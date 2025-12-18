@@ -59,7 +59,25 @@ export const AdminResidents: React.FC = () => {
             // ou assumimos que o usuário selecionou algo válido que mapeamos.
 
             // Vamos achar a unit no array carregado que bate com block e number
-            const targetUnit = units.find(u => u.block === residentForm.block && u.number === residentForm.unit);
+            // Normalizar inputs
+            const blockInput = residentForm.block.trim();
+            const numberInput = residentForm.unit.trim();
+
+            console.log("Searching for Unit:", { block: blockInput, number: numberInput });
+            console.log("Available Units:", units);
+
+            const targetUnit = units.find(u =>
+                (u.block || "").trim() === blockInput &&
+                u.number.trim() === numberInput
+            );
+
+            if (!targetUnit) {
+                alert(`DEBUG: Unidade não encontrada!\nInput: Bloco='${blockInput}', Num='${numberInput}'\nTotal Units Loaded: ${units.length}`);
+                console.error("Units:", units);
+                return;
+            } else {
+                // alert(`DEBUG: Unidade Encontrada: ID=${targetUnit.id}`);
+            }
 
             const payload = {
                 name: residentForm.name,
@@ -235,37 +253,66 @@ export const AdminResidents: React.FC = () => {
                                             />
                                         </div>
                                     </div>
-                                    <div className="col-span-1">
-                                        <label className="block text-sm font-bold text-slate-600 mb-2">Bloco</label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
-                                                value={residentForm.block}
-                                                onChange={e => setResidentForm({ ...residentForm, block: e.target.value })}
-                                            >
-                                                <option value="">Selecione...</option>
-                                                <option value="A">Bloco A</option>
-                                                <option value="B">Bloco B</option>
-                                                <option value="C">Bloco C</option>
-                                            </select>
-                                            <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className="block text-sm font-bold text-slate-600 mb-2">Nº da Unidade</label>
-                                        <div className="relative">
-                                            <Building size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                                            <input
-                                                type="text"
-                                                placeholder="Ex: 101"
-                                                className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
-                                                value={residentForm.unit}
-                                                onChange={e => setResidentForm({ ...residentForm, unit: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
+                                    {/* Calculated Lists */}
+                                    {(() => {
+                                        // 1. Identify Occupied Units
+                                        const occupiedUnitIds = new Set(residents.filter(r => r.unit_id).map(r => r.unit_id));
+
+                                        // 2. Extract Unique Blocks
+                                        const uniqueBlocks = Array.from(new Set(units.map(u => u.block).filter(Boolean))).sort();
+
+                                        // 3. Filter Units for Selected Block (Available Only)
+                                        const availableUnitsForBlock = units
+                                            .filter(u => u.block === residentForm.block)
+                                            .filter(u => !occupiedUnitIds.has(u.id))
+                                            .sort((a, b) => {
+                                                const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
+                                                const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
+                                                return numA - numB;
+                                            });
+
+                                        return (
+                                            <>
+                                                <div className="col-span-1">
+                                                    <label className="block text-sm font-bold text-slate-600 mb-2">Bloco</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
+                                                            value={residentForm.block}
+                                                            onChange={e => setResidentForm({ ...residentForm, block: e.target.value, unit: '' })}
+                                                        >
+                                                            <option value="">Selecione...</option>
+                                                            {uniqueBlocks.map(block => (
+                                                                <option key={block} value={block || ''}>{block}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400">
+                                                            <Building size={16} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className="block text-sm font-bold text-slate-600 mb-2">Nº da Unidade</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
+                                                            value={residentForm.unit}
+                                                            onChange={e => setResidentForm({ ...residentForm, unit: e.target.value })}
+                                                            disabled={!residentForm.block}
+                                                        >
+                                                            <option value="">{residentForm.block ? 'Selecione (Livres)...' : 'Selecione o Bloco'}</option>
+                                                            {availableUnitsForBlock.map(u => (
+                                                                <option key={u.id} value={u.number}>{u.number}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400">
+                                                            <Building size={16} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Linha: Datas */}
