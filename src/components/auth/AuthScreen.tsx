@@ -46,7 +46,13 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
   });
 
   const handleDemoLogin = (role: Role) => {
-    onLogin(role);
+    // Para simplificar a demo, vamos pré-preencher o form
+    if (role === 'ADMIN') {
+      setEmail('admin@maison.com');
+      setPassword('admin');
+    } else {
+      alert('Usuário demo de residente não criado no seed. Use Admin.');
+    }
   };
 
   const handleForgotPassword = () => {

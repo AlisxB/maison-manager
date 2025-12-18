@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Droplets, Flame, Zap, Plus, Save, History, FileText } from 'lucide-react';
 import { ReadingService, WaterReading, GasReading, ElectricityReading } from '../../services/readingService';
-import { UnitService, Unit } from '../../services/userService';
+import { UnitService, UserService, Unit } from '../../services/userService';
 
 type TabType = 'water' | 'gas' | 'electricity';
 
 export const AdminReadings: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('water');
     const [units, setUnits] = useState<Unit[]>([]);
+    const [residents, setResidents] = useState<any[]>([]); // To show resident name
     const [loading, setLoading] = useState(false);
 
     // Lists
@@ -32,8 +33,12 @@ export const AdminReadings: React.FC = () => {
 
     const fetchUnits = async () => {
         try {
-            const data = await UnitService.getAll();
-            setUnits(data);
+            const [unitsData, usersData] = await Promise.all([
+                UnitService.getAll(),
+                UserService.getAll()
+            ]);
+            setUnits(unitsData);
+            setResidents(usersData.filter((u: any) => u.role === 'RESIDENT' || u.unit_id));
         } catch (error) {
             console.error(error);
         }
@@ -160,9 +165,14 @@ export const AdminReadings: React.FC = () => {
                                         onChange={e => setWaterForm({ ...waterForm, unitId: e.target.value })}
                                     >
                                         <option value="">Selecione...</option>
-                                        {units.map(u => (
-                                            <option key={u.id} value={u.id}>Bl {u.block} - Apt {u.number}</option>
-                                        ))}
+                                        {units.map(u => {
+                                            const resident = residents.find(r => r.unit_id === u.id);
+                                            return (
+                                                <option key={u.id} value={u.id}>
+                                                    Bl {u.block} - Apt {u.number} {resident ? `(${resident.name})` : '(Vazio)'}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                 </div>
                                 <div>

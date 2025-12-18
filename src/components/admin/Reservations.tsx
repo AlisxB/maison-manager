@@ -153,6 +153,13 @@ export const AdminReservations: React.FC = () => {
     const handleManualReservationSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Check if date is blocked
+            const isBlocked = blockedDates.find(d => d.date === manualResForm.date);
+            if (isBlocked) {
+                alert(`Data bloqueada: ${isBlocked.reason}`);
+                return;
+            }
+
             // Creates Date objects treating the input as Local Time (Browser default)
             const startDate = new Date(`${manualResForm.date}T${manualResForm.startTime}:00`);
             const endDate = new Date(`${manualResForm.date}T${manualResForm.endTime}:00`);
