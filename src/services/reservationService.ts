@@ -33,6 +33,7 @@ export interface ReservationCreate {
     common_area_id: string;
     start_time: string;
     end_time: string;
+    user_id?: string;
 }
 
 export const CommonAreaService = {
@@ -50,6 +51,11 @@ export const ReservationService = {
 
     create: async (data: ReservationCreate) => {
         const response = await api.post<Reservation>('/reservations/', data);
+        return response.data;
+    },
+
+    updateStatus: async (id: string, status: 'CONFIRMED' | 'REJECTED' | 'CANCELLED') => {
+        const response = await api.patch<Reservation>(`/reservations/${id}`, { status });
         return response.data;
     }
 };
