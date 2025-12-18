@@ -149,13 +149,30 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
         }
     };
 
+    const getTableName = (table: string) => {
+        const map: Record<string, string> = {
+            'users': 'Usuários / Equipe',
+            'common_areas': 'Áreas Comuns',
+            'reservations': 'Reservas',
+            'readings_water': 'Leitura de Água',
+            'readings_gas': 'Leitura de Gás',
+            'readings_electricity': 'Leitura de Energia',
+            'transactions': 'Financeiro',
+            'inventory_items': 'Estoque',
+            'condominiums': 'Condomínio',
+            'vehicles': 'Veículos',
+            'pets': 'Pets'
+        };
+        return map[table] || table;
+    };
+
     const getActionBadge = (action: string) => {
         switch (action) {
-            case 'CREATE': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'UPDATE': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'DELETE': return 'bg-red-100 text-red-700 border-red-200';
-            case 'LOGIN': return 'bg-amber-100 text-amber-700 border-amber-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
+            case 'INSERT': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 uppercase">Criação</span>;
+            case 'UPDATE': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase">Edição</span>;
+            case 'DELETE': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 uppercase">Exclusão</span>;
+            case 'LOGIN': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">Login</span>;
+            default: return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase">{action}</span>;
         }
     };
 
@@ -209,11 +226,13 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-tighter ${getActionBadge(log.action)}`}>
-                                                {log.action}
+                                            {getActionBadge(log.action)}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                                                {getTableName(log.table_name)}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-slate-500">{log.table_name}</td>
                                         <td className="px-6 py-4">
                                             <p className="text-xs text-slate-600 line-clamp-1 italic font-mono">{log.record_id}</p>
                                         </td>
