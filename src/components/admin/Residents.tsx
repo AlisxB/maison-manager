@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    Search, Filter, UserPlus, Edit2, User, Mail, Phone, Building, Calendar, Cat, X, Trash2, PlusCircle
+    Search, Filter, UserPlus, Edit2, User as UserIcon, Mail, Phone, Building, Calendar, Cat, X, Trash2, PlusCircle
 } from 'lucide-react';
 import { MOCK_RESIDENTS } from '../../mock'; // Removido
 import { UserService, UnitService, User, Unit } from '../../services/userService';
@@ -193,7 +193,7 @@ export const AdminResidents: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-bold text-slate-600 mb-2">Nome Completo</label>
                                     <div className="relative">
-                                        <User size={18} className="absolute left-3 top-3.5 text-slate-400" />
+                                        <UserIcon size={18} className="absolute left-3 top-3.5 text-slate-400" />
                                         <input
                                             type="text"
                                             placeholder="Nome do proprietário"
@@ -300,7 +300,7 @@ export const AdminResidents: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-bold text-slate-600 mb-2">Cadastrado por</label>
                                     <div className="relative">
-                                        <User size={18} className="absolute left-3 top-3.5 text-slate-400" />
+                                        <UserIcon size={18} className="absolute left-3 top-3.5 text-slate-400" />
                                         <input
                                             type="text"
                                             readOnly

@@ -1,5 +1,4 @@
 import api from './api';
-import { UserRead, UserCreate } from '../types'; // Need to update types/index.ts or define here temporarily
 
 // Interfaces matching Backend Schemas
 export interface User {
