@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import MainLayout from './layouts/MainLayout';
 import AuthScreen from './components/auth/AuthScreen';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Role } from './types/index';
 
 // Admin Components (Modularized)
 import { AdminDashboard } from './components/admin/Dashboard';
@@ -26,24 +28,20 @@ import { ResidentReportIssue } from './components/resident/ReportIssue';
 import { ResidentConsumption } from './components/resident/Consumption';
 import { ResidentProfile } from './components/resident/Profile';
 
-import { Role } from './types/index';
+const AppContent: React.FC = () => {
+  const { signed, user, signOut, loading } = useAuth();
+  const [currentView, setCurrentView] = React.useState<string>('admin_dashboard');
 
-const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [role, setRole] = useState<Role>('ADMIN');
-  const [currentView, setCurrentView] = useState<string>('admin_dashboard');
+  useEffect(() => {
+    if (user) {
+      // Redirecionar para dashboard correto baseado no ROL do token
+      setCurrentView(user.role === 'ADMIN' ? 'admin_dashboard' : 'resident_dashboard');
+    }
+  }, [user]);
 
-  const handleLogin = (selectedRole: Role) => {
-    setRole(selectedRole);
-    setCurrentView(selectedRole === 'ADMIN' ? 'admin_dashboard' : 'resident_dashboard');
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setRole('ADMIN');
-    setCurrentView('admin_dashboard');
-  };
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
+  }
 
   const renderContent = () => {
     switch (currentView) {
@@ -60,7 +58,7 @@ const App: React.FC = () => {
       case 'admin_reports': return <AdminReports />;
       case 'admin_settings': return <AdminSettings />;
       case 'admin_profile': return <AdminProfile />;
-      
+
       case 'resident_dashboard': return <ResidentDashboard />;
       case 'resident_announcements': return <ResidentAnnouncements />;
       case 'resident_notifications': return <ResidentNotifications />;
@@ -68,24 +66,34 @@ const App: React.FC = () => {
       case 'resident_reservations': return <ResidentReservations />;
       case 'resident_report_issue': return <ResidentReportIssue />;
       case 'resident_profile': return <ResidentProfile />;
-      
+
       default: return <div className="p-4 text-red-500">View not found: {currentView}</div>;
     }
   };
 
-  if (!isAuthenticated) {
-    return <AuthScreen onLogin={handleLogin} />;
+  if (!signed || !user) {
+    // AuthScreen agora vai usar o hook useAuth internamente ou passar a função, 
+    // mas idealmente AuthScreen chama o serviço de login e usa o contexto.
+    return <AuthScreen />;
   }
 
   return (
-    <MainLayout 
-      role={role} 
-      currentView={currentView} 
+    <MainLayout
+      role={user.role}
+      currentView={currentView}
       onNavigate={setCurrentView}
-      onLogout={handleLogout}
+      onLogout={signOut}
     >
       {renderContent()}
     </MainLayout>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

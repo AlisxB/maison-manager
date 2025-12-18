@@ -1,18 +1,20 @@
 
 import React, { useState } from 'react';
-import { 
-  Home, 
-  ArrowRight, 
-  User, 
-  ShieldCheck, 
-  Mail, 
-  Lock, 
-  Key, 
-  UserPlus, 
-  Phone, 
-  Building, 
-  Calendar, 
-  ChevronDown, 
+import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import {
+  Home,
+  ArrowRight,
+  User,
+  ShieldCheck,
+  Mail,
+  Lock,
+  Key,
+  UserPlus,
+  Phone,
+  Building,
+  Calendar,
+  ChevronDown,
   ArrowLeft,
   Cat,
   PlusCircle,
@@ -20,11 +22,11 @@ import {
 } from 'lucide-react';
 import { Role } from '../../types';
 
-interface AuthScreenProps {
-  onLogin: (role: Role) => void;
-}
+// onLogin is removed from props as we use context
+interface AuthScreenProps { }
 
-const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
+const AuthScreen: React.FC<AuthScreenProps> = () => {
+  const { signIn } = useAuth();
   const [view, setView] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,11 +98,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               </div>
               <h1 className="text-xl font-black text-slate-800 tracking-tighter">Maison <span className="text-[#437476]">Manager</span></h1>
             </div>
-            <button 
+            <button
               onClick={() => setView('login')}
               className="flex items-center gap-2 text-xs font-black text-slate-400 hover:text-[#437476] transition-all uppercase tracking-widest group"
             >
-              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
               Voltar ao Login
             </button>
           </div>
@@ -126,13 +128,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                       <User size={18} />
                     </div>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       required
                       placeholder="COMO CONSTA NO SEU DOCUMENTO"
                       className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                       value={regForm.name}
-                      onChange={e => setRegForm({...regForm, name: e.target.value.toUpperCase()})}
+                      onChange={e => setRegForm({ ...regForm, name: e.target.value.toUpperCase() })}
                     />
                   </div>
                 </div>
@@ -144,13 +146,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                         <Mail size={18} />
                       </div>
-                      <input 
-                        type="email" 
+                      <input
+                        type="email"
                         required
                         placeholder="exemplo@email.com"
                         className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                         value={regForm.email}
-                        onChange={e => setRegForm({...regForm, email: e.target.value})}
+                        onChange={e => setRegForm({ ...regForm, email: e.target.value })}
                       />
                     </div>
                   </div>
@@ -160,13 +162,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                         <Phone size={18} />
                       </div>
-                      <input 
-                        type="tel" 
+                      <input
+                        type="tel"
                         required
                         placeholder="(00) 00000-0000"
                         className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                         value={regForm.phone}
-                        onChange={e => setRegForm({...regForm, phone: e.target.value})}
+                        onChange={e => setRegForm({ ...regForm, phone: e.target.value })}
                       />
                     </div>
                   </div>
@@ -185,11 +187,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                   <div className="space-y-1.5">
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Bloco</label>
                     <div className="relative group">
-                      <select 
+                      <select
                         required
                         className="block w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium appearance-none"
                         value={regForm.block}
-                        onChange={e => setRegForm({...regForm, block: e.target.value})}
+                        onChange={e => setRegForm({ ...regForm, block: e.target.value })}
                       >
                         <option value="">Selecione...</option>
                         <option value="A">Bloco A</option>
@@ -207,13 +209,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                         <Building size={18} />
                       </div>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         required
                         placeholder="Ex: 101"
                         className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                         value={regForm.unit}
-                        onChange={e => setRegForm({...regForm, unit: e.target.value})}
+                        onChange={e => setRegForm({ ...regForm, unit: e.target.value })}
                       />
                     </div>
                   </div>
@@ -225,12 +227,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                       <Calendar size={18} />
                     </div>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       required
                       className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                       value={regForm.entryDate}
-                      onChange={e => setRegForm({...regForm, entryDate: e.target.value})}
+                      onChange={e => setRegForm({ ...regForm, entryDate: e.target.value })}
                     />
                   </div>
                 </div>
@@ -249,15 +251,15 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                     <Cat size={20} />
                     <span className="text-[11px] font-black uppercase tracking-[0.2em]">Animais de Estimação</span>
                   </div>
-                  
+
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <p className="text-sm font-bold text-slate-600">Você possui algum animal de estimação residindo na unidade?</p>
                     <div className="flex gap-10">
                       {['Sim', 'Não'].map((opt) => (
                         <label key={opt} className="flex items-center gap-3 cursor-pointer group">
-                          <div 
+                          <div
                             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${regForm.hasPets === opt ? 'border-[#437476] bg-white' : 'border-slate-300 group-hover:border-[#437476]'}`}
-                            onClick={() => setRegForm({...regForm, hasPets: opt})}
+                            onClick={() => setRegForm({ ...regForm, hasPets: opt })}
                           >
                             {regForm.hasPets === opt && <div className="w-3.5 h-3.5 rounded-full bg-[#437476] animate-in zoom-in-50 duration-300" />}
                           </div>
@@ -274,8 +276,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                         <div key={index} className="grid grid-cols-12 gap-4 items-end">
                           <div className="col-span-4 space-y-1.5">
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Qtd</label>
-                            <input 
-                              type="number" 
+                            <input
+                              type="number"
                               min="1"
                               className="block w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                               value={pet.quantity}
@@ -285,7 +287,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                           <div className="col-span-6 space-y-1.5">
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Espécie</label>
                             <div className="relative">
-                              <select 
+                              <select
                                 className="block w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium appearance-none"
                                 value={pet.type}
                                 onChange={(e) => handlePetChange(index, 'type', e.target.value)}
@@ -302,7 +304,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                             </div>
                           </div>
                           <div className="col-span-2 pb-1 flex justify-center">
-                            <button 
+                            <button
                               type="button"
                               onClick={() => handleRemovePetRow(index)}
                               className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
@@ -313,9 +315,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                           </div>
                         </div>
                       ))}
-                      
+
                       <div className="flex justify-start pt-4">
-                        <button 
+                        <button
                           type="button"
                           onClick={handleAddPetRow}
                           className="flex items-center gap-2 px-5 py-2.5 text-[#437476] font-black text-[10px] uppercase tracking-widest hover:bg-[#437476]/5 rounded-xl transition-all"
@@ -343,13 +345,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                         <Key size={18} />
                       </div>
-                      <input 
-                        type="password" 
+                      <input
+                        type="password"
                         required
                         placeholder="••••••••"
                         className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                         value={regForm.password}
-                        onChange={e => setRegForm({...regForm, password: e.target.value})}
+                        onChange={e => setRegForm({ ...regForm, password: e.target.value })}
                       />
                     </div>
                   </div>
@@ -359,13 +361,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                         <Key size={18} />
                       </div>
-                      <input 
-                        type="password" 
+                      <input
+                        type="password"
                         required
                         placeholder="••••••••"
                         className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                         value={regForm.confirmPassword}
-                        onChange={e => setRegForm({...regForm, confirmPassword: e.target.value})}
+                        onChange={e => setRegForm({ ...regForm, confirmPassword: e.target.value })}
                       />
                     </div>
                   </div>
@@ -373,7 +375,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               </div>
 
               <div className="pt-10 flex flex-col gap-4">
-                <button 
+                <button
                   type="submit"
                   className="w-full py-5 bg-[#437476] text-white font-black rounded-3xl hover:bg-[#365e5f] hover:-translate-y-1 transition-all shadow-2xl shadow-[#437476]/30 text-sm uppercase tracking-widest active:scale-[0.98]"
                 >
@@ -382,7 +384,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               </div>
             </form>
           </div>
-          
+
           <p className="mt-12 text-center text-[10px] text-slate-400 font-black uppercase tracking-[0.4em] opacity-40">
             &copy; 2025 Maison Manager. Excelência em Gestão.
           </p>
@@ -417,19 +419,19 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                     <Mail size={18} />
                   </div>
-                  <input 
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    className="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium" 
-                    placeholder="seu@email.com" 
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
+                    placeholder="seu@email.com"
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center mb-1.5 ml-1">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Senha</label>
-                  <button 
+                  <button
                     onClick={handleForgotPassword}
                     className="text-[10px] font-black text-[#437476] hover:text-[#365e5f] hover:underline flex items-center gap-1 transition-colors uppercase tracking-tight"
                   >
@@ -440,18 +442,37 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                     <Lock size={18} />
                   </div>
-                  <input 
-                    type="password" 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    className="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium" 
-                    placeholder="••••••••" 
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
+                    placeholder="••••••••"
                   />
                 </div>
               </div>
             </div>
 
-            <button className="w-full py-4.5 bg-slate-900 text-white font-black rounded-2xl hover:bg-black hover:-translate-y-0.5 transition-all shadow-xl shadow-slate-200 text-sm uppercase tracking-widest active:scale-[0.98] py-4">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const formData = new FormData();
+                  formData.append('username', email);
+                  formData.append('password', password);
+
+                  const response = await api.post('/auth/login', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                  });
+
+                  signIn(response.data.access_token);
+                } catch (err) {
+                  alert('Falha no login. Verifique suas credenciais.');
+                  console.error(err);
+                }
+              }}
+              className="w-full py-4.5 bg-slate-900 text-white font-black rounded-2xl hover:bg-black hover:-translate-y-0.5 transition-all shadow-xl shadow-slate-200 text-sm uppercase tracking-widest active:scale-[0.98] py-4"
+            >
               Acessar Painel
             </button>
 
@@ -461,9 +482,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              <button 
-                type="button" 
-                onClick={() => handleDemoLogin('ADMIN')} 
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('ADMIN')}
                 className="w-full group flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-[1.5rem] hover:border-[#437476] hover:bg-[#437476]/5 transition-all duration-300 active:scale-[0.98] shadow-sm hover:shadow-md"
               >
                 <div className="w-12 h-12 bg-[#437476] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#437476]/20 transition-transform group-hover:scale-110">
@@ -476,9 +497,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                 <ArrowRight size={18} className="ml-auto text-slate-300 group-hover:text-[#437476] transform group-hover:translate-x-1 transition-all" />
               </button>
 
-              <button 
-                type="button" 
-                onClick={() => handleDemoLogin('RESIDENT')} 
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('RESIDENT')}
                 className="w-full group flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-[1.5rem] hover:border-emerald-600 hover:bg-emerald-50 transition-all duration-300 active:scale-[0.98] shadow-sm hover:shadow-md"
               >
                 <div className="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20 transition-transform group-hover:scale-110">
@@ -493,7 +514,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             </div>
 
             <div className="pt-2 text-center">
-              <button 
+              <button
                 onClick={() => setView('register')}
                 className="text-[11px] font-black text-slate-500 hover:text-[#437476] flex items-center justify-center gap-2 mx-auto transition-all group uppercase tracking-widest"
               >
@@ -503,7 +524,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             </div>
           </div>
         </div>
-        
+
         <p className="mt-8 text-center text-[10px] text-slate-400 font-black uppercase tracking-[0.3em] opacity-60">
           &copy; 2025 Maison Manager.
         </p>
