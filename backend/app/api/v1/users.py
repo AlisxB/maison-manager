@@ -104,6 +104,7 @@ async def create_user(
         password_hash=security.get_password_hash(user_in.password),
         role=user_in.role,
         profile_type=user_in.profile_type,
+        unit_id=user_in.unit_id,
         status="ACTIVE"
     )
     
