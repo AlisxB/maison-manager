@@ -63,7 +63,14 @@ class CommonArea(Base):
     id = uuid_pk()
     condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
     name = Column(String(100), nullable=False)
+    capacity = Column(Integer, default=10)
+    price_per_hour = Column(DECIMAL(10, 2), default=0)
+    min_booking_hours = Column(Integer, default=1)
+    max_booking_hours = Column(Integer, default=4)
+    monthly_limit_per_unit = Column(Integer, default=2)
+    opening_hours = Column(JSON, nullable=True)
     is_active = Column(Boolean, default=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
 class ReadingWater(Base):
     __tablename__ = "readings_water"
