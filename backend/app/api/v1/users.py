@@ -34,8 +34,13 @@ async def read_users(
         # Se for "ENC(email)", removemos o prefixo para exibir (simulação)
         if u.email_encrypted and u.email_encrypted.startswith("ENC("):
             u.email = u.email_encrypted[4:-1]
+        elif u.email_encrypted and "@" in u.email_encrypted and not u.email_encrypted.startswith("\\x"):
+            # Se parecer um email válido (ex: migração antiga), usa
+            u.email = u.email_encrypted
         else:
-            u.email = u.email_encrypted # Fallback
+            # Se for criptografia "real" (pgcrypto) que não conseguimos decifrar aqui sem a chave:
+            # Retornamos um placeholder válido para não quebrar o contrato Pydantic EmailStr
+            u.email = "admin@encrypted.com" 
             
     return users
 
