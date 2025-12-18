@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ChevronRight,
     ArrowLeft,
@@ -11,6 +11,7 @@ import {
     UserPlus,
     Edit2,
     Trash2,
+    Plus,
     ChevronDown,
     ChevronUp,
     Mail,
@@ -23,14 +24,18 @@ import {
     DollarSign,
     History,
     Search,
-    Filter,
     Monitor
 } from 'lucide-react';
-import { MOCK_SYSTEM_LOGS } from '../../mock';
+
 
 import { AdminUnits } from './Units';
 import { AdminInventory } from './Inventory';
-import { Package } from 'lucide-react'; // Ensure Package icon is imported if not already
+import { Package } from 'lucide-react';
+
+import { CondominiumService, CondominiumUpdate } from '../../services/condominiumService';
+import { UserService, User } from '../../services/userService';
+import { CommonAreaService, CommonArea } from '../../services/commonAreaService';
+import { AuditService, AuditLog } from '../../services/auditService';
 
 type SettingsView = 'menu' | 'condo_data' | 'users' | 'booking_rules' | 'notifications' | 'logs' | 'units' | 'inventory';
 
@@ -126,6 +131,23 @@ const SettingsMenu: React.FC<{ onNavigate: (view: SettingsView) => void }> = ({ 
 
 const LogsView: React.FC<{ onBack: () => void }> = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [logs, setLogs] = useState<AuditLog[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchLogs();
+    }, []);
+
+    const fetchLogs = async () => {
+        try {
+            const data = await AuditService.getLogs();
+            setLogs(data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const getActionBadge = (action: string) => {
         switch (action) {
@@ -151,11 +173,6 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="flex gap-2">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all">
-                            <Filter size={16} /> Filtros Avançados
-                        </button>
-                    </div>
                 </div>
 
                 <div className="flex-1 overflow-auto custom-scrollbar">
@@ -166,48 +183,56 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
                                 <th className="px-6 py-4">Administrador</th>
                                 <th className="px-6 py-4">Ação</th>
                                 <th className="px-6 py-4">Módulo</th>
-                                <th className="px-6 py-4">Descrição</th>
+                                <th className="px-6 py-4">Recurso ID</th>
                                 <th className="px-6 py-4 text-right">Origem</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {MOCK_SYSTEM_LOGS.map(log => (
-                                <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-slate-400 font-mono text-[11px]">{log.timestamp}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
-                                                {log.adminName.charAt(0)}
-                                            </div>
-                                            <span className="font-bold text-slate-700">{log.adminName}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-tighter ${getActionBadge(log.action)}`}>
-                                            {log.action}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-slate-500">{log.module}</td>
-                                    <td className="px-6 py-4">
-                                        <p className="text-xs text-slate-600 line-clamp-1 italic">"{log.description}"</p>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex flex-col items-end gap-1">
-                                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                                                <Monitor size={10} /> {log.ip}
+                            {loading ? (
+                                <tr><td colSpan={6} className="p-6 text-center text-slate-400">Carregando logs...</td></tr>
+                            ) : logs.length === 0 ? (
+                                <tr><td colSpan={6} className="p-6 text-center text-slate-400">Nenhum log encontrado.</td></tr>
+                            ) : (
+                                logs.filter(l => !searchTerm || l.action.includes(searchTerm.toUpperCase()) || l.actor_name?.toLowerCase().includes(searchTerm.toLowerCase())).map(log => (
+                                    <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="text-slate-400 font-mono text-[11px]">
+                                                {new Date(log.created_at).toLocaleString()}
                                             </span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
+                                                    {(log.actor_name || '?').charAt(0)}
+                                                </div>
+                                                <span className="font-bold text-slate-700">{log.actor_name || 'Sistema'}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-tighter ${getActionBadge(log.action)}`}>
+                                                {log.action}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium text-slate-500">{log.table_name}</td>
+                                        <td className="px-6 py-4">
+                                            <p className="text-xs text-slate-600 line-clamp-1 italic font-mono">{log.record_id}</p>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                                                    <Monitor size={10} /> {log.ip_address || 'N/A'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
 
                 <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Exibindo os últimos 50 registros de auditoria</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Exibindo os últimos {logs.length} registros de auditoria</p>
                 </div>
             </div>
         </div>
@@ -216,6 +241,40 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
 
 const CondoDataView: React.FC<{ onBack: () => void, onSave: () => void, isSaving: boolean }> = ({ onSave, isSaving }) => {
     const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState<CondominiumUpdate>({});
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            const data = await CondominiumService.getMe();
+            setFormData({
+                name: data.name,
+                address: data.address,
+                contact_email: data.contact_email,
+                gate_phone: data.gate_phone
+            });
+        } catch (error) {
+            console.error("Error loading condo data");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveLocal = async () => {
+        try {
+            await CondominiumService.updateMe(formData);
+            onSave();
+            setIsEditing(false);
+        } catch (error) {
+            alert("Erro ao salvar dados");
+        }
+    };
+
+    if (loading) return <div className="p-8 text-center">Carregando dados...</div>;
 
     return (
         <div className="bg-[#fcfbf9] rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -232,29 +291,53 @@ const CondoDataView: React.FC<{ onBack: () => void, onSave: () => void, isSaving
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase">Nome do Condomínio</label>
-                        <input type="text" defaultValue="Maison Heights" disabled={!isEditing} className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]" />
+                        <input
+                            type="text"
+                            value={formData.name || ''}
+                            disabled={!isEditing}
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]"
+                        />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase">CNPJ</label>
-                        <input type="text" defaultValue="12.345.678/0001-99" disabled={!isEditing} className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]" />
+                        <label className="text-xs font-bold text-slate-400 uppercase">CNPJ (Criptografado)</label>
+                        <input type="text" value={"**Criptografado pelo Sistema**"} disabled={true} className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 font-mono" />
                     </div>
                     <div className="md:col-span-2 space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase">Endereço Completo</label>
-                        <input type="text" defaultValue="Rua das Palmeiras, 1500 - Jardim das Flores, São Paulo - SP" disabled={!isEditing} className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]" />
+                        <input
+                            type="text"
+                            value={formData.address || ''}
+                            disabled={!isEditing}
+                            onChange={e => setFormData({ ...formData, address: e.target.value })}
+                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]"
+                        />
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase">E-mail de Contato</label>
-                        <input type="email" defaultValue="contato@maisonheights.com" disabled={!isEditing} className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]" />
+                        <input
+                            type="email"
+                            value={formData.contact_email || ''}
+                            disabled={!isEditing}
+                            onChange={e => setFormData({ ...formData, contact_email: e.target.value })}
+                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]"
+                        />
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase">Telefone Portaria</label>
-                        <input type="text" defaultValue="(11) 4002-8922" disabled={!isEditing} className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]" />
+                        <input
+                            type="text"
+                            value={formData.gate_phone || ''}
+                            disabled={!isEditing}
+                            onChange={e => setFormData({ ...formData, gate_phone: e.target.value })}
+                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]"
+                        />
                     </div>
                 </div>
                 {isEditing && (
                     <div className="pt-4 flex justify-end">
                         <button
-                            onClick={onSave}
+                            onClick={handleSaveLocal}
                             className="flex items-center gap-2 px-8 py-3 bg-[#437476] text-white font-bold rounded-lg hover:bg-[#365e5f] transition-all"
                         >
                             <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar Alterações'}
@@ -268,16 +351,96 @@ const CondoDataView: React.FC<{ onBack: () => void, onSave: () => void, isSaving
 
 const UserManagementView: React.FC<{ onBack: () => void }> = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const mockUsers = [
-        { id: 1, name: 'João Silva', email: 'joao@maison.com', role: 'Síndico', status: 'Ativo' },
-        { id: 2, name: 'Maria Souza', email: 'maria@maison.com', role: 'Portaria', status: 'Ativo' },
-        { id: 3, name: 'Ricardo Santos', email: 'ricardo@maison.com', role: 'Financeiro', status: 'Pendente' },
-    ];
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'PORTER', profile_type: 'STAFF' });
+
+    // Master Admin ID (hardcoded for protection in Frontend too)
+    const MASTER_ADMIN_ID = "22222222-2222-2222-2222-222222222222";
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const fetchUsers = async () => {
+        try {
+            const data = await UserService.getAll();
+            // Filter out residents, show only admin staff
+            setUsers(data.filter(u => u.role !== 'RESIDENT'));
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenCreate = () => {
+        setFormData({ name: '', email: '', password: '', role: 'PORTER', profile_type: 'STAFF' });
+        setIsEditing(false);
+        setSelectedUser(null);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEdit = (user: User) => {
+        setFormData({
+            name: user.name,
+            email: user.email,
+            password: '', // Don't show password
+            role: user.role,
+            profile_type: user.profile_type
+        });
+        setIsEditing(true);
+        setSelectedUser(user);
+        setIsModalOpen(true);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            if (isEditing && selectedUser) {
+                await UserService.update(selectedUser.id, {
+                    ...formData,
+                    password: formData.password || undefined // Only send if changed
+                });
+                alert('Usuário atualizado!');
+            } else {
+                await UserService.create({
+                    ...formData,
+                    status: 'ACTIVE'
+                });
+                alert('Usuário criado!');
+            }
+            setIsModalOpen(false);
+            fetchUsers();
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao salvar usuário.');
+        }
+    };
+
+    const handleDelete = async (user: User) => {
+        if (user.id === MASTER_ADMIN_ID) {
+            alert("O Administrador Master não pode ser excluído.");
+            return;
+        }
+        if (!confirm(`Tem certeza que deseja remover ${user.name}?`)) return;
+
+        try {
+            await UserService.delete(user.id);
+            fetchUsers();
+            alert("Usuário removido.");
+        } catch (error) {
+            alert("Erro ao remover usuário.");
+        }
+    };
 
     const getRoleBadge = (role: string) => {
         switch (role) {
-            case 'Síndico': return 'bg-yellow-100 text-yellow-700';
-            case 'Financeiro': return 'bg-blue-100 text-blue-700';
+            case 'ADMIN': return 'bg-yellow-100 text-yellow-700';
+            case 'PORTER': return 'bg-blue-100 text-blue-700';
+            case 'FINANCIAL': return 'bg-emerald-100 text-emerald-700';
             default: return 'bg-slate-100 text-slate-600';
         }
     };
@@ -288,54 +451,65 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
                 <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                     <h3 className="font-bold text-slate-700">Equipe Administrativa</h3>
                     <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={handleOpenCreate}
                         className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-bold hover:bg-[#365e5f] transition-all"
                     >
-                        <UserPlus size={18} /> Novo Usuário
+                        <UserPlus size={18} /> Novo Colaborador
                     </button>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
                             <tr>
-                                <th className="px-6 py-4">Usuário</th>
+                                <th className="px-6 py-4">Colaborador</th>
                                 <th className="px-6 py-4">Cargo</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4 text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {mockUsers.map(user => (
-                                <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
-                                                {user.name.charAt(0)}
+                            {loading ? (
+                                <tr><td colSpan={4} className="p-6 text-center text-slate-400">Carregando equipe...</td></tr>
+                            ) : users.length === 0 ? (
+                                <tr><td colSpan={4} className="p-6 text-center text-slate-400">Nenhum colaborador encontrado.</td></tr>
+                            ) : (
+                                users.map(user => (
+                                    <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
+                                                    {user.name.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-700">
+                                                        {user.name}
+                                                        {user.id === MASTER_ADMIN_ID && <span className="ml-2 text-[9px] bg-black text-white px-1.5 py-0.5 rounded uppercase font-black tracking-tighter">Master</span>}
+                                                    </p>
+                                                    <p className="text-xs text-slate-400">{user.email}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-slate-700">{user.name}</p>
-                                                <p className="text-xs text-slate-400">{user.email}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getRoleBadge(user.role)}`}>
+                                                {user.role}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`text-xs font-medium ${user.status === 'ACTIVE' ? 'text-green-600' : 'text-amber-500'}`}>
+                                                {user.status === 'ACTIVE' ? 'Ativo' : 'Pendente'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => handleOpenEdit(user)} className="p-1.5 text-slate-400 hover:text-[#437476] rounded-md hover:bg-white transition-all"><Edit2 size={16} /></button>
+                                                {user.id !== MASTER_ADMIN_ID && (
+                                                    <button onClick={() => handleDelete(user)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-white transition-all"><Trash2 size={16} /></button>
+                                                )}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getRoleBadge(user.role)}`}>
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`text-xs font-medium ${user.status === 'Ativo' ? 'text-green-600' : 'text-amber-500'}`}>
-                                            {user.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button className="p-1.5 text-slate-400 hover:text-[#437476] rounded-md hover:bg-white transition-all"><Edit2 size={16} /></button>
-                                            <button className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-white transition-all"><Trash2 size={16} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -343,44 +517,44 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
 
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-[#fcfbf9] rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
-                        <div className="px-8 py-6 border-b border-slate-100 bg-white flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-slate-700">Novo Administrador</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
-                        </div>
-                        <div className="p-8 space-y-5">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95">
+                        <h3 className="font-bold text-lg mb-4 text-slate-700">{isEditing ? 'Editar Colaborador' : 'Novo Colaborador'}</h3>
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-bold text-slate-600 mb-2">Nome Completo</label>
-                                <input type="text" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]" />
+                                <label className="text-xs font-bold text-slate-400 uppercase">Nome Completo</label>
+                                <input required className="w-full p-2 border rounded-lg mt-1" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-slate-600 mb-2">E-mail</label>
-                                <input type="email" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]" />
+                                <label className="text-xs font-bold text-slate-400 uppercase">E-mail Corporativo</label>
+                                <input required type="email" className="w-full p-2 border rounded-lg mt-1" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-slate-600 mb-2">Cargo</label>
-                                <select className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]">
-                                    <option>Administrador</option>
-                                    <option>Síndico</option>
-                                    <option>Portaria</option>
-                                    <option>Financeiro</option>
+                                <label className="text-xs font-bold text-slate-400 uppercase">Senha {isEditing && '(Deixe em branco para manter)'}</label>
+                                <input
+                                    type="password"
+                                    required={!isEditing}
+                                    className="w-full p-2 border rounded-lg mt-1"
+                                    value={formData.password}
+                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder={isEditing ? '******' : ''}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-400 uppercase">Cargo / Função</label>
+                                <select className="w-full p-2 border rounded-lg mt-1 bg-white" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                                    <option value="PORTER">Porteiro / Segurança</option>
+                                    <option value="FINANCIAL">Gerente Financeiro</option>
+                                    <option value="ADMIN">Administrador (Síndico)</option>
                                 </select>
                             </div>
-                            <div className="space-y-3 pt-2">
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Permissões de Acesso</p>
-                                {['Ver Financeiro', 'Gerir Moradores', 'Publicar Avisos', 'Configurações do Sistema'].map(perm => (
-                                    <label key={perm} className="flex items-center gap-3 cursor-pointer group">
-                                        <div className="w-5 h-5 rounded border border-slate-300 group-hover:border-[#437476] transition-colors flex items-center justify-center">
-                                            <Shield size={12} className="text-transparent group-hover:text-slate-100" />
-                                        </div>
-                                        <span className="text-sm text-slate-600">{perm}</span>
-                                    </label>
-                                ))}
+
+                            <div className="flex gap-2 pt-4">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 bg-slate-100 rounded-lg text-slate-600 font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
+                                <button type="submit" className="flex-1 py-2 bg-[#437476] text-white rounded-lg font-bold hover:bg-[#365e5f] transition-all">
+                                    {isEditing ? 'Salvar Alterações' : 'Cadastrar'}
+                                </button>
                             </div>
-                            <button className="w-full py-3 bg-[#437476] text-white font-bold rounded-lg hover:bg-[#365e5f] transition-all mt-4" onClick={() => setIsModalOpen(false)}>
-                                Criar Convite
-                            </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
             )}
@@ -389,51 +563,137 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
 };
 
 const BookingRulesView: React.FC<{ onBack: () => void, onSave: () => void, isSaving: boolean }> = ({ onSave, isSaving }) => {
-    const [openAccordion, setOpenAccordion] = useState<string | null>('Salão de Festas');
+    const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+    const [areas, setAreas] = useState<CommonArea[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [newArea, setNewArea] = useState({ name: '', capacity: 10, price_per_hour: 0 });
 
-    const areas = [
-        { name: 'Salão de Festas', icon: '🎉', price: 150.00, hours: '08:00 - 22:00', limit: 2 },
-        { name: 'Churrasqueira', icon: '🔥', price: 80.00, hours: '10:00 - 22:00', limit: 4 },
-        { name: 'Quadra de Tênis', icon: '🎾', price: 0, hours: '06:00 - 20:00', limit: 10 },
-    ];
+    useEffect(() => {
+        loadAreas();
+    }, []);
+
+    const loadAreas = async () => {
+        try {
+            const data = await CommonAreaService.getAll();
+            setAreas(data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateArea = async (id: string, updates: Partial<CommonArea>) => {
+        try {
+            await CommonAreaService.update(id, updates);
+            setAreas(areas.map(a => a.id === id ? { ...a, ...updates } : a));
+        } catch (error) {
+            alert('Erro ao atualizar regra');
+        }
+    };
+
+    const handleCreateArea = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await CommonAreaService.create(newArea);
+            setShowAddModal(false);
+            setNewArea({ name: '', capacity: 10, price_per_hour: 0 });
+            loadAreas();
+        } catch (error) {
+            alert('Erro ao criar área');
+        }
+    };
+
+    const handleDeleteArea = async (id: string) => {
+        if (!confirm('Tem certeza? Isso pode afetar reservas existentes.')) return;
+        try {
+            await CommonAreaService.delete(id);
+            loadAreas();
+        } catch (error) {
+            alert('Erro ao excluir área');
+        }
+    };
+
+    if (loading) return <div className="p-8 text-center">Carregando áreas...</div>;
 
     return (
         <div className="space-y-6">
+            <div className="flex justify-end">
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white font-bold rounded-lg hover:bg-[#365e5f] transition-all"
+                >
+                    <Plus size={18} /> Nova Área Comum
+                </button>
+            </div>
+
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+                {areas.length === 0 && <div className="p-8 text-center text-slate-400">Nenhuma área comum cadastrada.</div>}
+
                 {areas.map(area => (
-                    <div key={area.name}>
+                    <div key={area.id}>
                         <button
-                            onClick={() => setOpenAccordion(openAccordion === area.name ? null : area.name)}
+                            onClick={() => setOpenAccordion(openAccordion === area.id ? null : area.id)}
                             className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors text-left"
                         >
                             <div className="flex items-center gap-4">
-                                <span className="text-2xl">{area.icon}</span>
+                                <span className="text-2xl">🎉</span>
                                 <h3 className="font-bold text-slate-700">{area.name}</h3>
                             </div>
-                            {openAccordion === area.name ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+                            <div className="flex items-center gap-4">
+                                <span className={`text-xs px-2 py-1 rounded-full font-bold ${area.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {area.is_active ? 'Ativa' : 'Inativa'}
+                                </span>
+                                {openAccordion === area.id ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+                            </div>
                         </button>
-                        {openAccordion === area.name && (
+                        {openAccordion === area.id && (
                             <div className="p-8 bg-[#fcfbf9] border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><DollarSign size={12} /> Valor da Reserva</label>
-                                        <input type="number" defaultValue={area.price} className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]" />
+                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><DollarSign size={12} /> Valor / Hora</label>
+                                        <input
+                                            type="number"
+                                            value={area.price_per_hour}
+                                            onChange={(e) => handleUpdateArea(area.id, { price_per_hour: parseFloat(e.target.value) || 0 })}
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]"
+                                        />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><Clock size={12} /> Horário Permitido</label>
-                                        <input type="text" defaultValue={area.hours} className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]" />
+                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><Users size={12} /> Capacidade</label>
+                                        <input
+                                            type="number"
+                                            value={area.capacity}
+                                            onChange={(e) => handleUpdateArea(area.id, { capacity: parseInt(e.target.value) || 0 })}
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><Info size={12} /> Limite / Mês</label>
-                                        <input type="number" defaultValue={area.limit} className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]" />
+                                        <input
+                                            type="number"
+                                            value={area.monthly_limit_per_unit}
+                                            onChange={(e) => handleUpdateArea(area.id, { monthly_limit_per_unit: parseInt(e.target.value) || 0 })}
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]"
+                                        />
                                     </div>
-                                    <div className="flex items-end">
+                                    <div className="flex flex-col gap-2 justify-end">
                                         <label className="flex items-center gap-3 cursor-pointer">
-                                            <div className="w-12 h-6 bg-emerald-500 rounded-full relative p-1 shadow-inner">
-                                                <div className="w-4 h-4 bg-white rounded-full translate-x-6"></div>
+                                            <div
+                                                onClick={() => handleUpdateArea(area.id, { is_active: !area.is_active })}
+                                                className={`w-12 h-6 rounded-full relative p-1 shadow-inner transition-colors ${area.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                            >
+                                                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${area.is_active ? 'translate-x-6' : ''}`}></div>
                                             </div>
                                             <span className="text-xs font-bold text-slate-600">Disponível</span>
                                         </label>
+                                        <button
+                                            onClick={() => handleDeleteArea(area.id)}
+                                            className="text-xs text-red-400 hover:text-red-600 font-bold self-start mt-2 flex items-center gap-1"
+                                        >
+                                            <Trash2 size={12} /> Excluir Área
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -441,14 +701,32 @@ const BookingRulesView: React.FC<{ onBack: () => void, onSave: () => void, isSav
                     </div>
                 ))}
             </div>
-            <div className="flex justify-end">
-                <button
-                    onClick={onSave}
-                    className="flex items-center gap-2 px-8 py-3 bg-[#437476] text-white font-bold rounded-lg hover:bg-[#365e5f] transition-all shadow-sm"
-                >
-                    <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar Regras'}
-                </button>
-            </div>
+
+            {showAddModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95">
+                        <h3 className="font-bold text-lg mb-4 text-slate-700">Nova Área Comum</h3>
+                        <form onSubmit={handleCreateArea} className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-400">Nome</label>
+                                <input required className="w-full p-2 border rounded-lg" value={newArea.name} onChange={e => setNewArea({ ...newArea, name: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-400">Capacidade</label>
+                                <input required type="number" className="w-full p-2 border rounded-lg" value={newArea.capacity} onChange={e => setNewArea({ ...newArea, capacity: parseInt(e.target.value) })} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-400">Preço / Hora</label>
+                                <input required type="number" className="w-full p-2 border rounded-lg" value={newArea.price_per_hour} onChange={e => setNewArea({ ...newArea, price_per_hour: parseFloat(e.target.value) })} />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-2 bg-slate-100 rounded-lg text-slate-600 font-bold">Cancelar</button>
+                                <button type="submit" className="flex-1 py-2 bg-[#437476] text-white rounded-lg font-bold">Criar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
