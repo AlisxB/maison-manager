@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Annotated
 from app.core import deps
-from app.models.all import ReadingWater, ReadingGas, ReadingElectricity
+from app.models.all import ReadingWater, ReadingGas, ReadingElectricity, Transaction
 from app.schemas.readings import (
     WaterReadingCreate, WaterReadingRead,
     GasReadingCreate, GasReadingRead,
@@ -55,6 +55,20 @@ async def create_gas_reading(
         **reading_in.model_dump()
     )
     db.add(db_obj)
+    
+    # Auto-create Financial Expense
+    expense = Transaction(
+        condominium_id=current_user.condo_id,
+        type='expense',
+        description=f"Compra de Gás - {db_obj.supplier}",
+        amount=db_obj.total_price,
+        category='Utilidades',
+        date=db_obj.purchase_date,
+        status='paid', # Assume purchase is paid
+        observation="Gerado automaticamente pelo Módulo de Leituras"
+    )
+    db.add(expense)
+
     await db.commit()
     await db.refresh(db_obj)
     return db_obj
@@ -82,6 +96,20 @@ async def create_electricity_reading(
         **reading_in.model_dump()
     )
     db.add(db_obj)
+    
+    # Auto-create Financial Expense
+    expense = Transaction(
+        condominium_id=current_user.condo_id,
+        type='expense',
+        description="Conta de Luz",
+        amount=db_obj.total_value,
+        category='Utilidades',
+        date=db_obj.due_date,
+        status='pending', # Bills start as pending
+        observation="Gerado automaticamente pelo Módulo de Leituras"
+    )
+    db.add(expense)
+
     await db.commit()
     await db.refresh(db_obj)
     return db_obj
