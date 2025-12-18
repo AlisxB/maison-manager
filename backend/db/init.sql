@@ -322,22 +322,52 @@ DECLARE
     curr_condo UUID;
     curr_user UUID;
 BEGIN
-    curr_condo := current_condo_id();
-    curr_user := current_user_id();
+    -- Safely try to get context variables
+    BEGIN
+        curr_condo := NULLIF(current_setting('app.current_condo_id', true), '')::UUID;
+    EXCEPTION WHEN OTHERS THEN
+        curr_condo := NULL;
+    END;
 
-    IF (TG_OP = 'INSERT') THEN
-        INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, new_data)
-        VALUES (curr_condo, curr_user, 'INSERT', TG_TABLE_NAME, NEW.id, row_to_json(NEW));
-        RETURN NEW;
-    ELSIF (TG_OP = 'UPDATE') THEN
-        INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, old_data, new_data)
-        VALUES (curr_condo, curr_user, 'UPDATE', TG_TABLE_NAME, NEW.id, row_to_json(OLD), row_to_json(NEW));
-        RETURN NEW;
-    ELSIF (TG_OP = 'DELETE') THEN
-        INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, old_data)
-        VALUES (curr_condo, curr_user, 'DELETE', TG_TABLE_NAME, OLD.id, row_to_json(OLD));
-        RETURN OLD;
+    BEGIN
+        curr_user := NULLIF(current_setting('app.current_user_id', true), '')::UUID;
+    EXCEPTION WHEN OTHERS THEN
+         curr_user := NULL;
+    END;
+    
+    -- Fallback Heuristics for missing context
+    IF curr_condo IS NULL THEN
+        IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
+            BEGIN
+                curr_condo := NEW.condominium_id;
+            EXCEPTION WHEN OTHERS THEN
+                curr_condo := NULL; 
+            END;
+        ELSIF (TG_OP = 'DELETE') THEN
+            BEGIN
+                curr_condo := OLD.condominium_id;
+            EXCEPTION WHEN OTHERS THEN
+                curr_condo := NULL;
+            END;
+        END IF;
     END IF;
+
+    IF curr_condo IS NOT NULL THEN
+        IF (TG_OP = 'INSERT') THEN
+            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, new_data)
+            VALUES (curr_condo, curr_user, 'INSERT', TG_TABLE_NAME, NEW.id, row_to_json(NEW));
+            RETURN NEW;
+        ELSIF (TG_OP = 'UPDATE') THEN
+            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, old_data, new_data)
+            VALUES (curr_condo, curr_user, 'UPDATE', TG_TABLE_NAME, NEW.id, row_to_json(OLD), row_to_json(NEW));
+            RETURN NEW;
+        ELSIF (TG_OP = 'DELETE') THEN
+            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, old_data)
+            VALUES (curr_condo, curr_user, 'DELETE', TG_TABLE_NAME, OLD.id, row_to_json(OLD));
+            RETURN OLD;
+        END IF;
+    END IF;
+    
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -359,6 +389,9 @@ CREATE TRIGGER audit_readings_electricity_trigger AFTER INSERT OR UPDATE OR DELE
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 CREATE TRIGGER audit_transactions_trigger AFTER INSERT OR UPDATE OR DELETE ON transactions
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+CREATE TRIGGER audit_common_areas_trigger AFTER INSERT OR UPDATE OR DELETE ON common_areas
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 -- 5. Seed Initial Data (Optional - to allow first login)
