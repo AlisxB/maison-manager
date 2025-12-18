@@ -27,7 +27,17 @@ async def read_users(
     # Se quisermos descriptografar campos, precisaríamos usar func.pgp_sym_decrypt
     # Mas aqui vamos focar na estrutura
     result = await db.execute(select(User).offset(skip).limit(limit))
-    return result.scalars().all()
+    users = result.scalars().all()
+    
+    # Hack para conformidade com Pydantic para Lista
+    for u in users:
+        # Se for "ENC(email)", removemos o prefixo para exibir (simulação)
+        if u.email_encrypted and u.email_encrypted.startswith("ENC("):
+            u.email = u.email_encrypted[4:-1]
+        else:
+            u.email = u.email_encrypted # Fallback
+            
+    return users
 
 @router.post("/", response_model=UserRead)
 async def create_user(
@@ -106,4 +116,8 @@ async def create_user(
             )
         raise HTTPException(status_code=400, detail=str(e))
         
+    # Hack para conformidade com Pydantic (UserRead espera email, mas model tem email_encrypted)
+    # Em produção real, desencriptaria aqui via SQL ou chave.
+    db_user.email = user_in.email
+    
     return db_user
