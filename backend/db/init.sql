@@ -281,7 +281,15 @@ INSERT INTO users (
     'Super Admin',
     pgp_sym_encrypt('admin@maison.com', 'super_secure_key_for_pgcrypto'),
     encode(digest('admin@maison.com', 'sha256'), 'hex'),
-    '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
+    '$2b$12$/Zx8NmnkAUYoy46tlLzK2ec8lzZ2ifMbuFiiRzXEUjngnfUgotfW2',
     'ADMIN',
     'ACTIVE'
 );
+
+-- Insert Common Areas
+INSERT INTO common_areas (id, condominium_id, name, capacity, price_per_hour, min_booking_hours, max_booking_hours, is_active)
+VALUES 
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Salão de Festas', 80, 150.00, 4, 8, TRUE),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Churrasqueira Gourmet', 20, 50.00, 2, 6, TRUE),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Quadra de Tênis', 4, 0.00, 1, 2, TRUE),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Espaço Gourmet', 15, 80.00, 3, 5, TRUE);

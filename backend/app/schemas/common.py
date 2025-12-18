@@ -36,3 +36,22 @@ class ReservationRead(ReservationBase):
     
     class Config:
         from_attributes = True
+
+# --- Common Areas ---
+class CommonAreaBase(BaseModel):
+    name: str
+    capacity: Optional[int] = None
+    price_per_hour: Optional[float] = 0.0
+    min_booking_hours: Optional[int] = 1
+    max_booking_hours: Optional[int] = 4
+    is_active: bool = True
+
+class CommonAreaCreate(CommonAreaBase):
+    pass
+
+class CommonAreaRead(CommonAreaBase):
+    id: UUID
+    condominium_id: UUID
+    
+    class Config:
+        from_attributes = True
