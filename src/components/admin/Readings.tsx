@@ -1,485 +1,400 @@
-import React, { useState } from 'react';
-import { 
-  Droplets, 
-  Flame, 
-  Zap, 
-  Share2, 
-  PlusCircle, 
-  X,
-  ShoppingBag,
-  Truck,
-  ChevronDown,
-  Calendar
-} from 'lucide-react';
-import { MOCK_RESIDENTS } from '../../mock';
-import { Link as LinkIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Droplets, Flame, Zap, Plus, Save, History, FileText } from 'lucide-react';
+import { ReadingService, WaterReading, GasReading, ElectricityReading } from '../../services/readingService';
+import { UnitService, Unit } from '../../services/userService';
+
+type TabType = 'water' | 'gas' | 'electricity';
 
 export const AdminReadings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'water' | 'gas' | 'energy'>('water');
-  const [isWaterModalOpen, setIsWaterModalOpen] = useState(false);
-  const [isGasModalOpen, setIsGasModalOpen] = useState(false);
-  const [isEnergyModalOpen, setIsEnergyModalOpen] = useState(false);
-  const [waterForm, setWaterForm] = useState({ unit: '', reading: '', date: '2025-12-16', photoUrl: '' });
-  const [gasForm, setGasForm] = useState({ provider: '', c1: 0, c2: 0, c3: 0, c4: 0, total: 0, date: '2025-12-17' });
-  const [energyForm, setEnergyForm] = useState({ consumption: 0, total: 0, dueDate: '2025-12-17', status: 'Pendente' });
+    const [activeTab, setActiveTab] = useState<TabType>('water');
+    const [units, setUnits] = useState<Unit[]>([]);
+    const [loading, setLoading] = useState(false);
 
-  // Mock data for Gas and Energy
-  const mockGasPurchases = [
-    { id: 1, date: '15/12/2025', provider: 'SuperGás', qty: '400 kg', total: 4500.00 },
-    { id: 2, date: '10/11/2025', provider: 'Nacional Gás', qty: '350 kg', total: 4100.00 },
-  ];
+    // Lists
+    const [waterReadings, setWaterReadings] = useState<WaterReading[]>([]);
+    const [gasReadings, setGasReadings] = useState<GasReading[]>([]);
+    const [elecReadings, setElecReadings] = useState<ElectricityReading[]>([]);
 
-  const mockEnergyBills = [
-    { id: 1, month: 'Dezembro/2025', consumption: '12500 kWh', total: 11200.00, status: 'Pendente' },
-    { id: 2, month: 'Novembro/2025', consumption: '11800 kWh', total: 10500.00, status: 'Pago' },
-  ];
+    // Forms
+    const [waterForm, setWaterForm] = useState({ unitId: '', date: '', value: '', image: '' });
+    const [gasForm, setGasForm] = useState({ supplier: '', date: '', totalPrice: '', cyl1: '', cyl2: '', cyl3: '', cyl4: '' });
+    const [elecForm, setElecForm] = useState({ date: '', kwh: '', totalValue: '', status: 'PENDING' });
 
-  const TabButton = ({ id, label, icon: Icon }: { id: 'water' | 'gas' | 'energy', label: string, icon: any }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors
-        ${activeTab === id 
-          ? 'bg-[#fcfbf9] text-[#437476] border-b-2 border-[#437476] shadow-sm' 
-          : 'bg-[#e2e6e9] text-slate-500 hover:text-slate-700 hover:bg-[#dfe3e6]'}`}
-    >
-      <Icon size={16} />
-      {label}
-    </button>
-  );
+    useEffect(() => {
+        fetchUnits();
+    }, []);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-           <h2 className="text-2xl font-bold text-[#437476]">Leituras e Consumo</h2>
-           <p className="text-sm text-slate-500 mt-1">Gerencie o consumo de água, gás e energia do condomínio.</p>
+    useEffect(() => {
+        if (activeTab === 'water') fetchWaterReadings();
+        if (activeTab === 'gas') fetchGasReadings();
+        if (activeTab === 'electricity') fetchElecReadings();
+    }, [activeTab]);
+
+    const fetchUnits = async () => {
+        try {
+            const data = await UnitService.getAll();
+            setUnits(data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const fetchWaterReadings = async () => {
+        const data = await ReadingService.getAllWater();
+        setWaterReadings(data);
+    };
+    const fetchGasReadings = async () => {
+        const data = await ReadingService.getAllGas();
+        setGasReadings(data);
+    };
+    const fetchElecReadings = async () => {
+        const data = await ReadingService.getAllElectricity();
+        setElecReadings(data);
+    };
+
+    // Submits
+    const handleWaterSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await ReadingService.createWater({
+                unit_id: waterForm.unitId,
+                reading_date: waterForm.date,
+                value_m3: parseFloat(waterForm.value),
+                image_url: waterForm.image
+            });
+            alert('Leitura de Água salva!');
+            setWaterForm({ unitId: '', date: '', value: '', image: '' });
+            fetchWaterReadings();
+        } catch (err) { alert('Erro ao salvar'); }
+    };
+
+    const handleGasSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await ReadingService.createGas({
+                supplier: gasForm.supplier,
+                purchase_date: gasForm.date,
+                total_price: parseFloat(gasForm.totalPrice),
+                cylinder_1_kg: parseFloat(gasForm.cyl1),
+                cylinder_2_kg: parseFloat(gasForm.cyl2),
+                cylinder_3_kg: parseFloat(gasForm.cyl3),
+                cylinder_4_kg: parseFloat(gasForm.cyl4),
+            });
+            alert('Registro de Gás salvo!');
+            setGasForm({ supplier: '', date: '', totalPrice: '', cyl1: '', cyl2: '', cyl3: '', cyl4: '' });
+            fetchGasReadings();
+        } catch (err) { alert('Erro ao salvar'); }
+    };
+
+    const handleElecSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await ReadingService.createElectricity({
+                due_date: elecForm.date,
+                consumption_kwh: parseFloat(elecForm.kwh),
+                total_value: parseFloat(elecForm.totalValue),
+                status: elecForm.status as any
+            });
+            alert('Registro de Energia salvo!');
+            setElecForm({ date: '', kwh: '', totalValue: '', status: 'PENDING' });
+            fetchElecReadings();
+        } catch (err) { alert('Erro ao salvar'); }
+    };
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex justify-between items-end">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-800">Leituras e Consumo</h2>
+                    <p className="text-sm text-slate-500 mt-1">Gerencie leituras de água, gás e energia.</p>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex space-x-4 border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab('water')}
+                    className={`pb-3 px-4 text-sm font-medium flex items-center space-x-2 border-b-2 transition-colors ${activeTab === 'water' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    <Droplets size={18} />
+                    <span>Água (Individual)</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('gas')}
+                    className={`pb-3 px-4 text-sm font-medium flex items-center space-x-2 border-b-2 transition-colors ${activeTab === 'gas' ? 'border-orange-500 text-orange-500' : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    <Flame size={18} />
+                    <span>Gás (Coletivo)</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('electricity')}
+                    className={`pb-3 px-4 text-sm font-medium flex items-center space-x-2 border-b-2 transition-colors ${activeTab === 'electricity' ? 'border-yellow-500 text-yellow-500' : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    <Zap size={18} />
+                    <span>Energia (Coletivo)</span>
+                </button>
+            </div>
+
+            {/* Content using Grid for Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Form Column */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-6">
+                        <h3 className="font-bold text-slate-800 mb-4 flex items-center space-x-2">
+                            <Plus size={20} className="text-blue-600" />
+                            <span>Nova Leitura: {activeTab === 'water' ? 'Água' : activeTab === 'gas' ? 'Gás' : 'Energia'}</span>
+                        </h3>
+
+                        {/* WATER FORM */}
+                        {activeTab === 'water' && (
+                            <form onSubmit={handleWaterSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Unidade</label>
+                                    <select
+                                        required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        value={waterForm.unitId}
+                                        onChange={e => setWaterForm({ ...waterForm, unitId: e.target.value })}
+                                    >
+                                        <option value="">Selecione...</option>
+                                        {units.map(u => (
+                                            <option key={u.id} value={u.id}>Bl {u.block} - Apt {u.number}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Data Leitura</label>
+                                    <input
+                                        type="date" required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={waterForm.date}
+                                        onChange={e => setWaterForm({ ...waterForm, date: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Leitura (m³)</label>
+                                    <input
+                                        type="number" step="0.001" required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={waterForm.value}
+                                        onChange={e => setWaterForm({ ...waterForm, value: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Comprovante (URL/Foto)</label>
+                                    <input
+                                        type="text" placeholder="http://..."
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={waterForm.image}
+                                        onChange={e => setWaterForm({ ...waterForm, image: e.target.value })}
+                                    />
+                                </div>
+                                <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-all">
+                                    Salvar Leitura
+                                </button>
+                            </form>
+                        )}
+
+                        {/* GAS FORM */}
+                        {activeTab === 'gas' && (
+                            <form onSubmit={handleGasSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Fornecedor</label>
+                                    <input
+                                        type="text" required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={gasForm.supplier}
+                                        onChange={e => setGasForm({ ...gasForm, supplier: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Data Compra</label>
+                                    <input
+                                        type="date" required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={gasForm.date}
+                                        onChange={e => setGasForm({ ...gasForm, date: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs text-slate-500">Cilindro 1 (kg)</label>
+                                        <input type="number" step="0.1" required className="w-full p-2 rounded-lg border" value={gasForm.cyl1} onChange={e => setGasForm({ ...gasForm, cyl1: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-500">Cilindro 2 (kg)</label>
+                                        <input type="number" step="0.1" required className="w-full p-2 rounded-lg border" value={gasForm.cyl2} onChange={e => setGasForm({ ...gasForm, cyl2: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-500">Cilindro 3 (kg)</label>
+                                        <input type="number" step="0.1" required className="w-full p-2 rounded-lg border" value={gasForm.cyl3} onChange={e => setGasForm({ ...gasForm, cyl3: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-500">Cilindro 4 (kg)</label>
+                                        <input type="number" step="0.1" required className="w-full p-2 rounded-lg border" value={gasForm.cyl4} onChange={e => setGasForm({ ...gasForm, cyl4: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Valor Total (R$)</label>
+                                    <input
+                                        type="number" step="0.01" required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={gasForm.totalPrice}
+                                        onChange={e => setGasForm({ ...gasForm, totalPrice: e.target.value })}
+                                    />
+                                </div>
+                                <button type="submit" className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 transition-all">
+                                    Registrar Compra
+                                </button>
+                            </form>
+                        )}
+
+                        {/* ELECTRICITY FORM */}
+                        {activeTab === 'electricity' && (
+                            <form onSubmit={handleElecSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Data Vencimento</label>
+                                    <input
+                                        type="date" required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={elecForm.date}
+                                        onChange={e => setElecForm({ ...elecForm, date: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Consumo (kWh)</label>
+                                    <input
+                                        type="number" step="0.1" required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={elecForm.kwh}
+                                        onChange={e => setElecForm({ ...elecForm, kwh: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Valor Total (R$)</label>
+                                    <input
+                                        type="number" step="0.01" required
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={elecForm.totalValue}
+                                        onChange={e => setElecForm({ ...elecForm, totalValue: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Status Pagamento</label>
+                                    <select
+                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                        value={elecForm.status}
+                                        onChange={e => setElecForm({ ...elecForm, status: e.target.value })}
+                                    >
+                                        <option value="PENDING">Pendente</option>
+                                        <option value="PAID">Pago</option>
+                                        <option value="OVERDUE">Em Atraso</option>
+                                    </select>
+                                </div>
+                                <button type="submit" className="w-full bg-yellow-500 text-white py-3 rounded-xl font-medium hover:bg-yellow-600 transition-all">
+                                    Registrar Fatura
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                </div>
+
+                {/* List Column */}
+                <div className="lg:col-span-2 space-y-4">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                            <History size={20} />
+                            Histórico de Registros
+                        </h3>
+                        <span className="text-sm text-slate-400">
+                            {activeTab === 'water' && `${waterReadings.length} registros`}
+                            {activeTab === 'gas' && `${gasReadings.length} registros`}
+                            {activeTab === 'electricity' && `${elecReadings.length} registros`}
+                        </span>
+                    </div>
+
+                    {/* WATER LIST */}
+                    {activeTab === 'water' && waterReadings.map(r => {
+                        const unit = units.find(u => u.id === r.unit_id);
+                        return (
+                            <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-blue-50 text-blue-500 rounded-lg">
+                                        <Droplets size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-slate-800">
+                                            {unit ? `Bl ${unit.block} - Apt ${unit.number}` : 'Unidade Desconhecida'}
+                                        </h4>
+                                        <p className="text-sm text-slate-500">Data: {new Date(r.reading_date).toLocaleDateString('pt-BR')}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-lg font-bold text-slate-800">{r.value_m3} m³</p>
+                                    {r.image_url && (
+                                        <a href={r.image_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center justify-end gap-1">
+                                            <FileText size={12} /> Comprovante
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    {/* GAS LIST */}
+                    {activeTab === 'gas' && gasReadings.map(r => (
+                        <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-orange-50 text-orange-500 rounded-lg">
+                                        <Flame size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-slate-800">{r.supplier}</h4>
+                                        <p className="text-sm text-slate-500">Data: {new Date(r.purchase_date).toLocaleDateString('pt-BR')}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-lg font-bold text-slate-800">R$ {r.total_price.toFixed(2)}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2 text-center text-xs bg-slate-50 p-2 rounded-lg text-slate-600">
+                                <div>C1: {r.cylinder_1_kg}kg</div>
+                                <div>C2: {r.cylinder_2_kg}kg</div>
+                                <div>C3: {r.cylinder_3_kg}kg</div>
+                                <div>C4: {r.cylinder_4_kg}kg</div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* ELECTRICITY LIST */}
+                    {activeTab === 'electricity' && elecReadings.map(r => (
+                        <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-yellow-50 text-yellow-500 rounded-lg">
+                                    <Zap size={20} />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-800">Fatura Energia</h4>
+                                    <p className="text-sm text-slate-500">Venc: {new Date(r.due_date).toLocaleDateString('pt-BR')}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-lg font-bold text-slate-800">R$ {r.total_value.toFixed(2)}</p>
+                                <p className="text-sm font-medium text-slate-600">{r.consumption_kwh} kWh <span className={`ml-2 px-2 py-0.5 rounded-full text-xs text-white ${r.status === 'PAID' ? 'bg-green-500' : r.status === 'OVERDUE' ? 'bg-red-500' : 'bg-yellow-500'}`}>{r.status}</span></p>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Empty States */}
+                    {(activeTab === 'water' && waterReadings.length === 0) && <div className="p-8 text-center text-slate-400">Nenhuma leitura de água registrada.</div>}
+                    {(activeTab === 'gas' && gasReadings.length === 0) && <div className="p-8 text-center text-slate-400">Nenhum registro de gás.</div>}
+                    {(activeTab === 'electricity' && elecReadings.length === 0) && <div className="p-8 text-center text-slate-400">Nenhuma fatura de energia.</div>}
+                </div>
+            </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-[#fcfbf9] border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">
-           <Share2 size={16} /> Compartilhar Relatório
-        </button>
-      </div>
-
-      <div className="flex rounded-lg overflow-hidden border border-slate-200">
-         <TabButton id="water" label="Água (Individual)" icon={Droplets} />
-         <TabButton id="gas" label="Gás (Geral)" icon={Flame} />
-         <TabButton id="energy" label="Energia (Geral)" icon={Zap} />
-      </div>
-
-      <div className="bg-[#fcfbf9] border border-slate-200 rounded-lg shadow-sm min-h-[400px] flex flex-col">
-        {activeTab === 'water' && (
-          <>
-            <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-               <div>
-                  <h3 className="text-lg font-bold text-slate-700">Leituras de Água</h3>
-                  <p className="text-sm text-slate-500">Leituras individuais dos medidores de água dos moradores.</p>
-               </div>
-               <div className="flex gap-3">
-                  <select className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 outline-none">
-                     <option>Mês: Dezembro</option>
-                     <option>Mês: Novembro</option>
-                  </select>
-                  <button 
-                     onClick={() => setIsWaterModalOpen(true)}
-                     className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f]"
-                  >
-                     <PlusCircle size={16} /> Registrar Leitura
-                  </button>
-               </div>
-            </div>
-            
-            <div className="overflow-x-auto">
-               <table className="w-full text-left text-sm text-slate-600">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                     <tr>
-                        <th className="px-6 py-4">Data</th>
-                        <th className="px-6 py-4">Unidade</th>
-                        <th className="px-6 py-4">Morador</th>
-                        <th className="px-6 py-4 text-right">Leitura (m³)</th>
-                        <th className="px-6 py-4 text-center">Status</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                     {MOCK_RESIDENTS.map((res, i) => (
-                        <tr key={res.id} className="hover:bg-slate-50">
-                           <td className="px-6 py-4 text-slate-500">15/12/2025</td>
-                           <td className="px-6 py-4 font-bold text-slate-700">{res.unit}</td>
-                           <td className="px-6 py-4">{res.name}</td>
-                           <td className="px-6 py-4 text-right font-mono text-slate-700">{1000 + (i * 15)}.5</td>
-                           <td className="px-6 py-4 text-center">
-                              <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">Verificado</span>
-                           </td>
-                        </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </div>
-          </>
-        )}
-        
-        {activeTab === 'gas' && (
-           <>
-            <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-               <div>
-                  <h3 className="text-lg font-bold text-slate-700">Histórico de Compras de Gás</h3>
-                  <p className="text-sm text-slate-500">Registro de abastecimento dos cilindros do condomínio.</p>
-               </div>
-               <button 
-                  onClick={() => setIsGasModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#1e293b] text-white rounded-lg text-sm font-medium hover:bg-slate-800"
-               >
-                  <PlusCircle size={16} /> Nova Compra
-               </button>
-            </div>
-            <div className="overflow-x-auto">
-               <table className="w-full text-left text-sm text-slate-600">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                     <tr>
-                        <th className="px-6 py-4">Data</th>
-                        <th className="px-6 py-4">Fornecedor</th>
-                        <th className="px-6 py-4">Quantidade</th>
-                        <th className="px-6 py-4 text-right">Valor Total</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                     {mockGasPurchases.map((gas) => (
-                        <tr key={gas.id} className="hover:bg-slate-50">
-                           <td className="px-6 py-4 text-slate-900 font-medium">{gas.date}</td>
-                           <td className="px-6 py-4">{gas.provider}</td>
-                           <td className="px-6 py-4">{gas.qty}</td>
-                           <td className="px-6 py-4 text-right font-bold text-slate-700">R$ {gas.total.toFixed(2)}</td>
-                        </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </div>
-           </>
-        )}
-
-        {activeTab === 'energy' && (
-           <>
-            <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-               <div>
-                  <h3 className="text-lg font-bold text-slate-700">Contas de Energia</h3>
-                  <p className="text-sm text-slate-500">Histórico de faturas da concessionária de energia.</p>
-               </div>
-               <button 
-                  onClick={() => setIsEnergyModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#1e293b] text-white rounded-lg text-sm font-medium hover:bg-slate-800"
-               >
-                  <PlusCircle size={16} /> Nova Fatura
-               </button>
-            </div>
-            <div className="overflow-x-auto">
-               <table className="w-full text-left text-sm text-slate-600">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                     <tr>
-                        <th className="px-6 py-4">Mês de Referência</th>
-                        <th className="px-6 py-4">Consumo Total</th>
-                        <th className="px-6 py-4 text-right">Valor</th>
-                        <th className="px-6 py-4 text-center">Status</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                     {mockEnergyBills.map((bill) => (
-                        <tr key={bill.id} className="hover:bg-slate-50">
-                           <td className="px-6 py-4 text-slate-900 font-medium">{bill.month}</td>
-                           <td className="px-6 py-4">{bill.consumption}</td>
-                           <td className="px-6 py-4 text-right font-bold text-slate-700">R$ {bill.total.toFixed(2)}</td>
-                           <td className="px-6 py-4 text-center">
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded border ${
-                                 bill.status === 'Pago' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-                              }`}>
-                                 {bill.status}
-                              </span>
-                           </td>
-                        </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </div>
-           </>
-        )}
-      </div>
-
-      {/* Water Modal */}
-      {isWaterModalOpen && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-[#fcfbf9] rounded-lg shadow-xl w-full max-w-2xl overflow-hidden border border-[#e5e7eb] animate-in fade-in zoom-in-95 duration-200 relative">
-               <button 
-                  onClick={() => setIsWaterModalOpen(false)} 
-                  className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
-               >
-                  <X size={20} />
-               </button>
-               <div className="px-8 py-6">
-                  <div className="mb-6">
-                     <h3 className="text-xl font-bold text-slate-700">Detalhes da Leitura de Água</h3>
-                     <p className="text-sm text-slate-500 mt-1">Preencha os detalhes abaixo para registrar uma nova leitura do medidor de água.</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                     <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-2">Unidade (Apartamento)</label>
-                        <select 
-                           className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]"
-                           value={waterForm.unit}
-                           onChange={e => setWaterForm({...waterForm, unit: e.target.value})}
-                        >
-                           <option>Selecione uma unidade</option>
-                           {MOCK_RESIDENTS.map(r => <option key={r.id} value={r.unit}>{r.unit} - {r.name}</option>)}
-                        </select>
-                     </div>
-                     <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-2">Data da Leitura</label>
-                        <div className="relative">
-                           <input 
-                              type="text" 
-                              value={waterForm.date}
-                              readOnly 
-                              className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm text-slate-600 outline-none"
-                           />
-                           <Calendar size={18} className="absolute right-4 top-3.5 text-slate-400" />
-                        </div>
-                     </div>
-                     <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-2">Tipo de Medidor</label>
-                        <input 
-                           type="text" 
-                           disabled 
-                           value="Água" 
-                           className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm text-slate-500" 
-                        />
-                     </div>
-                     <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-2">Link da Foto (Opcional)</label>
-                        <div className="relative">
-                           <LinkIcon size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                           <input 
-                              type="text" 
-                              placeholder="https://exemplo.com/foto.jpg"
-                              className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]"
-                              value={waterForm.photoUrl}
-                              onChange={e => setWaterForm({...waterForm, photoUrl: e.target.value})}
-                           />
-                        </div>
-                        <p className="text-xs text-slate-500 mt-2">Cole a URL de uma imagem que comprove a leitura.</p>
-                     </div>
-                     <div className="md:col-span-1">
-                        <label className="block text-sm font-bold text-slate-600 mb-2">Valor da Leitura (m³)</label>
-                        <div className="relative">
-                           <input 
-                              type="number" 
-                              placeholder="ex: 1234.5"
-                              className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]"
-                              value={waterForm.reading}
-                              onChange={e => setWaterForm({...waterForm, reading: e.target.value})}
-                           />
-                           <div className="absolute right-3 top-3.5 flex flex-col gap-0.5">
-                              <ChevronDown size={10} className="text-slate-400 rotate-180" />
-                              <ChevronDown size={10} className="text-slate-400" />
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="mt-8 flex justify-end">
-                     <button 
-                        onClick={() => setIsWaterModalOpen(false)}
-                        className="px-6 py-3 bg-[#437476] text-white text-sm font-medium rounded-lg hover:bg-[#365e5f] shadow-sm transition-colors"
-                     >
-                        Enviar Leitura
-                     </button>
-                  </div>
-               </div>
-            </div>
-         </div>
-      )}
-
-      {/* Gas Modal */}
-      {isGasModalOpen && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-[#fcfbf9] rounded-lg shadow-xl w-full max-w-lg overflow-hidden border border-[#e5e7eb] animate-in fade-in zoom-in-95 duration-200 relative">
-               <button 
-                  onClick={() => setIsGasModalOpen(false)} 
-                  className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
-               >
-                  <X size={20} />
-               </button>
-               
-               <div className="px-8 py-8">
-                  <div className="mb-6">
-                     <h3 className="text-xl font-bold text-slate-700">Registrar Nova Compra de Gás</h3>
-                     <p className="text-sm text-slate-500 mt-1">Preencha os detalhes da compra abaixo.</p>
-                  </div>
-
-                  <div className="space-y-6">
-                     <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-2">Empresa Fornecedora</label>
-                        <div className="relative">
-                           <Truck size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                           <input 
-                              type="text" 
-                              placeholder="Ex: SuperGás" 
-                              className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]" 
-                              value={gasForm.provider}
-                              onChange={e => setGasForm({...gasForm, provider: e.target.value})}
-                           />
-                        </div>
-                     </div>
-                     <div className="grid grid-cols-4 gap-3">
-                        {[1, 2, 3, 4].map((num) => (
-                           <div key={num}>
-                              <label className="block text-xs font-bold text-slate-600 mb-1.5 text-center">Cilindro {num} (kg)</label>
-                              <div className="relative">
-                                 <ShoppingBag size={14} className="absolute left-2.5 top-3 text-slate-400" />
-                                 <input 
-                                    type="number" 
-                                    placeholder="0" 
-                                    className="w-full pl-8 pr-2 py-2.5 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-center"
-                                 />
-                                 <div className="absolute right-1 top-2.5 flex flex-col gap-0">
-                                    <ChevronDown size={8} className="text-slate-400 rotate-180" />
-                                    <ChevronDown size={8} className="text-slate-400" />
-                                 </div>
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                     <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-2">Valor Total (R$)</label>
-                        <div className="relative">
-                           <span className="absolute left-3 top-3 text-slate-400 font-bold">$</span>
-                           <input 
-                              type="number" 
-                              placeholder="0" 
-                              className="w-full pl-8 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]" 
-                              value={gasForm.total || ''}
-                              onChange={e => setGasForm({...gasForm, total: parseFloat(e.target.value)})}
-                           />
-                           <div className="absolute right-3 top-3.5 flex flex-col gap-0.5">
-                              <ChevronDown size={10} className="text-slate-400 rotate-180" />
-                              <ChevronDown size={10} className="text-slate-400" />
-                           </div>
-                        </div>
-                     </div>
-                     <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-2">Data da Compra</label>
-                        <div className="relative">
-                           <input 
-                              type="text" 
-                              value={gasForm.date}
-                              readOnly 
-                              className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm text-slate-600 outline-none"
-                           />
-                           <Calendar size={18} className="absolute right-4 top-3.5 text-slate-400" />
-                        </div>
-                     </div>
-                  </div>
-
-                  <button 
-                     onClick={() => setIsGasModalOpen(false)}
-                     className="w-full mt-8 py-3 bg-[#437476] text-white text-sm font-medium rounded-lg hover:bg-[#365e5f] shadow-sm transition-colors"
-                  >
-                     Salvar Compra
-                  </button>
-               </div>
-            </div>
-         </div>
-      )}
-      
-      {/* Energy Modal */}
-      {isEnergyModalOpen && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-[#fcfbf9] rounded-lg shadow-xl w-full max-w-lg overflow-hidden border border-[#e5e7eb] animate-in fade-in zoom-in-95 duration-200 relative">
-               <button 
-                  onClick={() => setIsEnergyModalOpen(false)} 
-                  className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
-               >
-                  <X size={20} />
-               </button>
-
-               <div className="px-8 py-8">
-                  <div className="mb-6">
-                     <h3 className="text-xl font-bold text-slate-700">Registrar Nova Conta de Energia</h3>
-                     <p className="text-sm text-slate-500 mt-1">Preencha os detalhes da conta abaixo.</p>
-                  </div>
-
-                  <div className="space-y-6">
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                           <label className="block text-sm font-bold text-slate-600 mb-2">Consumo (kWh)</label>
-                           <div className="relative">
-                              <Zap size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                              <input 
-                                 type="number" 
-                                 placeholder="0" 
-                                 className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]" 
-                                 value={energyForm.consumption || ''}
-                                 onChange={e => setEnergyForm({...energyForm, consumption: parseFloat(e.target.value)})}
-                              />
-                              <div className="absolute right-2 top-3.5 flex flex-col gap-0.5">
-                                 <ChevronDown size={10} className="text-slate-400 rotate-180" />
-                                 <ChevronDown size={10} className="text-slate-400" />
-                              </div>
-                           </div>
-                        </div>
-                        <div>
-                           <label className="block text-sm font-bold text-slate-600 mb-2">Valor Total (R$)</label>
-                           <div className="relative">
-                              <span className="absolute left-3 top-3 text-slate-400 font-bold">$</span>
-                              <input 
-                                 type="number" 
-                                 placeholder="0" 
-                                 className="w-full pl-8 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]" 
-                                 value={energyForm.total || ''}
-                                 onChange={e => setEnergyForm({...energyForm, total: parseFloat(e.target.value)})}
-                              />
-                              <div className="absolute right-2 top-3.5 flex flex-col gap-0.5">
-                                 <ChevronDown size={10} className="text-slate-400 rotate-180" />
-                                 <ChevronDown size={10} className="text-slate-400" />
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                           <label className="block text-sm font-bold text-slate-600 mb-2">Data de Vencimento</label>
-                           <div className="relative">
-                              <input 
-                                 type="text" 
-                                 value={energyForm.dueDate}
-                                 readOnly 
-                                 className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm text-slate-600 outline-none"
-                              />
-                              <Calendar size={18} className="absolute right-3 top-3.5 text-slate-400" />
-                           </div>
-                        </div>
-                        <div>
-                           <label className="block text-sm font-bold text-slate-600 mb-2">Status</label>
-                           <select 
-                              className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]"
-                              value={energyForm.status}
-                              onChange={e => setEnergyForm({...energyForm, status: e.target.value})}
-                           >
-                              <option>Pendente</option>
-                              <option>Pago</option>
-                              <option>Atrasado</option>
-                           </select>
-                        </div>
-                     </div>
-                  </div>
-
-                  <button 
-                     onClick={() => setIsEnergyModalOpen(false)}
-                     className="w-full mt-8 py-3 bg-[#437476] text-white text-sm font-medium rounded-lg hover:bg-[#365e5f] shadow-sm transition-colors"
-                  >
-                     Salvar Conta
-                  </button>
-               </div>
-            </div>
-         </div>
-      )}
-    </div>
-  );
+    );
 };
