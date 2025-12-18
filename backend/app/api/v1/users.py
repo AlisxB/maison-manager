@@ -93,6 +93,17 @@ async def create_user(
     )
     
     db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
+    try:
+        await db.commit()
+        await db.refresh(db_user)
+    except Exception as e:
+        await db.rollback()
+        # Verificar se é erro de integridade (duplicidade)
+        if "users_condominium_id_email_hash_key" in str(e):
+            raise HTTPException(
+                status_code=409, 
+                detail="Este email já está cadastrado neste condomínio."
+            )
+        raise HTTPException(status_code=400, detail=str(e))
+        
     return db_user

@@ -75,8 +75,9 @@ export const AdminResidents: React.FC = () => {
             alert('Morador cadastrado com sucesso!');
             setIsAddResidentModalOpen(false);
             loadData(); // Recarregar
-        } catch (error) {
-            alert('Erro ao cadastrar morador');
+        } catch (error: any) {
+            const msg = error.response?.data?.detail || 'Erro ao cadastrar morador';
+            alert(msg);
             console.error(error);
         }
     };
