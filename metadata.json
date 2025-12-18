@@ -1,0 +1,5 @@
+{
+  "name": "Maison Manager",
+  "description": "A modern SaaS frontend for condominium management, featuring specialized dashboards for Administrators and Residents with simulated data and workflows.",
+  "requestFramePermissions": []
+}
