@@ -248,6 +248,16 @@ CREATE TRIGGER audit_reservations_trigger AFTER INSERT OR UPDATE OR DELETE ON re
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 -- 5. Seed Initial Data (Optional - to allow first login)
+
+-- Set Context for Audit Triggers (System Setup)
+-- Precisamos "enganar" o trigger ou definir um contexto válido para que o insert na audit_logs funcione.
+-- Como estamos criando os dados iniciais, definimos o contexto para bater com os IDs que vamos inserir.
+SELECT set_config('app.current_condo_id', '11111111-1111-1111-1111-111111111111', false);
+-- Para o user_id, como ele ainda não existe no insert, podemos usar um UUID nulo ou o próprio ID que vamos criar.
+-- Vamos usar o ID do Super Admin para "auto-criação".
+SELECT set_config('app.current_user_id', '22222222-2222-2222-2222-222222222222', false);
+SELECT set_config('app.current_role', 'ADMIN', false);
+
 -- Insert a Condominium
 INSERT INTO condominiums (id, name, cnpj_encrypted, cnpj_hash, address) 
 VALUES (

@@ -43,7 +43,7 @@ async def create_unit(
 
     db_unit = Unit(
         condominium_id=current_user.condo_id,
-        ...unit_in.model_dump()
+        **unit_in.model_dump()
     )
     db.add(db_unit)
     await db.commit()
