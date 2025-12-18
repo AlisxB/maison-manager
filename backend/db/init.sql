@@ -179,6 +179,21 @@ CREATE TABLE IF NOT EXISTS readings_electricity (
 );
 ALTER TABLE readings_electricity ENABLE ROW LEVEL SECURITY;
 
+-- Financial: Transactions
+CREATE TABLE IF NOT EXISTS transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense')),
+    description VARCHAR(255) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    category VARCHAR(50),
+    date DATE NOT NULL,
+    status VARCHAR(20) DEFAULT 'paid' CHECK (status IN ('paid', 'pending')),
+    observation TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
 -- 3. Functions & Policies (Zero Trust Logic)
 
 -- Helpers to get session variables
@@ -272,6 +287,10 @@ CREATE POLICY readings_electricity_policy ON readings_electricity
     USING (condominium_id = current_condo_id())
     WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
 
+CREATE POLICY transactions_policy ON transactions
+    USING (condominium_id = current_condo_id())
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
+
 
 -- 4. Triggers (Audit)
 
@@ -314,6 +333,9 @@ CREATE TRIGGER audit_readings_gas_trigger AFTER INSERT OR UPDATE OR DELETE ON re
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 CREATE TRIGGER audit_readings_electricity_trigger AFTER INSERT OR UPDATE OR DELETE ON readings_electricity
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+CREATE TRIGGER audit_transactions_trigger AFTER INSERT OR UPDATE OR DELETE ON transactions
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 -- 5. Seed Initial Data (Optional - to allow first login)
