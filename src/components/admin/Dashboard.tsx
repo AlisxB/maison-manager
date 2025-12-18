@@ -1,78 +1,160 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Users, Droplets, Flame, Zap } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, Tooltip } from 'recharts';
-import { MOCK_RESIDENTS, MOCK_UTILITY_DATA } from '../../mock';
+import { DashboardService, DashboardStats } from '../../services/dashboardService';
 
 export const AdminDashboard: React.FC = () => {
-  const StatCard = ({ title, value, subtext, icon: Icon, iconClassName }: any) => (
-    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-full hover:shadow-md transition-shadow">
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await DashboardService.getStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const StatCard = ({ title, value, subtext, icon: Icon, iconClassName, colorClass = "text-slate-600" }: any) => (
+    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between h-full hover:shadow-md transition-shadow group">
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-sm font-medium text-slate-600">{title}</h3>
-        {Icon && <Icon size={16} className={iconClassName} />}
+        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{title}</h3>
+        <div className={`p-2 rounded-xl bg-slate-50 group-hover:bg-white border border-transparent group-hover:border-slate-100 transition-colors ${iconClassName}`}>
+          {Icon && <Icon size={18} />}
+        </div>
       </div>
       <div>
-        <div className="text-2xl font-bold text-slate-800">{value}</div>
-        <p className="text-xs text-slate-400 mt-1">{subtext}</p>
+        <div className={`text-2xl font-black ${colorClass}`}>{value}</div>
+        <p className={`text-[10px] font-bold mt-1 ${subtext.includes('+') ? 'text-emerald-500' : subtext.includes('-') ? 'text-red-500' : 'text-slate-400'}`}>
+          {subtext}
+        </p>
       </div>
     </div>
   );
 
   const ChartCard = ({ title, subtext, color, dataKey }: any) => (
-    <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-80">
+    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col h-80">
       <div className="mb-6">
         <div className="flex items-center gap-2">
-          {dataKey === 'water' && <Droplets size={18} className="text-slate-500" />}
-          {dataKey === 'gas' && <Flame size={18} className="text-slate-500" />}
-          {dataKey === 'energy' && <Zap size={18} className="text-slate-500" />}
-          <h3 className="text-lg font-medium text-slate-700">{title}</h3>
+          {dataKey === 'water' && <Droplets size={18} className="text-[#437476]" />}
+          {dataKey === 'gas' && <Flame size={18} className="text-[#dcb008]" />}
+          {dataKey === 'energy' && <Zap size={18} className="text-[#e11d48]" />}
+          <h3 className="text-lg font-black text-slate-800 tracking-tight">{title}</h3>
         </div>
-        <p className="text-xs text-slate-400 mt-1">{subtext}</p>
+        <p className="text-xs text-slate-400 font-medium mt-1">{subtext}</p>
       </div>
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={MOCK_UTILITY_DATA}>
+          <BarChart data={stats?.charts || []}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} dy={10} />
-            <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-            <Bar dataKey={dataKey} fill={color} radius={[4, 4, 0, 0]} barSize={32} />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} dy={10} />
+            <Tooltip
+              cursor={{ fill: '#f8fafc' }}
+              contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold', color: '#475569' }}
+            />
+            <Bar dataKey={dataKey} fill={color} radius={[6, 6, 6, 6]} barSize={24} />
           </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
   );
 
+  if (loading) {
+    return <div className="p-10 text-center text-slate-400 font-bold animate-pulse">Carregando painel...</div>;
+  }
+
+  if (!stats) {
+    return <div className="p-10 text-center text-red-400 font-bold">Erro ao carregar dados.</div>;
+  }
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-[#437476]">Painel do Administrador</h2>
+      <h2 className="text-2xl font-black text-[#437476] tracking-tight">Painel do Administrador</h2>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard title="Receita Total" value="R$ 48.500,00" subtext="+2,4% do último mês" icon={() => <span className="text-slate-400 text-sm">R$</span>} />
-        <StatCard title="Inquilinos" value="45" subtext="Total de unidades alugadas" icon={Users} iconClassName="text-slate-400" />
-        <StatCard title="Consumo de Água" value="14.200 m³" subtext="+1,2% do último mês" icon={Droplets} iconClassName="text-slate-400" />
-        <StatCard title="Consumo de Gás" value="850 m³" subtext="-0,5% do último mês" icon={Flame} iconClassName="text-slate-400" />
-        <StatCard title="Consumo de Energia" value="12.450 kWh" subtext="+3,1% do último mês" icon={Zap} iconClassName="text-slate-400" />
+        <StatCard
+          title="Receita (Mês)"
+          value={stats.financial.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          subtext={`${stats.financial.revenue_growth > 0 ? '+' : ''}${stats.financial.revenue_growth.toFixed(1)}% vs anterior`}
+          icon={() => <span className="text-emerald-600 font-black text-sm">$</span>}
+          colorClass="text-emerald-700"
+          iconClassName="text-emerald-600"
+        />
+        <StatCard
+          title="Inquilinos"
+          value={stats.occupancy.residents_count}
+          subtext={`${stats.occupancy.occupied_units} unidades ocupadas`}
+          icon={Users}
+          iconClassName="text-blue-500"
+          colorClass="text-slate-800"
+        />
+        <StatCard
+          title="Água (m³)"
+          value={stats.readings.water_total.toFixed(0)}
+          subtext={`${stats.readings.water_growth > 0 ? '+' : ''}${stats.readings.water_growth.toFixed(1)}% vs anterior`}
+          icon={Droplets}
+          iconClassName="text-cyan-500"
+          colorClass="text-slate-800"
+        />
+        <StatCard
+          title="Gás (kg)"
+          value={stats.readings.gas_total.toFixed(0)}
+          subtext={`${stats.readings.gas_growth > 0 ? '+' : ''}${stats.readings.gas_growth.toFixed(1)}% vs anterior`}
+          icon={Flame}
+          iconClassName="text-amber-500"
+          colorClass="text-slate-800"
+        />
+        <StatCard
+          title="Energia (kWh)"
+          value={stats.readings.energy_total.toFixed(0)}
+          subtext={`${stats.readings.energy_growth > 0 ? '+' : ''}${stats.readings.energy_growth.toFixed(1)}% vs anterior`}
+          icon={Zap}
+          iconClassName="text-rose-500"
+          colorClass="text-slate-800"
+        />
       </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <ChartCard title="Água (m³)" subtext="Uso de água nos últimos 6 meses." color="#437476" dataKey="water" />
-        <ChartCard title="Gás (m³)" subtext="Uso de gás nos últimos 6 meses." color="#dcb008" dataKey="gas" />
-        <ChartCard title="Energia (kWh)" subtext="Uso de energia nos últimos 6 meses." color="#e11d48" dataKey="energy" />
-        <div className="bg-[#f8f9fa] p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col h-full">
+        <ChartCard title="Consumo de Água" subtext="Últimos 6 meses (m³)." color="#437476" dataKey="water" />
+        <ChartCard title="Consumo de Gás" subtext="Últimos 6 meses (kg)." color="#dcb008" dataKey="gas" />
+        <ChartCard title="Energia Elétrica" subtext="Últimos 6 meses (kWh)." color="#e11d48" dataKey="energy" />
+
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
           <div className="mb-6">
-            <h3 className="text-lg font-bold text-slate-700">Moradores Recentes</h3>
-            <p className="text-xs text-slate-500 mt-1">Visão geral dos novos membros.</p>
+            <h3 className="text-lg font-black text-slate-800 tracking-tight">Moradores Recentes</h3>
+            <p className="text-xs text-slate-400 font-medium mt-1">Visão geral dos novos membros.</p>
           </div>
-          <div className="flex-1 space-y-4">
-            {MOCK_RESIDENTS.slice(0, 3).map((res) => (
-              <div key={res.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">{res.name.charAt(0)}</div>
-                  <div><p className="text-xs font-bold text-slate-700 uppercase">{res.name}</p><p className="text-[10px] text-slate-500">{res.unit}</p></div>
+          <div className="flex-1 space-y-4 overflow-y-auto">
+            {stats.recent_residents.length === 0 ? (
+              <div className="text-center text-xs text-slate-400 py-4">Nenhum morador recente.</div>
+            ) : (
+              stats.recent_residents.map((res) => (
+                <div key={res.id} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 font-black text-xs group-hover:bg-[#437476] group-hover:text-white transition-colors">
+                      {res.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-700 uppercase tracking-tight group-hover:text-[#437476] transition-colors">{res.name}</p>
+                      <p className="text-[10px] text-slate-400 font-bold">Unidade {res.unit}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[9px] font-bold text-slate-300">{res.start_date}</span>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${res.status === 'Ativo' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                      }`}>
+                      {res.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-slate-600">{res.startDate}</span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${res.status === 'Ativo' ? 'bg-green-50 text-white' : 'bg-yellow-50 text-white'}`}>{res.status}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
