@@ -35,5 +35,10 @@ export const UnitService = {
     getAll: async () => {
         const response = await api.get<Unit[]>('/units/');
         return response.data;
+    },
+
+    create: async (data: { block: string; number: string; type: string }) => {
+        const response = await api.post<Unit>('/units/', data);
+        return response.data;
     }
 };

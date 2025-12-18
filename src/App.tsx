@@ -7,6 +7,7 @@ import { Role } from './types/index';
 // Admin Components (Modularized)
 import { AdminDashboard } from './components/admin/Dashboard';
 import { AdminResidents } from './components/admin/Residents';
+import { AdminUnits } from './components/admin/Units';
 import { AdminReadings } from './components/admin/Readings';
 import { AdminRequests } from './components/admin/Requests';
 import { AdminFinancial } from './components/admin/Financial';
@@ -46,6 +47,7 @@ const AppContent: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'admin_dashboard': return <AdminDashboard />;
+      case 'admin_units': return <AdminUnits />;
       case 'admin_readings': return <AdminReadings />;
       case 'admin_residents': return <AdminResidents />;
       case 'admin_requests': return <AdminRequests />;
