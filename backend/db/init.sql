@@ -140,6 +140,45 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
+-- Readings: Water (Individual)
+CREATE TABLE IF NOT EXISTS readings_water (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    unit_id UUID NOT NULL REFERENCES units(id),
+    reading_date DATE NOT NULL,
+    image_url TEXT,
+    value_m3 DECIMAL(10, 3) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE readings_water ENABLE ROW LEVEL SECURITY;
+
+-- Readings: Gas (Collective)
+CREATE TABLE IF NOT EXISTS readings_gas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    supplier VARCHAR(100) NOT NULL,
+    purchase_date DATE NOT NULL,
+    total_price DECIMAL(10, 2) NOT NULL,
+    cylinder_1_kg DECIMAL(10, 2) NOT NULL,
+    cylinder_2_kg DECIMAL(10, 2) NOT NULL,
+    cylinder_3_kg DECIMAL(10, 2) NOT NULL,
+    cylinder_4_kg DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE readings_gas ENABLE ROW LEVEL SECURITY;
+
+-- Readings: Electricity (Collective)
+CREATE TABLE IF NOT EXISTS readings_electricity (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    due_date DATE NOT NULL,
+    consumption_kwh DECIMAL(10, 2) NOT NULL,
+    total_value DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'OVERDUE')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE readings_electricity ENABLE ROW LEVEL SECURITY;
+
 -- 3. Functions & Policies (Zero Trust Logic)
 
 -- Helpers to get session variables
@@ -212,6 +251,27 @@ CREATE POLICY audit_policy ON audit_logs
         AND current_app_role() = 'ADMIN'
     );
 
+-- Readings Policies
+-- Water: Admin sees all. Resident sees own unit's.
+CREATE POLICY readings_water_policy ON readings_water
+    USING (
+        condominium_id = current_condo_id()
+        AND (
+            current_app_role() IN ('ADMIN', 'PORTER') OR 
+            unit_id IN (SELECT unit_id FROM users WHERE id = current_user_id())
+        )
+    );
+
+-- Gas: Admin/Financial sees all. Residents view-only.
+CREATE POLICY readings_gas_policy ON readings_gas
+    USING (condominium_id = current_condo_id())
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
+
+-- Electricity: Admin/Financial sees all. Residents view-only.
+CREATE POLICY readings_electricity_policy ON readings_electricity
+    USING (condominium_id = current_condo_id())
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
+
 
 -- 4. Triggers (Audit)
 
@@ -245,6 +305,15 @@ CREATE TRIGGER audit_users_trigger AFTER INSERT OR UPDATE OR DELETE ON users
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 CREATE TRIGGER audit_reservations_trigger AFTER INSERT OR UPDATE OR DELETE ON reservations
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+CREATE TRIGGER audit_readings_water_trigger AFTER INSERT OR UPDATE OR DELETE ON readings_water
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+CREATE TRIGGER audit_readings_gas_trigger AFTER INSERT OR UPDATE OR DELETE ON readings_gas
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+CREATE TRIGGER audit_readings_electricity_trigger AFTER INSERT OR UPDATE OR DELETE ON readings_electricity
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 -- 5. Seed Initial Data (Optional - to allow first login)
