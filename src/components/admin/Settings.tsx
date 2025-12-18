@@ -29,8 +29,10 @@ import {
 import { MOCK_SYSTEM_LOGS } from '../../mock';
 
 import { AdminUnits } from './Units';
+import { AdminInventory } from './Inventory';
+import { Package } from 'lucide-react'; // Ensure Package icon is imported if not already
 
-type SettingsView = 'menu' | 'condo_data' | 'users' | 'booking_rules' | 'notifications' | 'logs' | 'units';
+type SettingsView = 'menu' | 'condo_data' | 'users' | 'booking_rules' | 'notifications' | 'logs' | 'units' | 'inventory';
 
 export const AdminSettings: React.FC = () => {
     const [currentSubView, setCurrentSubView] = useState<SettingsView>('menu');
@@ -52,6 +54,7 @@ export const AdminSettings: React.FC = () => {
             case 'notifications': return <NotificationConfigView onBack={() => setCurrentSubView('menu')} onSave={handleSave} isSaving={isSaving} />;
             case 'logs': return <LogsView onBack={() => setCurrentSubView('menu')} />;
             case 'units': return <div className="pt-4"><AdminUnits /></div>;
+            case 'inventory': return <div className="pt-4"><AdminInventory /></div>;
             default: return <SettingsMenu onNavigate={setCurrentSubView} />;
         }
     };
@@ -95,6 +98,7 @@ const SettingsMenu: React.FC<{ onNavigate: (view: SettingsView) => void }> = ({ 
         {[
             { id: 'condo_data', title: 'Dados do Condomínio', desc: 'Nome, endereço e CNPJ.', icon: Building },
             { id: 'units', title: 'Gestão de Unidades', desc: 'Gerenciar blocos, unidades e criar lotes.', icon: Building },
+            { id: 'inventory', title: 'Gestão de Estoque', desc: 'Controle de suprimentos e materiais.', icon: Package },
             { id: 'users', title: 'Gestão de Usuários Administrativos', desc: 'Adicionar ou remover administradores e porteiros.', icon: Users },
             { id: 'booking_rules', title: 'Regras de Reservas', desc: 'Definir horários, limites e valores.', icon: Calendar },
             { id: 'notifications', title: 'Notificações Automáticas', desc: 'Configurar e-mails e alertas do sistema.', icon: Bell },

@@ -287,9 +287,32 @@ CREATE POLICY readings_electricity_policy ON readings_electricity
     USING (condominium_id = current_condo_id())
     WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
 
+
 CREATE POLICY transactions_policy ON transactions
     USING (condominium_id = current_condo_id())
     WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
+
+-- Inventory Items
+CREATE TABLE IF NOT EXISTS inventory_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0,
+    unit VARCHAR(20) NOT NULL,
+    min_quantity INTEGER DEFAULT 5,
+    location VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY inventory_policy ON inventory_items
+    USING (condominium_id = current_condo_id())
+    WITH CHECK (condominium_id = current_condo_id());
+
+-- Audit Trigger for Inventory
+CREATE TRIGGER audit_inventory_trigger AFTER INSERT OR UPDATE OR DELETE ON inventory_items
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 
 -- 4. Triggers (Audit)

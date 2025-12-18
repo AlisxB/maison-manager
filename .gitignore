@@ -24,7 +24,10 @@ dist-ssr
 *.sw?
 
 # Backend
-backend/.env
-backend/__pycache__/
-backend/.pytest_cache/
-backend/venv/
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+tmp_venv/
+.pytest_cache/

@@ -105,3 +105,31 @@ class ReadingElectricity(Base):
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+
+class InventoryItem(Base):
+    __tablename__ = "inventory_items"
+    id = uuid_pk()
+    condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    category = Column(String(50), nullable=False)
+    quantity = Column(Integer, nullable=False, default=0)
+    unit = Column(String(20), nullable=False)
+    min_quantity = Column(Integer, default=5)
+    location = Column(String(100))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+    id = uuid_pk()
+    condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
+    
+    type = Column(String(20), nullable=False) # income, expense
+    description = Column(String(255), nullable=False)
+    amount = Column(DECIMAL(10, 2), nullable=False)
+    category = Column(String(50))
+    date = Column(TIMESTAMP(timezone=True), nullable=False) # Store as date content in timestamp col or just Date type? DB says DATE. SQLAlchemy Date maps to python date.
+    status = Column(String(20), default='paid')
+    observation = Column(Text)
+    
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
