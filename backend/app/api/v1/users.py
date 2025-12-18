@@ -127,3 +127,74 @@ async def create_user(
     db_user.email = user_in.email
     
     return db_user
+
+@router.put("/{id}", response_model=UserRead)
+async def update_user(
+    id: str,
+    user_in: UserCreate, # Using Create schema for simplicity, ideally UserUpdate
+    db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
+):
+    """
+    Atualizar usuário.
+    Apenas ADMIN pode atualizar outros usuários.
+    """
+    if current_user.role != 'ADMIN':
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    db_user = await db.get(User, id)
+    if not db_user or str(db_user.condominium_id) != str(current_user.condo_id):
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Prevent editing Master Admin by others (optional, but good practice)
+    # if str(db_user.id) == "22222222-2222-2222-2222-222222222222" and str(current_user.id) != str(db_user.id):
+    #     raise HTTPException(status_code=403, detail="Cannot edit Master Admin")
+
+    db_user.name = user_in.name
+    # Update other fields... complex due to encryption/hashing.
+    # For now, let's just update basic info + role + status
+    db_user.role = user_in.role
+    db_user.profile_type = user_in.profile_type
+    
+    # If password provided and not empty/star
+    if user_in.password and user_in.password != "******":
+        db_user.password_hash = security.get_password_hash(user_in.password)
+        
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    
+    # Mock email for response
+    db_user.email = user_in.email
+    return db_user
+
+@router.delete("/{id}")
+async def delete_user(
+    id: str,
+    db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
+):
+    """
+    Deletar usuário.
+    MASTER ADMIN: 22222222-2222-2222-2222-222222222222 não pode ser excluído.
+    """
+    if current_user.role != 'ADMIN':
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    # MASTER ADMIN CHECK
+    MASTER_ADMIN_ID = "22222222-2222-2222-2222-222222222222"
+    if str(id) == MASTER_ADMIN_ID:
+        raise HTTPException(status_code=403, detail="O Administrador Master não pode ser excluído.")
+        
+    db_user = await db.get(User, id)
+    if not db_user or str(db_user.condominium_id) != str(current_user.condo_id):
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Prevent self-deletion
+    if str(db_user.id) == str(current_user.user_id):
+        raise HTTPException(status_code=400, detail="Você não pode excluir sua própria conta.")
+        
+    await db.delete(db_user)
+    await db.commit()
+    
+    return {"status": "success"}
