@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: maison_manager
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Initialize Schema on first run
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - maison-network
+
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:password123@db:5432/maison_manager
+      PROJECT_NAME: "Maison Manager API"
+      SECRET_KEY: "change_this_secret_in_prod"
+      APP_ENCRYPTION_KEY: "super_secure_key_for_pgcrypto" # Keys match init.sql for demo
+    depends_on:
+      - db
+    networks:
+      - maison-network
+
+volumes:
+  postgres_data:
+
+networks:
+  maison-network:
+    driver: bridge
