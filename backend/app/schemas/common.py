@@ -26,7 +26,10 @@ class ReservationBase(BaseModel):
     end_time: datetime
 
 class ReservationCreate(ReservationBase):
-    pass
+    user_id: Optional[UUID] = None
+
+class ReservationUpdate(BaseModel):
+    status: str
 
 class ReservationRead(ReservationBase):
     id: UUID
