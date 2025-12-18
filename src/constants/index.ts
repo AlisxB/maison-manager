@@ -1,19 +1,20 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  BarChart3, 
-  ClipboardList, 
-  Landmark, 
-  ShieldAlert, 
-  AlertCircle, 
-  Megaphone, 
-  CalendarDays, 
-  Package, 
-  FileText, 
+import {
+  LayoutDashboard,
+  Users,
+  BarChart3,
+  ClipboardList,
+  Landmark,
+  ShieldAlert,
+  AlertCircle,
+  Megaphone,
+  CalendarDays,
+  Package,
+  FileText,
   ShieldCheck,
   Home,
   Calendar,
-  Bell
+  Bell,
+  Building
 } from 'lucide-react';
 import { NavItem } from '../types';
 

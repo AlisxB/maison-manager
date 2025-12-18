@@ -1,34 +1,36 @@
 
 import React, { useState } from 'react';
-import { 
-  ChevronRight, 
-  ArrowLeft, 
-  Building, 
-  Users, 
-  Calendar, 
-  Bell, 
-  Save, 
-  UserPlus, 
-  Edit2, 
-  Trash2, 
-  ChevronDown, 
-  ChevronUp,
-  Mail,
-  Smartphone,
-  Info,
-  CheckCircle,
-  X,
-  Shield,
-  Clock,
-  DollarSign,
-  History,
-  Search,
-  Filter,
-  Monitor
+import {
+    ChevronRight,
+    ArrowLeft,
+    Building,
+    Users,
+    Calendar,
+    Bell,
+    Save,
+    UserPlus,
+    Edit2,
+    Trash2,
+    ChevronDown,
+    ChevronUp,
+    Mail,
+    Smartphone,
+    Info,
+    CheckCircle,
+    X,
+    Shield,
+    Clock,
+    DollarSign,
+    History,
+    Search,
+    Filter,
+    Monitor
 } from 'lucide-react';
 import { MOCK_SYSTEM_LOGS } from '../../mock';
 
-type SettingsView = 'menu' | 'condo_data' | 'users' | 'booking_rules' | 'notifications' | 'logs';
+import { AdminUnits } from './Units';
+
+type SettingsView = 'menu' | 'condo_data' | 'users' | 'booking_rules' | 'notifications' | 'logs' | 'units';
 
 export const AdminSettings: React.FC = () => {
     const [currentSubView, setCurrentSubView] = useState<SettingsView>('menu');
@@ -49,6 +51,7 @@ export const AdminSettings: React.FC = () => {
             case 'booking_rules': return <BookingRulesView onBack={() => setCurrentSubView('menu')} onSave={handleSave} isSaving={isSaving} />;
             case 'notifications': return <NotificationConfigView onBack={() => setCurrentSubView('menu')} onSave={handleSave} isSaving={isSaving} />;
             case 'logs': return <LogsView onBack={() => setCurrentSubView('menu')} />;
+            case 'units': return <div className="pt-4"><AdminUnits /></div>;
             default: return <SettingsMenu onNavigate={setCurrentSubView} />;
         }
     };
@@ -57,7 +60,7 @@ export const AdminSettings: React.FC = () => {
         <div className="space-y-6 max-w-5xl mx-auto">
             <div className="flex items-center gap-4">
                 {currentSubView !== 'menu' && (
-                    <button 
+                    <button
                         onClick={() => setCurrentSubView('menu')}
                         className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
                     >
@@ -73,6 +76,7 @@ export const AdminSettings: React.FC = () => {
                         {currentSubView === 'booking_rules' && 'Regras e horários para áreas comuns.'}
                         {currentSubView === 'notifications' && 'Configuração de alertas automáticos.'}
                         {currentSubView === 'logs' && 'Auditoria de ações e alterações do sistema.'}
+                        {currentSubView === 'units' && 'Cadastro e listagem de blocos e unidades.'}
                     </p>
                 </div>
             </div>
@@ -90,12 +94,13 @@ const SettingsMenu: React.FC<{ onNavigate: (view: SettingsView) => void }> = ({ 
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
         {[
             { id: 'condo_data', title: 'Dados do Condomínio', desc: 'Nome, endereço e CNPJ.', icon: Building },
+            { id: 'units', title: 'Gestão de Unidades', desc: 'Gerenciar blocos, unidades e criar lotes.', icon: Building },
             { id: 'users', title: 'Gestão de Usuários Administrativos', desc: 'Adicionar ou remover administradores e porteiros.', icon: Users },
             { id: 'booking_rules', title: 'Regras de Reservas', desc: 'Definir horários, limites e valores.', icon: Calendar },
             { id: 'notifications', title: 'Notificações Automáticas', desc: 'Configurar e-mails e alertas do sistema.', icon: Bell },
             { id: 'logs', title: 'Logs do Sistema (Auditoria)', desc: 'Rastrear todas as alterações realizadas.', icon: History },
         ].map((item) => (
-            <button 
+            <button
                 key={item.id}
                 onClick={() => onNavigate(item.id as SettingsView)}
                 className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group text-left"
@@ -117,9 +122,9 @@ const SettingsMenu: React.FC<{ onNavigate: (view: SettingsView) => void }> = ({ 
 
 const LogsView: React.FC<{ onBack: () => void }> = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     const getActionBadge = (action: string) => {
-        switch(action) {
+        switch (action) {
             case 'CREATE': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 'UPDATE': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'DELETE': return 'bg-red-100 text-red-700 border-red-200';
@@ -134,9 +139,9 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
                 <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="relative flex-1 w-full max-w-md">
                         <Search size={18} className="absolute left-3 top-2.5 text-slate-400" />
-                        <input 
-                            type="text" 
-                            placeholder="Filtrar por administrador ou ação..." 
+                        <input
+                            type="text"
+                            placeholder="Filtrar por administrador ou ação..."
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]/10 focus:border-[#437476]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -187,7 +192,7 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex flex-col items-end gap-1">
                                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                                                <Monitor size={10}/> {log.ip}
+                                                <Monitor size={10} /> {log.ip}
                                             </span>
                                         </div>
                                     </td>
@@ -196,7 +201,7 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Exibindo os últimos 50 registros de auditoria</p>
                 </div>
@@ -212,7 +217,7 @@ const CondoDataView: React.FC<{ onBack: () => void, onSave: () => void, isSaving
         <div className="bg-[#fcfbf9] rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white">
                 <h3 className="font-bold text-slate-700">Informações Institucionais</h3>
-                <button 
+                <button
                     onClick={() => setIsEditing(!isEditing)}
                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${isEditing ? 'bg-slate-200 text-slate-600' : 'bg-[#437476] text-white'}`}
                 >
@@ -244,7 +249,7 @@ const CondoDataView: React.FC<{ onBack: () => void, onSave: () => void, isSaving
                 </div>
                 {isEditing && (
                     <div className="pt-4 flex justify-end">
-                        <button 
+                        <button
                             onClick={onSave}
                             className="flex items-center gap-2 px-8 py-3 bg-[#437476] text-white font-bold rounded-lg hover:bg-[#365e5f] transition-all"
                         >
@@ -266,7 +271,7 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
     ];
 
     const getRoleBadge = (role: string) => {
-        switch(role) {
+        switch (role) {
             case 'Síndico': return 'bg-yellow-100 text-yellow-700';
             case 'Financeiro': return 'bg-blue-100 text-blue-700';
             default: return 'bg-slate-100 text-slate-600';
@@ -278,7 +283,7 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                     <h3 className="font-bold text-slate-700">Equipe Administrativa</h3>
-                    <button 
+                    <button
                         onClick={() => setIsModalOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-bold hover:bg-[#365e5f] transition-all"
                     >
@@ -321,8 +326,8 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
-                                            <button className="p-1.5 text-slate-400 hover:text-[#437476] rounded-md hover:bg-white transition-all"><Edit2 size={16}/></button>
-                                            <button className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-white transition-all"><Trash2 size={16}/></button>
+                                            <button className="p-1.5 text-slate-400 hover:text-[#437476] rounded-md hover:bg-white transition-all"><Edit2 size={16} /></button>
+                                            <button className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-white transition-all"><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -337,7 +342,7 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
                     <div className="bg-[#fcfbf9] rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
                         <div className="px-8 py-6 border-b border-slate-100 bg-white flex justify-between items-center">
                             <h3 className="text-xl font-bold text-slate-700">Novo Administrador</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
+                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
                         </div>
                         <div className="p-8 space-y-5">
                             <div>
@@ -393,7 +398,7 @@ const BookingRulesView: React.FC<{ onBack: () => void, onSave: () => void, isSav
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
                 {areas.map(area => (
                     <div key={area.name}>
-                        <button 
+                        <button
                             onClick={() => setOpenAccordion(openAccordion === area.name ? null : area.name)}
                             className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors text-left"
                         >
@@ -407,15 +412,15 @@ const BookingRulesView: React.FC<{ onBack: () => void, onSave: () => void, isSav
                             <div className="p-8 bg-[#fcfbf9] border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><DollarSign size={12}/> Valor da Reserva</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><DollarSign size={12} /> Valor da Reserva</label>
                                         <input type="number" defaultValue={area.price} className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><Clock size={12}/> Horário Permitido</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><Clock size={12} /> Horário Permitido</label>
                                         <input type="text" defaultValue={area.hours} className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><Info size={12}/> Limite / Mês</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5"><Info size={12} /> Limite / Mês</label>
                                         <input type="number" defaultValue={area.limit} className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-[#437476]" />
                                     </div>
                                     <div className="flex items-end">
@@ -433,7 +438,7 @@ const BookingRulesView: React.FC<{ onBack: () => void, onSave: () => void, isSav
                 ))}
             </div>
             <div className="flex justify-end">
-                <button 
+                <button
                     onClick={onSave}
                     className="flex items-center gap-2 px-8 py-3 bg-[#437476] text-white font-bold rounded-lg hover:bg-[#365e5f] transition-all shadow-sm"
                 >
@@ -492,7 +497,7 @@ const NotificationConfigView: React.FC<{ onBack: () => void, onSave: () => void,
             </div>
 
             <div className="flex justify-end">
-                <button 
+                <button
                     onClick={onSave}
                     className="flex items-center gap-2 px-8 py-3 bg-[#437476] text-white font-bold rounded-lg hover:bg-[#365e5f] transition-all shadow-sm"
                 >
