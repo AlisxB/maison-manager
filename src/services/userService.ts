@@ -28,6 +28,16 @@ export const UserService = {
     create: async (data: any) => {
         const response = await api.post<User>('/users/', data);
         return response.data;
+    },
+
+    update: async (id: string, data: any) => {
+        const response = await api.put<User>(`/users/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id: string) => {
+        const response = await api.delete(`/users/${id}`);
+        return response.data;
     }
 };
 
