@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS users (
     condominium_id UUID NOT NULL REFERENCES condominiums(id),
     unit_id UUID REFERENCES units(id),
     name VARCHAR(255) NOT NULL,
-    
+
     email_encrypted TEXT NOT NULL,
     email_hash VARCHAR(64) NOT NULL,
     phone_encrypted TEXT,
@@ -354,6 +354,14 @@ INSERT INTO users (
     'ADMIN',
     'ACTIVE'
 );
+
+-- Insert Units
+INSERT INTO units (id, condominium_id, block, number, type)
+VALUES 
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'A', '101', 'Apartment'),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'A', '102', 'Apartment'),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'B', '201', 'Apartment'),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'B', '202', 'Apartment');
 
 -- Insert Common Areas
 INSERT INTO common_areas (id, condominium_id, name, capacity, price_per_hour, min_booking_hours, max_booking_hours, is_active)

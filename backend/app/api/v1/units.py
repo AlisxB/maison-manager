@@ -46,6 +46,17 @@ async def create_unit(
         **unit_in.model_dump()
     )
     db.add(db_unit)
-    await db.commit()
-    await db.refresh(db_unit)
+    try:
+        await db.commit()
+        await db.refresh(db_unit)
+    except Exception as e:
+        await db.rollback()
+        # Check for unique constraint violation (asyncpg)
+        if "unique constraint" in str(e) or "IntegrityError" in str(e):
+            raise HTTPException(
+                status_code=409, 
+                detail=f"Unidade {unit_in.block}-{unit_in.number} já existe."
+            )
+        raise HTTPException(status_code=400, detail=str(e))
+        
     return db_unit

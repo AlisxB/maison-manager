@@ -44,6 +44,7 @@ class Unit(Base):
     condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
     block = Column(String(50))
     number = Column(String(20), nullable=False)
+    type = Column(String(20), default="Apartment")
 
 class Reservation(Base):
     __tablename__ = "reservations"
