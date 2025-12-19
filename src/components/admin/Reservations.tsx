@@ -16,7 +16,8 @@ import {
     Search,
     Filter,
     Trash2,
-    Ban
+    Ban,
+    CheckCircle
 } from 'lucide-react';
 import { ReservationService, CommonAreaService, Reservation, CommonArea } from '../../services/reservationService';
 import { UserService, User as UserType } from '../../services/userService';
@@ -38,11 +39,8 @@ export const AdminReservations: React.FC = () => {
     const [residents, setResidents] = useState<UserType[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Estado inicial com algumas datas bloqueadas para teste (Local por enquanto)
-    const [blockedDates, setBlockedDates] = useState<{ date: string, reason: string }[]>([
-        { date: '2025-12-24', reason: 'Véspera de Natal' },
-        { date: '2025-12-25', reason: 'Feriado de Natal' }
-    ]);
+    // Estado inicial de datas bloqueadas (será populado pela API)
+    const [blockedDates, setBlockedDates] = useState<{ date: string, reason: string, areaId?: string }[]>([]);
 
     // Estados de Controle de Modais
     const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
@@ -52,7 +50,7 @@ export const AdminReservations: React.FC = () => {
 
     // Estados de Dados Selecionados
     const [selectedDateStr, setSelectedDateStr] = useState<string>('');
-    const [blockReason, setBlockReason] = useState('');
+    const [blockForm, setBlockForm] = useState<{ reason: string, commonAreaIds: string[] }>({ reason: '', commonAreaIds: [] });
 
     // Estado do Formulário de Reserva Manual
     const [manualResForm, setManualResForm] = useState({
@@ -94,10 +92,17 @@ export const AdminReservations: React.FC = () => {
                 UserService.getAll()
             ]);
 
-            // Enrich Reservations
+            // Enrich Reservations & Populate Blocked Dates
+            const blocks: { date: string, reason: string, areaId?: string }[] = [];
             const enrichedReservations = resData.map(r => {
                 const area = areasData.find(a => a.id === r.common_area_id);
                 const user = usersData.find(u => u.id === r.user_id);
+
+                if (r.status === 'BLOCKED') {
+                    const dateStr = new Date(r.start_time).toLocaleDateString('pt-BR').split('/').reverse().join('-');
+                    blocks.push({ date: dateStr, reason: r.reason || 'Bloqueado', areaId: r.common_area_id });
+                }
+
                 return {
                     ...r,
                     areaName: area?.name || 'Área Desconhecida',
@@ -107,6 +112,7 @@ export const AdminReservations: React.FC = () => {
             });
 
             setReservations(enrichedReservations);
+            setBlockedDates(blocks);
             setCommonAreas(areasData);
             setResidents(usersData);
         } catch (error) {
@@ -123,40 +129,68 @@ export const AdminReservations: React.FC = () => {
     // Lógica Central de Clique na Data do Calendário
     const handleDateClick = (day: number) => {
         const fullDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const isBlocked = blockedDates.find(d => d.date === fullDateStr);
+        // Sempre abre o modal de escolha de ação, permitindo desbloqueio ou nova reserva manual
         setSelectedDateStr(fullDateStr);
+        setIsActionChoiceModalOpen(true);
+    };
 
-        if (isBlocked) {
-            setIsUnlockModalOpen(true);
-        } else {
-            setIsActionChoiceModalOpen(true);
+    const handleConfirmBlock = async () => {
+        if (selectedDateStr && blockForm.reason && blockForm.commonAreaIds.length > 0) {
+            try {
+                // Create Blocked Reservation for EACH selected area
+                const startDate = new Date(`${selectedDateStr}T00:00:00`);
+                const endDate = new Date(`${selectedDateStr}T23:59:59`);
+
+                await Promise.all(blockForm.commonAreaIds.map(areaId =>
+                    ReservationService.create({
+                        common_area_id: areaId,
+                        start_time: startDate.toISOString(),
+                        end_time: endDate.toISOString(),
+                        status: 'BLOCKED',
+                        reason: blockForm.reason
+                    })
+                ));
+
+                alert('Áreas bloqueadas com sucesso!');
+                setIsBlockModalOpen(false);
+                setBlockForm({ reason: '', commonAreaIds: [] });
+                setSelectedDateStr('');
+                loadData();
+            } catch (error) {
+                console.error(error);
+                alert('Erro ao bloquear data.');
+            }
         }
     };
 
-    const handleConfirmBlock = () => {
-        if (selectedDateStr && blockReason) {
-            setBlockedDates([...blockedDates, { date: selectedDateStr, reason: blockReason }]);
-            setIsBlockModalOpen(false);
-            setBlockReason('');
-            setSelectedDateStr('');
-        }
-    };
-
-    const handleConfirmUnlock = () => {
+    const handleConfirmUnlock = async () => {
         if (selectedDateStr) {
-            setBlockedDates(blockedDates.filter(d => d.date !== selectedDateStr));
-            setIsUnlockModalOpen(false);
-            alert(`Data ${formatDate(selectedDateStr)} desbloqueada com sucesso!`);
+            // Find the blocked reservation(s) for this date and cancel it
+            const blocks = reservations.filter(r =>
+                r.status === 'BLOCKED' &&
+                new Date(r.start_time).toLocaleDateString('pt-BR').split('/').reverse().join('-') === selectedDateStr
+            );
+
+            if (blocks.length > 0) {
+                try {
+                    await Promise.all(blocks.map(b => ReservationService.updateStatus(b.id, 'CANCELLED')));
+                    alert(`Data ${formatDate(selectedDateStr)} desbloqueada com sucesso!`);
+                    setIsUnlockModalOpen(false);
+                    loadData();
+                } catch (error) {
+                    alert("Erro ao desbloquear.");
+                }
+            }
         }
     };
 
     const handleManualReservationSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Check if date is blocked
-            const isBlocked = blockedDates.find(d => d.date === manualResForm.date);
+            // Check if THIS SPECIFIC AREA is blocked on this date
+            const isBlocked = blockedDates.find(d => d.date === manualResForm.date && d.areaId === manualResForm.commonAreaId);
             if (isBlocked) {
-                alert(`Data bloqueada: ${isBlocked.reason}`);
+                alert(`Esta área está bloqueada nesta data: ${isBlocked.reason}`);
                 return;
             }
 
@@ -200,6 +234,7 @@ export const AdminReservations: React.FC = () => {
 
     const openBlockModal = () => {
         setIsActionChoiceModalOpen(false);
+        setBlockForm({ reason: '', commonAreaIds: [] });
         setIsBlockModalOpen(true);
     };
 
@@ -531,6 +566,11 @@ export const AdminReservations: React.FC = () => {
                                 <button onClick={openBlockModal} className="w-full py-4 bg-white border border-slate-200 text-slate-600 font-black rounded-2xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px]">
                                     <Ban size={16} /> Bloquear Data
                                 </button>
+                                {blockedDates.some(b => b.date === selectedDateStr) && (
+                                    <button onClick={() => { setIsActionChoiceModalOpen(false); setIsUnlockModalOpen(true); }} className="w-full py-4 bg-red-50 text-red-600 border border-red-100 font-black rounded-2xl hover:bg-red-100 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px]">
+                                        <Unlock size={16} /> Desbloquear Data
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -552,6 +592,31 @@ export const AdminReservations: React.FC = () => {
                             </div>
                             <div className="space-y-6">
                                 <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest ml-1">Áreas a Bloquear</label>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar p-2 bg-slate-50 rounded-2xl border border-slate-100">
+                                        {commonAreas.map(area => (
+                                            <label key={area.id} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group">
+                                                <div className="relative flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border border-slate-300 shadow-sm transition-all checked:border-[#437476] checked:bg-[#437476]"
+                                                        checked={blockForm.commonAreaIds.includes(area.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setBlockForm(prev => ({ ...prev, commonAreaIds: [...prev.commonAreaIds, area.id] }));
+                                                            } else {
+                                                                setBlockForm(prev => ({ ...prev, commonAreaIds: prev.commonAreaIds.filter(id => id !== area.id) }));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <CheckCircle size={12} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" />
+                                                </div>
+                                                <span className="text-sm font-bold text-slate-600 group-hover:text-[#437476]">{area.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
                                     <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest ml-1">Selecione a Data</label>
                                     <div className="relative group">
                                         <input
@@ -569,12 +634,12 @@ export const AdminReservations: React.FC = () => {
                                             type="text"
                                             placeholder="Ex: Manutenção preventiva, Feriado..."
                                             className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all shadow-sm"
-                                            value={blockReason}
-                                            onChange={(e) => setBlockReason(e.target.value)}
+                                            value={blockForm.reason}
+                                            onChange={(e) => setBlockForm({ ...blockForm, reason: e.target.value })}
                                         />
                                     </div>
                                 </div>
-                                <button onClick={handleConfirmBlock} disabled={!blockReason || !selectedDateStr} className={`w-full py-4 text-white font-black rounded-2xl shadow-xl transition-all text-[10px] uppercase tracking-widest ${!blockReason || !selectedDateStr ? 'bg-slate-300 cursor-not-allowed shadow-none' : 'bg-red-600 hover:bg-red-700 active:scale-95 shadow-red-600/20'}`}>Confirmar Bloqueio</button>
+                                <button onClick={handleConfirmBlock} disabled={!blockForm.reason || !selectedDateStr || blockForm.commonAreaIds.length === 0} className={`w-full py-4 text-white font-black rounded-2xl shadow-xl transition-all text-[10px] uppercase tracking-widest ${!blockForm.reason || !selectedDateStr || blockForm.commonAreaIds.length === 0 ? 'bg-slate-300 cursor-not-allowed shadow-none' : 'bg-red-600 hover:bg-red-700 active:scale-95 shadow-red-600/20'}`}>Confirmar Bloqueio</button>
                             </div>
                         </div>
                     </div>
