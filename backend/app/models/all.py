@@ -38,6 +38,11 @@ class User(Base):
     status = Column(String(20), default="PENDING")
     
     unit = relationship("Unit")
+    vehicles = relationship("Vehicle", back_populates="user", cascade="all, delete-orphan")
+    pets = relationship("Pet", back_populates="user", cascade="all, delete-orphan")
+    
+    phone_encrypted = Column(Text, nullable=True)
+    phone_hash = Column(String(64), nullable=True)
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
@@ -48,6 +53,32 @@ class Unit(Base):
     block = Column(String(50))
     number = Column(String(20), nullable=False)
     type = Column(String(20), default="Apartment")
+
+class Vehicle(Base):
+    __tablename__ = "vehicles"
+    id = uuid_pk()
+    condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    
+    model = Column(String(100), nullable=False)
+    color = Column(String(50))
+    plate = Column(String(10), nullable=False)
+    
+    user = relationship("User", back_populates="vehicles")
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+
+class Pet(Base):
+    __tablename__ = "pets"
+    id = uuid_pk()
+    condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    
+    name = Column(String(100), nullable=False)
+    type = Column(String(50), nullable=False)
+    breed = Column(String(100))
+    
+    user = relationship("User", back_populates="pets")
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
 class Reservation(Base):
     __tablename__ = "reservations"

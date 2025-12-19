@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1 import auth, users, units, reservations, common_areas, readings, financial, dashboard, inventory, condominium, audit, bylaws, violations, occurrences, announcements
+from app.api.v1 import auth, users, units, reservations, common_areas, readings, financial, dashboard, inventory, condominium, audit, bylaws, violations, occurrences, announcements, profile
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -34,6 +34,7 @@ app.include_router(bylaws.router, prefix=f"{settings.API_V1_STR}/bylaws", tags=[
 app.include_router(violations.router, prefix=f"{settings.API_V1_STR}/violations", tags=["violations"])
 app.include_router(occurrences.router, prefix=f"{settings.API_V1_STR}/occurrences", tags=["occurrences"])
 app.include_router(announcements.router, prefix=f"{settings.API_V1_STR}/announcements", tags=["announcements"])
+app.include_router(profile.router, prefix=f"{settings.API_V1_STR}/profile", tags=["profile"])
 
 @app.get("/")
 def root():
