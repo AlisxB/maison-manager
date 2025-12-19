@@ -10,6 +10,7 @@ export interface Occurrence {
     status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
     admin_response?: string;
     photo_url?: string;
+    is_anonymous?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -19,6 +20,7 @@ export interface OccurrenceCreate {
     description: string;
     category: string;
     photo_url?: string;
+    is_anonymous?: boolean;
 }
 
 export const OccurrenceService = {

@@ -85,9 +85,17 @@ export const AdminIssues: React.FC = () => {
                             <h3 className="font-bold text-slate-800 mb-2 line-clamp-1">{issue.title}</h3>
                             <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
                                 {/* Note: We might need to join with User table to get name properly in backend or fetch here. 
-                                 For now, we rely on user_id or if backend returns expanded user. 
-                                 Assuming ID until we enhance backend response. */}
-                                <User size={14} /> Morador (ID: {issue.user_id.substring(0, 8)}...)
+                                     For now, we rely on user_id or if backend returns expanded user. 
+                                     Assuming ID until we enhance backend response. */}
+                                {issue.is_anonymous ? (
+                                    <span className="flex items-center gap-1 font-semibold text-indigo-500">
+                                        <User size={14} /> Anônimo
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1">
+                                        <User size={14} /> Morador (ID: {issue.user_id.substring(0, 8)}...)
+                                    </span>
+                                )}
                             </div>
 
                             <div className="mt-auto pt-4 border-t border-slate-50">

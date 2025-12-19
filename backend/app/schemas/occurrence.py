@@ -10,7 +10,7 @@ class OccurrenceBase(BaseModel):
     photo_url: Optional[str] = None
 
 class OccurrenceCreate(OccurrenceBase):
-    pass
+    is_anonymous: bool = False
 
 class OccurrenceUpdate(BaseModel):
     status: Optional[str] = None
@@ -22,6 +22,7 @@ class OccurrenceRead(OccurrenceBase):
     condominium_id: UUID
     user_id: UUID
     status: str
+    is_anonymous: bool = False
     admin_response: Optional[str] = None
     created_at: datetime
     updated_at: datetime
