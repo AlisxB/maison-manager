@@ -50,13 +50,20 @@ async def create_reservation(
     if existing.scalars().first():
         raise HTTPException(status_code=409, detail="Conflict: This time slot is already reserved.")
 
+
+    # Status Logic (only Admin can set status != PENDING)
+    initial_status = "PENDING"
+    if current_user.role == 'ADMIN' and res_in.status:
+        initial_status = res_in.status
+
     db_res = Reservation(
         condominium_id=current_user.condo_id,
         user_id=owner_id,
         common_area_id=res_in.common_area_id,
         start_time=res_in.start_time,
         end_time=res_in.end_time,
-        status="PENDING"
+        status=initial_status,
+        reason=res_in.reason
     )
     db.add(db_res)
     await db.commit()

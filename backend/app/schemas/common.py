@@ -24,9 +24,11 @@ class ReservationBase(BaseModel):
     common_area_id: UUID
     start_time: datetime
     end_time: datetime
+    reason: Optional[str] = None
 
 class ReservationCreate(ReservationBase):
     user_id: Optional[UUID] = None
+    status: Optional[str] = "PENDING"
 
 class ReservationUpdate(BaseModel):
     status: str

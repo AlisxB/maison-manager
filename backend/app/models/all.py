@@ -59,6 +59,7 @@ class Reservation(Base):
     start_time = Column(TIMESTAMP(timezone=True), nullable=False)
     end_time = Column(TIMESTAMP(timezone=True), nullable=False)
     status = Column(String(20), default="PENDING")
+    reason = Column(Text, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
 class CommonArea(Base):
