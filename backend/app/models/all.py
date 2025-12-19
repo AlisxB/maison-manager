@@ -44,6 +44,8 @@ class User(Base):
     phone_encrypted = Column(Text, nullable=True)
     phone_hash = Column(String(64), nullable=True)
     
+    last_notification_check = Column(TIMESTAMP(timezone=True), nullable=True)
+    
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
 class Unit(Base):
