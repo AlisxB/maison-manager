@@ -19,9 +19,10 @@ export interface Reservation {
     user_id: string;
     start_time: string;
     end_time: string;
-    status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED';
+    status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'BLOCKED';
     total_price: number;
     created_at: string;
+    reason?: string;
 
     // Virtual fields for UI (joined)
     residentName?: string;
@@ -34,6 +35,8 @@ export interface ReservationCreate {
     start_time: string;
     end_time: string;
     user_id?: string;
+    status?: string;
+    reason?: string;
 }
 
 export const CommonAreaService = {
