@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'RESIDENT', 'PORTER', 'FINANCIAL')),
     profile_type VARCHAR(20) CHECK (profile_type IN ('OWNER', 'TENANT', 'STAFF')), 
     status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('ACTIVE', 'PENDING', 'INACTIVE')),
-    
+    last_notification_check TIMESTAMP WITH TIME ZONE,
+
     photo_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -482,6 +483,37 @@ CREATE POLICY occurrences_update_policy ON occurrences FOR UPDATE
 CREATE TRIGGER audit_occurrences_trigger AFTER INSERT OR UPDATE OR DELETE ON occurrences
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
+
+-- 12. Announcements (Avisos)
+CREATE TABLE IF NOT EXISTS announcements (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    target_audience VARCHAR(100) DEFAULT 'Todos os moradores',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
+
+-- RLS: Admin manages, Residents view
+CREATE POLICY announcements_admin_policy ON announcements
+    USING (
+        condominium_id = current_condo_id()
+        AND current_app_role() = 'ADMIN'
+    )
+    WITH CHECK (
+        condominium_id = current_condo_id()
+        AND current_app_role() = 'ADMIN'
+    );
+
+CREATE POLICY announcements_select_policy ON announcements FOR SELECT
+    USING (condominium_id = current_condo_id());
+
+-- Audit
+CREATE TRIGGER audit_announcements_trigger AFTER INSERT OR UPDATE OR DELETE ON announcements
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 -- 4. Triggers (Audit)
 
