@@ -80,8 +80,14 @@ async def update_reservation_status(
     if not db_res:
         raise HTTPException(status_code=404, detail="Reservation not found")
         
+    print(f"DEBUG: User Role: {current_user.role}")
+    print(f"DEBUG: Req Status: {res_update.status}")
+    print(f"DEBUG: Owner: {db_res.user_id} (Type: {type(db_res.user_id)})")
+    print(f"DEBUG: Current: {current_user.user_id} (Type: {type(current_user.user_id)})")
+
     # Permission Check
-    if current_user.role != 'ADMIN' and db_res.user_id != current_user.user_id:
+    # Ensure comparison is string vs string
+    if current_user.role != 'ADMIN' and str(db_res.user_id) != str(current_user.user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
         
     # Logic: Owner can only CANCEL. Admin can CONFIRM/REJECT.
