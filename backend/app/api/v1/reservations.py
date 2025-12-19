@@ -12,6 +12,7 @@ router = APIRouter()
 @router.get("/", response_model=List[ReservationRead])
 async def read_reservations(
     db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)],
     skip: int = 0,
     limit: int = 100
 ):
@@ -21,7 +22,12 @@ async def read_reservations(
     - Admin: Vê todas do condomínio.
     - Resident: Vê apenas as próprias.
     """
-    result = await db.execute(select(Reservation).offset(skip).limit(limit))
+    stmt = select(Reservation).where(Reservation.condominium_id == current_user.condo_id)
+    if current_user.role != 'ADMIN':
+        stmt = stmt.where(Reservation.user_id == current_user.user_id)
+    
+    stmt = stmt.offset(skip).limit(limit)
+    result = await db.execute(stmt)
     return result.scalars().all()
 
 @router.post("/", response_model=ReservationRead)
