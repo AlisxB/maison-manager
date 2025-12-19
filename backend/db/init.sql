@@ -196,6 +196,61 @@ ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
 -- 3. Functions & Policies (Zero Trust Logic)
 
+CREATE OR REPLACE FUNCTION audit_trigger_func() RETURNS TRIGGER AS $$
+DECLARE
+    curr_condo UUID;
+    curr_user UUID;
+BEGIN
+    -- Safely try to get context variables
+    BEGIN
+        curr_condo := NULLIF(current_setting('app.current_condo_id', true), '')::UUID;
+    EXCEPTION WHEN OTHERS THEN
+        curr_condo := NULL;
+    END;
+
+    BEGIN
+        curr_user := NULLIF(current_setting('app.current_user_id', true), '')::UUID;
+    EXCEPTION WHEN OTHERS THEN
+         curr_user := NULL;
+    END;
+    
+    -- Fallback Heuristics for missing context
+    IF curr_condo IS NULL THEN
+        IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
+            BEGIN
+                curr_condo := NEW.condominium_id;
+            EXCEPTION WHEN OTHERS THEN
+                curr_condo := NULL; 
+            END;
+        ELSIF (TG_OP = 'DELETE') THEN
+            BEGIN
+                curr_condo := OLD.condominium_id;
+            EXCEPTION WHEN OTHERS THEN
+                curr_condo := NULL;
+            END;
+        END IF;
+    END IF;
+
+    IF curr_condo IS NOT NULL THEN
+        IF (TG_OP = 'INSERT') THEN
+            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, new_data)
+            VALUES (curr_condo, curr_user, 'INSERT', TG_TABLE_NAME, NEW.id, row_to_json(NEW));
+            RETURN NEW;
+        ELSIF (TG_OP = 'UPDATE') THEN
+            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, old_data, new_data)
+            VALUES (curr_condo, curr_user, 'UPDATE', TG_TABLE_NAME, NEW.id, row_to_json(OLD), row_to_json(NEW));
+            RETURN NEW;
+        ELSIF (TG_OP = 'DELETE') THEN
+            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, old_data)
+            VALUES (curr_condo, curr_user, 'DELETE', TG_TABLE_NAME, OLD.id, row_to_json(OLD));
+            RETURN OLD;
+        END IF;
+    END IF;
+    
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Helpers to get session variables
 CREATE OR REPLACE FUNCTION current_condo_id() RETURNS UUID AS $$
 BEGIN
@@ -250,8 +305,21 @@ CREATE POLICY users_visibility_policy ON users
 
 -- Reservations: RBAC
 -- Admin sees all. Users see own.
-CREATE POLICY reservations_policy ON reservations
+-- Reservations: RBAC
+-- Admin sees all. Users see own.
+-- UPDATE: Residents can SEE all (for calendar availability) but only MOD own.
+CREATE POLICY reservations_select_policy ON reservations FOR SELECT
+    USING (condominium_id = current_condo_id());
+
+CREATE POLICY reservations_modify_policy ON reservations FOR ALL
     USING (
+        condominium_id = current_condo_id() 
+        AND (
+            current_app_role() = 'ADMIN' OR
+            user_id = current_user_id()
+        )
+    )
+    WITH CHECK (
         condominium_id = current_condo_id() 
         AND (
             current_app_role() = 'ADMIN' OR
@@ -333,62 +401,35 @@ CREATE TRIGGER audit_bylaws_trigger AFTER INSERT OR UPDATE OR DELETE ON bylaws
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
 
+
+-- 10. Violations (Multas/Notificações)
+CREATE TABLE IF NOT EXISTS violations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    resident_id UUID NOT NULL REFERENCES users(id), -- Recipient
+    bylaw_id UUID REFERENCES bylaws(id), -- Linked rule (optional)
+    type VARCHAR(50) NOT NULL, -- 'WARNING' (Notificação) or 'FINE' (Multa)
+    status VARCHAR(50) DEFAULT 'OPEN', -- OPEN, PAID, APPEALED, RESOLVED
+    description TEXT NOT NULL,
+    amount DECIMAL(10, 2), -- Only for FINE
+    occurred_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- RLS
+ALTER TABLE violations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY violations_policy ON violations
+    USING (condominium_id = current_condo_id())
+    WITH CHECK (condominium_id = current_condo_id());
+
+-- Audit
+CREATE TRIGGER audit_violations_trigger AFTER INSERT OR UPDATE OR DELETE ON violations
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
 -- 4. Triggers (Audit)
 
-CREATE OR REPLACE FUNCTION audit_trigger_func() RETURNS TRIGGER AS $$
-DECLARE
-    curr_condo UUID;
-    curr_user UUID;
-BEGIN
-    -- Safely try to get context variables
-    BEGIN
-        curr_condo := NULLIF(current_setting('app.current_condo_id', true), '')::UUID;
-    EXCEPTION WHEN OTHERS THEN
-        curr_condo := NULL;
-    END;
 
-    BEGIN
-        curr_user := NULLIF(current_setting('app.current_user_id', true), '')::UUID;
-    EXCEPTION WHEN OTHERS THEN
-         curr_user := NULL;
-    END;
-    
-    -- Fallback Heuristics for missing context
-    IF curr_condo IS NULL THEN
-        IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
-            BEGIN
-                curr_condo := NEW.condominium_id;
-            EXCEPTION WHEN OTHERS THEN
-                curr_condo := NULL; 
-            END;
-        ELSIF (TG_OP = 'DELETE') THEN
-            BEGIN
-                curr_condo := OLD.condominium_id;
-            EXCEPTION WHEN OTHERS THEN
-                curr_condo := NULL;
-            END;
-        END IF;
-    END IF;
-
-    IF curr_condo IS NOT NULL THEN
-        IF (TG_OP = 'INSERT') THEN
-            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, new_data)
-            VALUES (curr_condo, curr_user, 'INSERT', TG_TABLE_NAME, NEW.id, row_to_json(NEW));
-            RETURN NEW;
-        ELSIF (TG_OP = 'UPDATE') THEN
-            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, old_data, new_data)
-            VALUES (curr_condo, curr_user, 'UPDATE', TG_TABLE_NAME, NEW.id, row_to_json(OLD), row_to_json(NEW));
-            RETURN NEW;
-        ELSIF (TG_OP = 'DELETE') THEN
-            INSERT INTO audit_logs (condominium_id, actor_id, action, table_name, record_id, old_data)
-            VALUES (curr_condo, curr_user, 'DELETE', TG_TABLE_NAME, OLD.id, row_to_json(OLD));
-            RETURN OLD;
-        END IF;
-    END IF;
-    
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Attach Triggers
 CREATE TRIGGER audit_users_trigger AFTER INSERT OR UPDATE OR DELETE ON users
@@ -467,26 +508,4 @@ VALUES
 (uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Quadra de Tênis', 4, 0.00, 1, 2, TRUE),
 (uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Espaço Gourmet', 15, 80.00, 3, 5, TRUE);
 
--- 10. Violations (Multas/Notificações)
-CREATE TABLE IF NOT EXISTS violations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    condominium_id UUID NOT NULL REFERENCES condominiums(id),
-    resident_id UUID NOT NULL REFERENCES users(id), -- Recipient
-    bylaw_id UUID REFERENCES bylaws(id), -- Linked rule (optional)
-    type VARCHAR(50) NOT NULL, -- 'WARNING' (Notificação) or 'FINE' (Multa)
-    status VARCHAR(50) DEFAULT 'OPEN', -- OPEN, PAID, APPEALED, RESOLVED
-    description TEXT NOT NULL,
-    amount DECIMAL(10, 2), -- Only for FINE
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
 
--- RLS
-ALTER TABLE violations ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY violations_policy ON violations
-    USING (condominium_id = current_condo_id())
-    WITH CHECK (condominium_id = current_condo_id());
-
--- Audit
-CREATE TRIGGER audit_violations_trigger AFTER INSERT OR UPDATE OR DELETE ON violations
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
