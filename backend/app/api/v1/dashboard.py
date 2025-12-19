@@ -44,8 +44,8 @@ async def get_dashboard_stats(
     async def get_financial_sum(month, year, tx_type):
         stmt = select(func.sum(Transaction.amount)).where(
             Transaction.condominium_id == current_user.condo_id,
-            extract('month', Transaction.date) == month,
-            extract('year', Transaction.date) == year,
+            extract('month', func.timezone('America/Sao_Paulo', Transaction.date)) == month,
+            extract('year', func.timezone('America/Sao_Paulo', Transaction.date)) == year,
             Transaction.type == tx_type
         )
         return (await db.execute(stmt)).scalar() or 0
@@ -86,22 +86,23 @@ async def get_dashboard_stats(
     )
 
     # --- Readings Stats ---
+    # --- Readings Stats ---
     # Helper for Monthly Sum
-    async def get_reading_sum(model, field, month, year):
+    async def get_reading_sum(model, field, date_col, month, year):
         stmt = select(func.sum(field)).where(
             model.condominium_id == current_user.condo_id,
-            extract('month', model.created_at if hasattr(model, 'created_at') else model.reading_date) == month,
-            extract('year', model.created_at if hasattr(model, 'created_at') else model.reading_date) == year
+            extract('month', func.timezone('America/Sao_Paulo', date_col)) == month,
+            extract('year', func.timezone('America/Sao_Paulo', date_col)) == year
         )
         return (await db.execute(stmt)).scalar() or 0
 
-    # Water (m3)
-    water_curr = await get_reading_sum(ReadingWater, ReadingWater.value_m3, current_month, current_year)
-    water_last = await get_reading_sum(ReadingWater, ReadingWater.value_m3, last_month, last_month_year)
+    # Water (m3) - Use reading_date
+    water_curr = await get_reading_sum(ReadingWater, ReadingWater.value_m3, ReadingWater.reading_date, current_month, current_year)
+    water_last = await get_reading_sum(ReadingWater, ReadingWater.value_m3, ReadingWater.reading_date, last_month, last_month_year)
     
-    # Energy (kWh)
-    energy_curr = await get_reading_sum(ReadingElectricity, ReadingElectricity.consumption_kwh, current_month, current_year)
-    energy_last = await get_reading_sum(ReadingElectricity, ReadingElectricity.consumption_kwh, last_month, last_month_year)
+    # Energy (kWh) - Use due_date (or should it be created_at? typically due_date for bills)
+    energy_curr = await get_reading_sum(ReadingElectricity, ReadingElectricity.consumption_kwh, ReadingElectricity.due_date, current_month, current_year)
+    energy_last = await get_reading_sum(ReadingElectricity, ReadingElectricity.consumption_kwh, ReadingElectricity.due_date, last_month, last_month_year)
 
     # Gas (KG -> proxy for consumption?)
     # Model has cylinders. sum(cylinder_1_kg + cylinder_2_kg...)?
@@ -111,8 +112,8 @@ async def get_dashboard_stats(
     async def get_gas_sum(month, year):
         stmt = select(func.sum(ReadingGas.cylinder_1_kg + ReadingGas.cylinder_2_kg + ReadingGas.cylinder_3_kg + ReadingGas.cylinder_4_kg)).where(
              ReadingGas.condominium_id == current_user.condo_id,
-             extract('month', ReadingGas.purchase_date) == month,
-             extract('year', ReadingGas.purchase_date) == year
+             extract('month', func.timezone('America/Sao_Paulo', ReadingGas.purchase_date)) == month,
+             extract('year', func.timezone('America/Sao_Paulo', ReadingGas.purchase_date)) == year
         )
         return (await db.execute(stmt)).scalar() or 0
 
@@ -133,13 +134,41 @@ async def get_dashboard_stats(
 
     # --- Charts (Last 6 Months) ---
     charts = []
+    
+    # Helper for Monthly Sum (Reused from above if needed, or defined here)
+    # We already have get_reading_sum and get_financial_sum available in scope or similar logic
+    
     for i in range(5, -1, -1):
         d = subtract_months(today, i)
         m, y = d.month, d.year
         
-        w_val = await get_reading_sum(ReadingWater, ReadingWater.value_m3, m, y)
-        e_val = await get_reading_sum(ReadingElectricity, ReadingElectricity.consumption_kwh, m, y)
-        g_val = await get_gas_sum(m, y)
+        # Helper for TZ conversion
+        # We assume 'America/Sao_Paulo' for this project context
+        
+        # Water
+        w_stmt = select(func.sum(ReadingWater.value_m3)).where(
+            ReadingWater.condominium_id == current_user.condo_id,
+            extract('month', func.timezone('America/Sao_Paulo', ReadingWater.reading_date)) == m,
+            extract('year', func.timezone('America/Sao_Paulo', ReadingWater.reading_date)) == y
+        )
+        w_val = (await db.execute(w_stmt)).scalar() or 0
+        
+        # Energy
+        e_stmt = select(func.sum(ReadingElectricity.consumption_kwh)).where(
+            ReadingElectricity.condominium_id == current_user.condo_id,
+            extract('month', func.timezone('America/Sao_Paulo', ReadingElectricity.due_date)) == m,
+            extract('year', func.timezone('America/Sao_Paulo', ReadingElectricity.due_date)) == y
+        )
+        e_val = (await db.execute(e_stmt)).scalar() or 0
+        
+        # Gas
+        # Use previous logic or query directly
+        g_stmt = select(func.sum(ReadingGas.cylinder_1_kg + ReadingGas.cylinder_2_kg + ReadingGas.cylinder_3_kg + ReadingGas.cylinder_4_kg)).where(
+             ReadingGas.condominium_id == current_user.condo_id,
+             extract('month', func.timezone('America/Sao_Paulo', ReadingGas.purchase_date)) == m,
+             extract('year', func.timezone('America/Sao_Paulo', ReadingGas.purchase_date)) == y
+        )
+        g_val = (await db.execute(g_stmt)).scalar() or 0
         
         charts.append(DashboardChartData(
             name=d.strftime("%b"), # Short month name
