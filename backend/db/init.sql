@@ -314,6 +314,24 @@ CREATE POLICY inventory_policy ON inventory_items
 CREATE TRIGGER audit_inventory_trigger AFTER INSERT OR UPDATE OR DELETE ON inventory_items
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
+-- Bylaws (Regimentos)
+CREATE TABLE IF NOT EXISTS bylaws (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE bylaws ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY bylaws_policy ON bylaws
+    USING (condominium_id = current_condo_id())
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() = 'ADMIN');
+
+CREATE TRIGGER audit_bylaws_trigger AFTER INSERT OR UPDATE OR DELETE ON bylaws
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
 
 -- 4. Triggers (Audit)
 
@@ -448,3 +466,27 @@ VALUES
 (uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Churrasqueira Gourmet', 20, 50.00, 2, 6, TRUE),
 (uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Quadra de Tênis', 4, 0.00, 1, 2, TRUE),
 (uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Espaço Gourmet', 15, 80.00, 3, 5, TRUE);
+
+-- 10. Violations (Multas/Notificações)
+CREATE TABLE IF NOT EXISTS violations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    resident_id UUID NOT NULL REFERENCES users(id), -- Recipient
+    bylaw_id UUID REFERENCES bylaws(id), -- Linked rule (optional)
+    type VARCHAR(50) NOT NULL, -- 'WARNING' (Notificação) or 'FINE' (Multa)
+    status VARCHAR(50) DEFAULT 'OPEN', -- OPEN, PAID, APPEALED, RESOLVED
+    description TEXT NOT NULL,
+    amount DECIMAL(10, 2), -- Only for FINE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- RLS
+ALTER TABLE violations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY violations_policy ON violations
+    USING (condominium_id = current_condo_id())
+    WITH CHECK (condominium_id = current_condo_id());
+
+-- Audit
+CREATE TRIGGER audit_violations_trigger AFTER INSERT OR UPDATE OR DELETE ON violations
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();

@@ -14,7 +14,8 @@ import {
   Home,
   Calendar,
   Bell,
-  Building
+  Building,
+  AlertTriangle
 } from 'lucide-react';
 import { NavItem } from '../types';
 
@@ -25,7 +26,7 @@ export const ADMIN_NAV: NavItem[] = [
   { id: 'requests', label: 'Solicitações', icon: ClipboardList, view: 'admin_requests' },
   { id: 'financial', label: 'Financeiro', icon: Landmark, view: 'admin_financial' },
   { id: 'incidents', label: 'Intercorrências', icon: ShieldAlert, view: 'admin_issues' },
-  { id: 'notifications', label: 'Notificações e Multas', icon: AlertCircle, view: 'admin_notifications' },
+  { id: 'incidents_violations', label: 'Multas e Infrações', icon: AlertTriangle, view: 'admin_violations' },
   { id: 'announcements', label: 'Avisos', icon: Megaphone, view: 'admin_announcements' },
   { id: 'reservations', label: 'Gerenciar Reservas', icon: CalendarDays, view: 'admin_reservations' },
   { id: 'inventory', label: 'Estoque', icon: Package, view: 'admin_inventory' },

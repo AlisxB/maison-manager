@@ -19,6 +19,7 @@ import { AdminInventory } from './components/admin/Inventory';
 import { AdminReports } from './components/admin/Reports';
 import { AdminSettings } from './components/admin/Settings';
 import { AdminProfile } from './components/admin/Profile';
+import { ViolationsView } from './components/admin/ViolationsView';
 
 // Resident Components (Modularized)
 import { ResidentDashboard } from './components/resident/Dashboard';
@@ -53,6 +54,7 @@ const AppContent: React.FC = () => {
       case 'admin_requests': return <AdminRequests />;
       case 'admin_financial': return <AdminFinancial />;
       case 'admin_issues': return <AdminIssues />;
+      case 'admin_violations': return <ViolationsView />;
       case 'admin_notifications': return <AdminNotifications />;
       case 'admin_announcements': return <AdminAnnouncements />;
       case 'admin_reservations': return <AdminReservations />;

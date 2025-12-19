@@ -24,7 +24,8 @@ import {
     DollarSign,
     History,
     Search,
-    Monitor
+    Monitor,
+    AlertTriangle
 } from 'lucide-react';
 
 
@@ -36,8 +37,10 @@ import { CondominiumService, CondominiumUpdate } from '../../services/condominiu
 import { UserService, User } from '../../services/userService';
 import { CommonAreaService, CommonArea } from '../../services/commonAreaService';
 import { AuditService, AuditLog } from '../../services/auditService';
+import { BylawService, Bylaw } from '../../services/bylawService';
+import { Book, FileText } from 'lucide-react';
 
-type SettingsView = 'menu' | 'condo_data' | 'users' | 'booking_rules' | 'notifications' | 'logs' | 'units' | 'inventory';
+type SettingsView = 'menu' | 'condo_data' | 'users' | 'booking_rules' | 'notifications' | 'logs' | 'units' | 'inventory' | 'bylaws';
 
 export const AdminSettings: React.FC = () => {
     const [currentSubView, setCurrentSubView] = useState<SettingsView>('menu');
@@ -60,6 +63,7 @@ export const AdminSettings: React.FC = () => {
             case 'logs': return <LogsView onBack={() => setCurrentSubView('menu')} />;
             case 'units': return <div className="pt-4"><AdminUnits /></div>;
             case 'inventory': return <div className="pt-4"><AdminInventory /></div>;
+            case 'bylaws': return <BylawsView onBack={() => setCurrentSubView('menu')} />;
             default: return <SettingsMenu onNavigate={setCurrentSubView} />;
         }
     };
@@ -85,6 +89,7 @@ export const AdminSettings: React.FC = () => {
                         {currentSubView === 'notifications' && 'Configuração de alertas automáticos.'}
                         {currentSubView === 'logs' && 'Auditoria de ações e alterações do sistema.'}
                         {currentSubView === 'units' && 'Cadastro e listagem de blocos e unidades.'}
+                        {currentSubView === 'bylaws' && 'Regras e regimentos internos do condomínio.'}
                     </p>
                 </div>
             </div>
@@ -106,6 +111,7 @@ const SettingsMenu: React.FC<{ onNavigate: (view: SettingsView) => void }> = ({ 
             { id: 'inventory', title: 'Gestão de Estoque', desc: 'Controle de suprimentos e materiais.', icon: Package },
             { id: 'users', title: 'Gestão de Usuários Administrativos', desc: 'Adicionar ou remover administradores e porteiros.', icon: Users },
             { id: 'booking_rules', title: 'Regras de Reservas', desc: 'Definir horários, limites e valores.', icon: Calendar },
+            { id: 'bylaws', title: 'Regimentos Internos', desc: 'Normas, convenções e multas.', icon: Book },
             { id: 'notifications', title: 'Notificações Automáticas', desc: 'Configurar e-mails e alertas do sistema.', icon: Bell },
             { id: 'logs', title: 'Logs do Sistema (Auditoria)', desc: 'Rastrear todas as alterações realizadas.', icon: History },
         ].map((item) => (
@@ -161,7 +167,8 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
             'inventory_items': 'Estoque',
             'condominiums': 'Condomínio',
             'vehicles': 'Veículos',
-            'pets': 'Pets'
+            'pets': 'Pets',
+            'bylaws': 'Regimentos'
         };
         return map[table] || table;
     };
@@ -805,6 +812,147 @@ const NotificationConfigView: React.FC<{ onBack: () => void, onSave: () => void,
                     <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar Preferências'}
                 </button>
             </div>
+        </div>
+    );
+};
+
+const BylawsView: React.FC<{ onBack: () => void }> = () => {
+    const [bylaws, setBylaws] = useState<Bylaw[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showModal, setShowModal] = useState(false);
+    const [formData, setFormData] = useState<Partial<Bylaw>>({ title: '', description: '', category: 'Norma' });
+    const [isEditing, setIsEditing] = useState(false);
+
+    useEffect(() => {
+        loadBylaws();
+    }, []);
+
+    const loadBylaws = async () => {
+        try {
+            const data = await BylawService.getAll();
+            setBylaws(data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenCreate = () => {
+        setFormData({ title: '', description: '', category: 'Norma' });
+        setIsEditing(false);
+        setShowModal(true);
+    };
+
+    const handleOpenEdit = (bylaw: Bylaw) => {
+        setFormData(bylaw);
+        setIsEditing(true);
+        setShowModal(true);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            if (isEditing && formData.id) {
+                await BylawService.update(formData.id, formData);
+            } else {
+                await BylawService.create(formData);
+            }
+            setShowModal(false);
+            loadBylaws();
+        } catch (error) {
+            alert('Erro ao salvar regimento');
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Tem certeza que deseja excluir?')) return;
+        try {
+            await BylawService.delete(id);
+            loadBylaws();
+        } catch (error) {
+            alert('Erro ao excluir regimento');
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-end">
+                <button
+                    onClick={handleOpenCreate}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white font-bold rounded-lg hover:bg-[#365e5f] transition-all"
+                >
+                    <Plus size={18} /> Novo Regimento
+                </button>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-200 bg-slate-50">
+                    <h3 className="font-bold text-slate-700">Regimentos e Normas</h3>
+                    <p className="text-xs text-slate-500 mt-1">Defina as regras que serão base para o módulo de infrações.</p>
+                </div>
+                <div className="divide-y divide-slate-100">
+                    {loading ? (
+                        <div className="p-8 text-center text-slate-400">Carregando regimentos...</div>
+                    ) : bylaws.length === 0 ? (
+                        <div className="p-8 text-center text-slate-400">Nenhum regimento cadastrado.</div>
+                    ) : (
+                        bylaws.map(bylaw => (
+                            <div key={bylaw.id} className="p-6 hover:bg-slate-50 transition-colors flex justify-between items-start gap-4">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-3">
+                                        <FileText size={18} className="text-slate-400" />
+                                        <h4 className="font-bold text-slate-800">{bylaw.title}</h4>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${bylaw.category === 'Multa' ? 'bg-red-100 text-red-700' :
+                                            bylaw.category === 'Aviso' ? 'bg-amber-100 text-amber-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>
+                                            {bylaw.category}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-slate-600 pl-8">{bylaw.description}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleOpenEdit(bylaw)} className="p-2 text-slate-400 hover:text-[#437476] hover:bg-white rounded-lg transition-all"><Edit2 size={16} /></button>
+                                    <button onClick={() => handleDelete(bylaw.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-all"><Trash2 size={16} /></button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animate-in zoom-in-95">
+                        <h3 className="font-bold text-lg mb-4 text-slate-700">{isEditing ? 'Editar Regimento' : 'Novo Regimento'}</h3>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-400 uppercase">Título</label>
+                                <input required className="w-full p-2 border rounded-lg mt-1" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Lei do Silêncio" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-400 uppercase">Categoria</label>
+                                <select className="w-full p-2 border rounded-lg mt-1 bg-white" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                                    <option value="Norma">Norma Geral</option>
+                                    <option value="Multa">Infração / Multa</option>
+                                    <option value="Aviso">Aviso / Comunicado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-400 uppercase">Descrição Completa</label>
+                                <textarea required className="w-full p-2 border rounded-lg mt-1 h-32" value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Descreva os detalhes da regra..." />
+                            </div>
+                            <div className="flex gap-2 pt-4">
+                                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 bg-slate-100 rounded-lg text-slate-600 font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
+                                <button type="submit" className="flex-1 py-2 bg-[#437476] text-white rounded-lg font-bold hover:bg-[#365e5f] transition-all">
+                                    {isEditing ? 'Salvar' : 'Criar Regimento'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
