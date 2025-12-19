@@ -65,25 +65,25 @@ export const ResidentReservations: React.FC = () => {
    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0 (Sun) - 6 (Sat)
 
-   const isDateBlocked = (day: number) => {
-      // Logic: A date is blocked if there's a CONFIRMED reservation for the selected area on that day.
-      // This logic assumes Daily exclusivity or minimal visual blocking.
-      // Refined logic: If area has 'daily' limit or just simply check if any reservation exists.
-      // For simplicity in this UI, we mark it 'busy' if there is an overlapping reservation.
-      if (!selectedAreaId) return false;
-      return allReservations.some(r => {
+   const findBlockingReservation = (day: number) => {
+      if (!selectedAreaId) return null;
+      return allReservations.find(r => {
          const resDate = new Date(r.start_time);
          return r.common_area_id === selectedAreaId &&
-            r.status === 'CONFIRMED' &&
+            (r.status === 'CONFIRMED' || r.status === 'BLOCKED') &&
             resDate.getDate() === day &&
             resDate.getMonth() === currentMonth;
       });
    };
 
    const handleDateClick = (day: number) => {
-      if (isDateBlocked(day)) {
-         // Show reason
-         setBlockedReason(`Esta data já possui uma reserva confirmada.`);
+      const blockingRes = findBlockingReservation(day);
+      if (blockingRes) {
+         if (blockingRes.status === 'BLOCKED') {
+            setBlockedReason(`Data Bloqueada: ${blockingRes.reason || 'Manutenção/Outro'}`);
+         } else {
+            setBlockedReason(`Esta data já possui uma reserva confirmada.`);
+         }
          setTimeout(() => setBlockedReason(null), 3000);
          return;
       }
@@ -169,7 +169,10 @@ export const ResidentReservations: React.FC = () => {
       }
       for (let i = 1; i <= daysInMonth; i++) {
          const isSelected = selectedDate === i;
-         const blocked = isDateBlocked(i);
+         const blockingRes = findBlockingReservation(i);
+         const isBlocked = !!blockingRes;
+         const isAdminBlock = blockingRes?.status === 'BLOCKED';
+
          const isMyReservation = myReservations.some(r => {
             const d = new Date(r.start_time);
             return r.common_area_id === selectedAreaId && d.getDate() === i && d.getMonth() === currentMonth;
@@ -182,15 +185,20 @@ export const ResidentReservations: React.FC = () => {
                className={`h-10 w-10 mx-auto flex items-center justify-center rounded-lg text-sm font-medium transition-all relative
             ${isMyReservation
                      ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                     : blocked
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : isSelected
-                           ? 'bg-[#437476] text-white shadow-md transform scale-105'
-                           : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                     : isAdminBlock
+                        ? 'bg-red-50 text-red-400 border border-red-100 cursor-not-allowed'
+                        : isBlocked
+                           ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                           : isSelected
+                              ? 'bg-[#437476] text-white shadow-md transform scale-105'
+                              : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
             >
                {i}
-               {blocked && !isMyReservation && (
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-400 rounded-full border border-white"></span>
+               {isAdminBlock && (
+                  <Lock size={12} className="absolute top-0.5 right-0.5" />
+               )}
+               {isBlocked && !isAdminBlock && !isMyReservation && (
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-slate-400 rounded-full border border-white"></span>
                )}
             </button>
          );
@@ -280,7 +288,8 @@ export const ResidentReservations: React.FC = () => {
 
                   <div className="flex items-center justify-center gap-6 text-xs text-slate-500 mb-6">
                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-slate-200"></div>Disponível</div>
-                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-slate-200 relative"><div className="absolute top-0 right-0 w-1.5 h-1.5 bg-red-400 rounded-full border border-white"></div></div>Ocupado</div>
+                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-slate-200 relative"><div className="absolute top-0 right-0 w-1.5 h-1.5 bg-slate-400 rounded-full border border-white"></div></div>Ocupado</div>
+                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-100 border border-red-200"></div>Bloqueado</div>
                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#437476]"></div>Selecionado</div>
                   </div>
 
