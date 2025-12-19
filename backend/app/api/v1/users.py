@@ -2,6 +2,7 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
+from sqlalchemy.orm import joinedload
 from app.core import deps, security
 from app.models.all import User
 from app.schemas.user import UserRead, UserCreate
@@ -26,7 +27,9 @@ async def read_users(
     # Exemplo de Select simples
     # Se quisermos descriptografar campos, precisaríamos usar func.pgp_sym_decrypt
     # Mas aqui vamos focar na estrutura
-    result = await db.execute(select(User).offset(skip).limit(limit))
+    # Eager load Unit relationship
+    query = select(User).options(joinedload(User.unit)).offset(skip).limit(limit)
+    result = await db.execute(query)
     users = result.scalars().all()
     
     # Hack para conformidade com Pydantic para Lista

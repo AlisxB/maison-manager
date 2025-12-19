@@ -17,11 +17,22 @@ class UserCreate(UserBase):
     phone: Optional[str] = None
     cpf: Optional[str] = None
 
+# Schema para nested Unit
+class UnitNested(BaseModel):
+    id: UUID
+    block: Optional[str] = None
+    number: str
+    type: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 # Schema para Leitura (Retorna dados públicos/seguros)
 class UserRead(UserBase):
     id: UUID
     status: str
     created_at: datetime
+    unit: Optional[UnitNested] = None
     # Nota: Email é retornado como está no modelo Pydantic (vindo do payload descriptografado 
     # ou texto criptografado se o banco não descriptografar automaticamente).
     # Na arquitetura proposta, o banco armazena criptografado.

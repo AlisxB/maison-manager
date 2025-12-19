@@ -8,6 +8,7 @@ export interface User {
     role: string;
     profile_type: string;
     unit_id?: string;
+    unit?: Unit;
     status: string;
     created_at: string;
 }
@@ -23,6 +24,11 @@ export const UserService = {
     getAll: async () => {
         const response = await api.get<User[]>('/users/');
         return response.data;
+    },
+
+    getResidents: async () => {
+        const response = await api.get<User[]>('/users/');
+        return response.data.filter(u => u.role === 'RESIDENT');
     },
 
     create: async (data: any) => {
