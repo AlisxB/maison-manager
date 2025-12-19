@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1 import auth, users, units, reservations, common_areas, readings, financial, dashboard, inventory, condominium, audit, bylaws, violations
+from app.api.v1 import auth, users, units, reservations, common_areas, readings, financial, dashboard, inventory, condominium, audit, bylaws, violations, occurrences
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -32,6 +32,7 @@ app.include_router(condominium.router, prefix=f"{settings.API_V1_STR}/condominiu
 app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit", tags=["audit"])
 app.include_router(bylaws.router, prefix=f"{settings.API_V1_STR}/bylaws", tags=["bylaws"])
 app.include_router(violations.router, prefix=f"{settings.API_V1_STR}/violations", tags=["violations"])
+app.include_router(occurrences.router, prefix=f"{settings.API_V1_STR}/occurrences", tags=["occurrences"])
 
 
 @app.get("/")

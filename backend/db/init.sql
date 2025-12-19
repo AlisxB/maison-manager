@@ -427,6 +427,62 @@ CREATE POLICY violations_policy ON violations
 CREATE TRIGGER audit_violations_trigger AFTER INSERT OR UPDATE OR DELETE ON violations
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 
+-- 11. Occurrences (Intercorrências)
+CREATE TABLE IF NOT EXISTS occurrences (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL CHECK (category IN ('Maintenance', 'Noise', 'Security', 'Other')),
+    status VARCHAR(50) DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
+    admin_response TEXT,
+    photo_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE occurrences ENABLE ROW LEVEL SECURITY;
+
+-- RLS: Admin sees all, User sees own
+CREATE POLICY occurrences_select_policy ON occurrences FOR SELECT
+    USING (
+        condominium_id = current_condo_id()
+        AND (
+            current_app_role() = 'ADMIN' OR
+            user_id = current_user_id()
+        )
+    );
+
+-- RLS: User can insert (for their condo)
+CREATE POLICY occurrences_insert_policy ON occurrences FOR INSERT
+    WITH CHECK (
+        condominium_id = current_condo_id()
+        AND user_id = current_user_id()
+    );
+
+-- RLS: User can update own if OPEN. Admin can update any.
+CREATE POLICY occurrences_update_policy ON occurrences FOR UPDATE
+    USING (
+        condominium_id = current_condo_id()
+        AND (
+            current_app_role() = 'ADMIN' OR
+            (user_id = current_user_id() AND status = 'OPEN')
+        )
+    )
+    WITH CHECK (
+        condominium_id = current_condo_id()
+        AND (
+            current_app_role() = 'ADMIN' OR
+            (user_id = current_user_id() AND status = 'OPEN')
+        )
+    );
+
+-- Audit
+CREATE TRIGGER audit_occurrences_trigger AFTER INSERT OR UPDATE OR DELETE ON occurrences
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+
 -- 4. Triggers (Audit)
 
 

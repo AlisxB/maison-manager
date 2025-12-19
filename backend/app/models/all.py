@@ -165,3 +165,20 @@ class Violation(Base):
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+class Occurrence(Base):
+    __tablename__ = "occurrences"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    condominium_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("condominiums.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False) # 'Maintenance', 'Noise', 'Security', 'Other'
+    status: Mapped[str] = mapped_column(String(50), default='OPEN') # 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    
+    admin_response: Mapped[str] = mapped_column(Text, nullable=True)
+    photo_url: Mapped[str] = mapped_column(Text, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
