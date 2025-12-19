@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Home, Clock, CheckCircle, MessageSquare, ShieldAlert, Megaphone, FileText, BarChart3, ChevronRight, X, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { ReservationService, Reservation } from '../../services/reservationService';
+import { ReservationService, Reservation, CommonAreaService, CommonArea } from '../../services/reservationService';
 import { OccurrenceService, Occurrence, OccurrenceCreate } from '../../services/occurrenceService';
 import { AnnouncementService, Announcement } from '../../services/announcementService';
 
-export const ResidentDashboard: React.FC = () => {
+interface DashboardProps {
+  onNavigate: (view: string) => void;
+}
+
+export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [nextReservation, setNextReservation] = useState<Reservation | null>(null);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  // const [commonAreas, setCommonAreas] = useState<CommonArea[]>([]); // Not strictly needed in state if only used for enrichment, but good for debug
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -22,23 +27,33 @@ export const ResidentDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch Reservations, Occurrences and Announcements independently
+      // Fetch Reservations, Occurrences, Announcements AND Common Areas
       const results = await Promise.allSettled([
         ReservationService.getAll(),
         OccurrenceService.getAll(),
-        AnnouncementService.getAll()
+        AnnouncementService.getAll(),
+        CommonAreaService.getAll()
       ]);
+
+      let areas: CommonArea[] = [];
+      if (results[3].status === 'fulfilled') {
+        areas = results[3].value;
+      }
 
       if (results[0].status === 'fulfilled') {
         const reservations = results[0].value;
-        // Find next future reservation
+        // Find next future reservation and enrich with area name
         const now = new Date();
         const futureReservations = reservations
           .filter(r => new Date(r.start_time) > now)
           .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
         if (futureReservations.length > 0) {
-          setNextReservation(futureReservations[0]);
+          const next = futureReservations[0];
+          const area = areas.find(a => a.id === next.common_area_id);
+          setNextReservation({ ...next, areaName: area?.name || 'Área Comum' });
+        } else {
+          setNextReservation(null);
         }
       } else {
         console.error("Failed to fetch reservations", results[0].reason);
@@ -101,10 +116,28 @@ export const ResidentDashboard: React.FC = () => {
   };
 
   const handleActionClick = (label: string) => {
-    if (label === 'Reportar Problema') {
-      setIsReportModalOpen(true);
+    switch (label) {
+      case 'Reportar Problema':
+        setIsReportModalOpen(true);
+        break;
+      case 'Reservar Área':
+        onNavigate('resident_reservations');
+        break;
+      case 'Notificar Intercorrência':
+        // Assuming this leads to the issues list or report page. 
+        // User requested "Notificar ocorrência > notificar ocorrência".
+        onNavigate('resident_report_issue');
+        break;
+      case 'Avisos':
+        onNavigate('resident_announcements');
+        break;
+      case 'Consumo':
+        onNavigate('resident_consumption');
+        break;
+
+      default:
+        console.log(`Action ${label} not implemented`);
     }
-    // Other actions logic...
   };
 
   return (
@@ -114,7 +147,7 @@ export const ResidentDashboard: React.FC = () => {
         <div className="relative z-10">
           <h2 className="text-3xl font-bold mb-2">Bem-vinda de volta {(user as any)?.name ? `, ${(user as any).name.split(' ')[0]}` : ''}!</h2>
           <p className="text-emerald-100 mb-6">
-            Unidade {(user as any)?.unit?.number || '---'}-{(user as any)?.unit?.block || '-'} • Maison Heights
+            Unidade {(user as any)?.unit?.number || (user as any)?.unit || '---'} • Maison Heights
           </p>
           <div className="flex gap-3">
             <button className="bg-white text-emerald-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
@@ -229,7 +262,12 @@ export const ResidentDashboard: React.FC = () => {
                 <div className="text-center text-slate-500 text-sm py-4">Nenhum aviso no momento.</div>
               )}
             </div>
-            <button className="w-full text-center text-sm text-emerald-600 font-medium hover:underline">Ver Todos os Avisos</button>
+            <button
+              onClick={() => onNavigate('resident_announcements')}
+              className="w-full text-center text-sm text-emerald-600 font-medium hover:underline"
+            >
+              Ver Todos os Avisos
+            </button>
           </div>
         </div>
       </div>

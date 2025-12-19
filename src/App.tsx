@@ -66,7 +66,7 @@ const AppContent: React.FC = () => {
       case 'admin_settings': return <AdminSettings />;
       case 'admin_profile': return <AdminProfile />;
 
-      case 'resident_dashboard': return <ResidentDashboard />;
+      case 'resident_dashboard': return <ResidentDashboard onNavigate={setCurrentView} />;
       case 'resident_announcements': return <ResidentAnnouncements />;
       case 'resident_notifications': return <ResidentNotifications />;
       case 'resident_consumption': return <ResidentConsumption />;
