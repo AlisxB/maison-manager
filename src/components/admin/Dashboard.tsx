@@ -21,22 +21,28 @@ export const AdminDashboard: React.FC = () => {
     fetchStats();
   }, []);
 
-  const StatCard = ({ title, value, subtext, icon: Icon, iconClassName, colorClass = "text-slate-600" }: any) => (
-    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between h-full hover:shadow-md transition-shadow group">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{title}</h3>
-        <div className={`p-2 rounded-xl bg-slate-50 group-hover:bg-white border border-transparent group-hover:border-slate-100 transition-colors ${iconClassName}`}>
-          {Icon && <Icon size={18} />}
+  const StatCard = ({ title, value, subtext, icon: Icon, iconClassName, colorClass = "text-slate-600", inverseTrend = false }: any) => {
+    let trendColor = 'text-slate-400';
+    if (subtext.includes('+')) trendColor = inverseTrend ? 'text-rose-500' : 'text-emerald-500';
+    else if (subtext.includes('-')) trendColor = inverseTrend ? 'text-emerald-500' : 'text-rose-500';
+
+    return (
+      <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between h-full hover:shadow-md transition-shadow group">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{title}</h3>
+          <div className={`p-2 rounded-xl bg-slate-50 group-hover:bg-white border border-transparent group-hover:border-slate-100 transition-colors ${iconClassName}`}>
+            {Icon && <Icon size={18} />}
+          </div>
+        </div>
+        <div>
+          <div className={`text-2xl font-black ${colorClass}`}>{value}</div>
+          <p className={`text-[10px] font-bold mt-1 ${trendColor}`}>
+            {subtext}
+          </p>
         </div>
       </div>
-      <div>
-        <div className={`text-2xl font-black ${colorClass}`}>{value}</div>
-        <p className={`text-[10px] font-bold mt-1 ${subtext.includes('+') ? 'text-emerald-500' : subtext.includes('-') ? 'text-red-500' : 'text-slate-400'}`}>
-          {subtext}
-        </p>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const ChartCard = ({ title, subtext, color, dataKey }: any) => (
     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col h-80">
@@ -101,6 +107,7 @@ export const AdminDashboard: React.FC = () => {
           icon={Droplets}
           iconClassName="text-cyan-500"
           colorClass="text-slate-800"
+          inverseTrend
         />
         <StatCard
           title="Gás (kg)"
@@ -109,6 +116,7 @@ export const AdminDashboard: React.FC = () => {
           icon={Flame}
           iconClassName="text-amber-500"
           colorClass="text-slate-800"
+          inverseTrend
         />
         <StatCard
           title="Energia (kWh)"
@@ -117,6 +125,7 @@ export const AdminDashboard: React.FC = () => {
           icon={Zap}
           iconClassName="text-rose-500"
           colorClass="text-slate-800"
+          inverseTrend
         />
       </div>
 
