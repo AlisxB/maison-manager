@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Home, Clock, CheckCircle, MessageSquare, ShieldAlert, Megaphone, FileText, BarChart3, ChevronRight, X, AlertCircle } from 'lucide-react';
-import { MOCK_ANNOUNCEMENTS } from '../../mock';
 import { useAuth } from '../../context/AuthContext';
 import { ReservationService, Reservation } from '../../services/reservationService';
 import { OccurrenceService, Occurrence, OccurrenceCreate } from '../../services/occurrenceService';
+import { AnnouncementService, Announcement } from '../../services/announcementService';
 
 export const ResidentDashboard: React.FC = () => {
   const { user } = useAuth();
   const [nextReservation, setNextReservation] = useState<Reservation | null>(null);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -21,10 +22,11 @@ export const ResidentDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch Reservations and Occurrences independently
+      // Fetch Reservations, Occurrences and Announcements independently
       const results = await Promise.allSettled([
         ReservationService.getAll(),
-        OccurrenceService.getAll()
+        OccurrenceService.getAll(),
+        AnnouncementService.getAll()
       ]);
 
       if (results[0].status === 'fulfilled') {
@@ -47,6 +49,13 @@ export const ResidentDashboard: React.FC = () => {
       } else {
         console.error("Failed to fetch occurrences", results[1].reason);
       }
+
+      if (results[2].status === 'fulfilled') {
+        setAnnouncements(results[2].value);
+      } else {
+        console.error("Failed to fetch announcements", results[2].reason);
+      }
+
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -203,7 +212,7 @@ export const ResidentDashboard: React.FC = () => {
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-blue-500"></div>
 
             <div className="space-y-4">
-              {MOCK_ANNOUNCEMENTS.slice(0, 2).map((ann) => (
+              {announcements.length > 0 ? announcements.slice(0, 2).map((ann) => (
                 <div key={ann.id} className="pb-4 border-b border-slate-100 last:border-0 last:pb-0">
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase
                        ${ann.type === 'Manutenção' ? 'text-emerald-600 bg-emerald-50' :
@@ -216,7 +225,9 @@ export const ResidentDashboard: React.FC = () => {
                     {ann.description}
                   </p>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center text-slate-500 text-sm py-4">Nenhum aviso no momento.</div>
+              )}
             </div>
             <button className="w-full text-center text-sm text-emerald-600 font-medium hover:underline">Ver Todos os Avisos</button>
           </div>
