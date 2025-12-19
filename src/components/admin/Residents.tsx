@@ -17,7 +17,8 @@ export const AdminResidents: React.FC = () => {
         exitDate: '',
         registeredBy: 'JOAO',
         hasPets: false,
-        petsList: [{ quantity: 1, type: '' }]
+        petsList: [{ quantity: 1, type: '' }],
+        password: '' // Add password to state
     });
 
     const [residents, setResidents] = useState<User[]>([]);
@@ -86,7 +87,7 @@ export const AdminResidents: React.FC = () => {
                 role: 'RESIDENT',
                 profile_type: 'TENANT', // Default
                 unit_id: targetUnit?.id,
-                password: 'mudar123', // Senha temporária padrão
+                password: residentForm.password || 'mudar123', // Usa a senha definida ou padrão se vazia
             };
 
             await UserService.create(payload);
@@ -223,18 +224,32 @@ export const AdminResidents: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Email */}
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-600 mb-2">E-mail</label>
-                                    <div className="relative">
-                                        <Mail size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                                        <input
-                                            type="email"
-                                            placeholder="email@exemplo.com"
-                                            className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
-                                            value={residentForm.email}
-                                            onChange={e => setResidentForm({ ...residentForm, email: e.target.value })}
-                                        />
+                                {/* Linha: Email | Senha Inicial */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div className="col-span-1">
+                                        <label className="block text-sm font-bold text-slate-600 mb-2">E-mail</label>
+                                        <div className="relative">
+                                            <Mail size={18} className="absolute left-3 top-3.5 text-slate-400" />
+                                            <input
+                                                type="email"
+                                                placeholder="email@exemplo.com"
+                                                className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
+                                                value={residentForm.email}
+                                                onChange={e => setResidentForm({ ...residentForm, email: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="block text-sm font-bold text-slate-600 mb-2">Senha Inicial</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="Defina a senha inicial"
+                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
+                                                value={residentForm.password}
+                                                onChange={e => setResidentForm({ ...residentForm, password: e.target.value })}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 

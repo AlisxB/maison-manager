@@ -37,7 +37,21 @@ async def read_water_readings(
     db: Annotated[AsyncSession, Depends(deps.get_db)],
     current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
 ):
-    result = await db.execute(select(ReadingWater))
+    query = select(ReadingWater)
+    if current_user.role == 'RESIDENT':
+        # Need to find the resident's unit_id to filter their readings
+        # Since TokenData might not have unit_id, we fetch it or join.
+        # Efficient way: Join User where id = cur_user.id
+        from app.models.all import User
+        # We can subquery or just fetch the user first.
+        # Let's simple fetch user's unit_id
+        res_user = await db.get(User, current_user.user_id)
+        if not res_user or not res_user.unit_id:
+            return [] # No unit, no readings
+        
+        query = query.where(ReadingWater.unit_id == res_user.unit_id)
+        
+    result = await db.execute(query)
     return result.scalars().all()
 
 # --- Gas ---

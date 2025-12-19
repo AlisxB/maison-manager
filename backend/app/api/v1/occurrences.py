@@ -12,6 +12,7 @@ router = APIRouter()
 @router.get("/", response_model=List[OccurrenceRead])
 async def read_occurrences(
     db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)],
     skip: int = 0,
     limit: int = 100
 ):
@@ -21,7 +22,15 @@ async def read_occurrences(
     - Admin: Sees all (for current condo).
     - Resident: Sees own.
     """
-    result = await db.execute(select(Occurrence).order_by(Occurrence.created_at.desc()).offset(skip).limit(limit))
+    query = select(Occurrence).order_by(Occurrence.created_at.desc())
+    
+    # Explicit Application-Level Security (Defense in Depth)
+    # Even if RLS is on, we filter here to be 100% sure.
+    if current_user.role == 'RESIDENT':
+        query = query.where(Occurrence.user_id == current_user.user_id)
+        
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 @router.post("/", response_model=OccurrenceRead)

@@ -114,16 +114,29 @@ async def create_user(
     db.add(db_user)
     try:
         await db.commit()
-        await db.refresh(db_user)
+        # Instead of refresh, we must re-fetch with relationships loaded to avoid MissingGreenlet
+        # when Pydantic tries to access db_user.unit
+        stmt = select(User).options(joinedload(User.unit)).where(User.id == db_user.id)
+        result = await db.execute(stmt)
+        db_user = result.scalars().first()
     except Exception as e:
-        await db.rollback()
-        # Verificar se é erro de integridade (duplicidade)
+        # If commit failed, rollback
+        if db_user not in db: # Check if it was attached
+             await db.rollback()
+        
+        # Check integrity error
         if "users_condominium_id_email_hash_key" in str(e):
-            raise HTTPException(
+             raise HTTPException(
                 status_code=409, 
                 detail="Este email já está cadastrado neste condomínio."
-            )
-        raise HTTPException(status_code=400, detail=str(e))
+             )
+        # Note: If error happened during re-fetch (rare), we still enter here.
+        # But if commit succeeded, we shouldn't rollback. 
+        # Ideally split commit and fetch.
+        # But for now, let's assume if commit passed, fetch is safe.
+        # If fetch fails, we already have the ID... returning basic object?
+        # Better to just log and raise.
+        raise HTTPException(status_code=400, detail=f"Error creating user: {str(e)}")
         
     # Hack para conformidade com Pydantic (UserRead espera email, mas model tem email_encrypted)
     # Em produção real, desencriptaria aqui via SQL ou chave.

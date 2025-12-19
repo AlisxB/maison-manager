@@ -23,10 +23,17 @@ async def read_violations(
 ):
     query = select(ViolationModel)
     
+    # RBAC Enforcement
+    if current_user.role == 'RESIDENT':
+        # Force filtering by own ID, ignoring whatever input might have been sent (or setting it if missing)
+        query = query.where(ViolationModel.resident_id == current_user.user_id)
+    else:
+        # Admin can filter by resident_id if provided
+        if resident_id:
+            query = query.where(ViolationModel.resident_id == resident_id)
+    
     if type:
         query = query.where(ViolationModel.type == type)
-    if resident_id:
-        query = query.where(ViolationModel.resident_id == resident_id)
         
     query = query.offset(skip).limit(limit).order_by(ViolationModel.created_at.desc())
     
