@@ -27,6 +27,7 @@ import { ResidentReservations } from './components/resident/Reservations';
 import { ResidentAnnouncements } from './components/resident/Announcements';
 import { ResidentNotifications } from './components/resident/Notifications';
 import { ResidentReportIssue } from './components/resident/ReportIssue';
+import { ResidentIssues } from './components/resident/Issues';
 // ... imports
 import { ResidentConsumption } from './components/resident/Consumption';
 import { ResidentProfile } from './components/resident/Profile';
@@ -71,6 +72,7 @@ const AppContent: React.FC = () => {
       case 'resident_consumption': return <ResidentConsumption />;
       case 'resident_reservations': return <ResidentReservations />;
       case 'resident_report_issue': return <ResidentReportIssue />;
+      case 'resident_issues': return <ResidentIssues />;
       case 'resident_profile': return <ResidentProfile />;
       case 'resident_financial': return <ResidentFinancial />;
 
