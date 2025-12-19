@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Menu,
   Bell,
+  BellRing,
   Home,
   User,
   LogOut,
@@ -10,6 +11,7 @@ import {
 import { Role } from '../types';
 import { ADMIN_NAV, RESIDENT_NAV } from '../constants';
 import { useAuth } from '../context/AuthContext';
+import { NotificationService, Notification } from '../services/notificationService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,12 +32,73 @@ const MainLayout: React.FC<LayoutProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [hasNew, setHasNew] = useState(false);
 
-  const notifications = [
-    { id: 1, title: 'Nova fatura disponível', time: 'Há 5 min', unread: true },
-    { id: 2, title: 'Manutenção na piscina', time: 'Há 2 horas', unread: false },
-    { id: 3, title: 'Encomenda recebida', time: 'Há 4 horas', unread: true },
-  ];
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      NotificationService.getAll()
+        .then(data => {
+          setNotifications(data);
+          if (data.some(note => !note.read)) {
+            setHasNew(true);
+          }
+        })
+        .catch(err => console.error("Failed to fetch notifications", err));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'Agora';
+    if (minutes < 60) return `Há ${minutes} min`;
+    if (hours < 24) return `Há ${hours} horas`;
+    return `Há ${days} dias`;
+  };
+
+  const handleNotificationClick = (note: Notification) => {
+    if (note.link) {
+      const view = note.link.replace('/resident/', 'resident_').replace('/', '');
+      onNavigate(view);
+    }
+    setIsNotificationsOpen(false);
+  };
+
+  const handleOpenNotifications = () => {
+    setIsNotificationsOpen(!isNotificationsOpen);
+    if (!isNotificationsOpen) {
+      setHasNew(false);
+      if (hasNew) {
+        NotificationService.markAllAsRead().catch(console.error);
+        // Visually mark as read immediately to match backend state
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      }
+    }
+    setIsProfileMenuOpen(false);
+  }
 
   const navItems = role === 'ADMIN' ? ADMIN_NAV : RESIDENT_NAV;
   const sidebarBg = role === 'ADMIN' ? 'bg-[#1e3a3a]' : 'bg-emerald-900';
@@ -119,13 +182,13 @@ const MainLayout: React.FC<LayoutProps> = ({
             <div className="flex-1 lg:flex-none" />
 
             <div className="flex items-center gap-6">
-              <div className="relative">
+              <div className="relative" ref={notificationRef}>
                 <button
-                  onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileMenuOpen(false); }}
+                  onClick={handleOpenNotifications}
                   className={`relative p-2 transition-colors rounded-full hover:bg-slate-100 ${isNotificationsOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-400'}`}
                 >
-                  <Bell size={20} />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                  {hasNew ? <BellRing size={20} className="text-indigo-600" /> : <Bell size={20} />}
+                  {hasNew && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>}
                 </button>
 
                 {isNotificationsOpen && (
@@ -135,15 +198,17 @@ const MainLayout: React.FC<LayoutProps> = ({
                       <button className="text-xs text-indigo-600 font-medium hover:text-indigo-700">Marcar todas</button>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
-                      {notifications.map((note) => (
-                        <div key={note.id} className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${note.unread ? 'bg-indigo-50/30' : ''}`}>
+                      {notifications.length > 0 ? notifications.map((note) => (
+                        <div key={note.id} onClick={() => handleNotificationClick(note)} className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${!note.read ? 'bg-indigo-50/30' : ''}`}>
                           <div className="flex justify-between items-start">
-                            <h4 className={`text-sm ${note.unread ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>{note.title}</h4>
-                            {note.unread && <span className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></span>}
+                            <h4 className={`text-sm ${!note.read ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>{note.title}</h4>
+                            {!note.read && <span className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5 shrink-0"></span>}
                           </div>
-                          <p className="text-xs text-slate-400 mt-1">{note.time}</p>
+                          <p className="text-xs text-slate-400 mt-1">{timeAgo(note.created_at)}</p>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="p-8 text-center text-slate-400 text-sm">Nenhuma notificação recente.</div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -151,7 +216,7 @@ const MainLayout: React.FC<LayoutProps> = ({
 
               <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
 
-              <div className="relative">
+              <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => { setIsProfileMenuOpen(!isProfileMenuOpen); setIsNotificationsOpen(false); }}
                   className="flex items-center gap-3 hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-slate-200"
