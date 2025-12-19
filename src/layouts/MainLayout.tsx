@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Menu, 
+import {
+  Menu,
   Bell,
   Home,
   User,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Role } from '../types';
 import { ADMIN_NAV, RESIDENT_NAV } from '../constants';
+import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,17 +19,18 @@ interface LayoutProps {
   onLogout: () => void;
 }
 
-const MainLayout: React.FC<LayoutProps> = ({ 
-  children, 
-  role, 
-  currentView, 
+const MainLayout: React.FC<LayoutProps> = ({
+  children,
+  role,
+  currentView,
   onNavigate,
   onLogout
 }) => {
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  
+
   const notifications = [
     { id: 1, title: 'Nova fatura disponível', time: 'Há 5 min', unread: true },
     { id: 2, title: 'Manutenção na piscina', time: 'Há 2 horas', unread: false },
@@ -80,8 +82,8 @@ const MainLayout: React.FC<LayoutProps> = ({
             <span className="font-medium">N</span>
           </div>
           <div className="flex flex-col items-start">
-             <span className="text-sm font-medium text-slate-300 group-hover:text-white">Sair</span>
-             <span className="text-xs text-slate-500">v2.0.0</span>
+            <span className="text-sm font-medium text-slate-300 group-hover:text-white">Sair</span>
+            <span className="text-xs text-slate-500">v2.0.0</span>
           </div>
         </button>
       </div>
@@ -91,7 +93,7 @@ const MainLayout: React.FC<LayoutProps> = ({
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -107,7 +109,7 @@ const MainLayout: React.FC<LayoutProps> = ({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen">
         <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 sm:px-8 py-4">
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-md"
             >
@@ -118,7 +120,7 @@ const MainLayout: React.FC<LayoutProps> = ({
 
             <div className="flex items-center gap-6">
               <div className="relative">
-                <button 
+                <button
                   onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileMenuOpen(false); }}
                   className={`relative p-2 transition-colors rounded-full hover:bg-slate-100 ${isNotificationsOpen ? 'bg-slate-100 text-slate-800' : 'text-slate-400'}`}
                 >
@@ -150,19 +152,19 @@ const MainLayout: React.FC<LayoutProps> = ({
               <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
 
               <div className="relative">
-                <button 
+                <button
                   onClick={() => { setIsProfileMenuOpen(!isProfileMenuOpen); setIsNotificationsOpen(false); }}
                   className="flex items-center gap-3 hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-slate-200"
                 >
                   <div className="h-9 w-9 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-medium shadow-sm ring-2 ring-white">
-                    {role === 'ADMIN' ? 'AD' : 'AF'}
+                    {user?.name?.charAt(0) || (role === 'ADMIN' ? 'A' : 'M')}
                   </div>
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-semibold text-slate-700 leading-none">
-                      {role === 'ADMIN' ? 'Admin User' : 'Alice Freeman'}
+                      {user?.name || (role === 'ADMIN' ? 'Administrador' : 'Morador')}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {role === 'ADMIN' ? 'Gestor' : 'Unidade 101'}
+                      {role === 'ADMIN' ? 'Gestor' : (user?.unit ? `Unidade ${user.unit}` : 'Residente')}
                     </p>
                   </div>
                 </button>
@@ -170,7 +172,7 @@ const MainLayout: React.FC<LayoutProps> = ({
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                     <div className="p-2 space-y-1">
-                      <button 
+                      <button
                         onClick={() => {
                           if (role === 'RESIDENT') onNavigate('resident_profile');
                           else if (role === 'ADMIN') onNavigate('admin_profile');
@@ -203,8 +205,8 @@ const MainLayout: React.FC<LayoutProps> = ({
         <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50">
           {children}
         </main>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

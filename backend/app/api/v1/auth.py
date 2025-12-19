@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core import security, config, deps
 from app.models.all import User
@@ -24,7 +25,12 @@ async def login_access_token(
     
     # 2. Buscar usuário pelo hash do email
     # Nota: Usamos get_db_no_context porque ainda não temos usuário autenticado
-    result = await db.execute(select(User).where(User.email_hash == email_hash))
+    # Eager load unit for token claims
+    result = await db.execute(
+        select(User)
+        .options(joinedload(User.unit))
+        .where(User.email_hash == email_hash)
+    )
     user = result.scalars().first()
     
     # 3. Validar senha
@@ -39,12 +45,20 @@ async def login_access_token(
         raise HTTPException(status_code=400, detail="Usuário inativo")
 
     # 4. Gerar Token com Payload rico (User, Condo, Role)
+    unit_label = None
+    if user.unit:
+        unit_label = user.unit.number
+        if user.unit.block:
+            unit_label = f"{user.unit.block}-{user.unit.number}"
+
     access_token_expires = timedelta(minutes=config.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         subject=user.id,
         claims={
             "condo_id": str(user.condominium_id),
-            "role": user.role
+            "role": user.role,
+            "name": user.name,
+            "unit": unit_label
         },
         expires_delta=access_token_expires,
     )

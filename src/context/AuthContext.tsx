@@ -8,6 +8,8 @@ interface User {
     condo_id: string;
     role: Role;
     sub: string;
+    name?: string;
+    unit?: string;
 }
 
 interface AuthContextData {
@@ -40,7 +42,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         id: decoded.sub,
                         condo_id: decoded.condo_id,
                         role: decoded.role as Role,
-                        sub: decoded.sub
+                        sub: decoded.sub,
+                        name: decoded.name,
+                        unit: decoded.unit
                     });
                     api.defaults.headers.common['Authorization'] = `Bearer ${storagedToken}`;
                 }
@@ -60,7 +64,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: decoded.sub,
             condo_id: decoded.condo_id,
             role: decoded.role as Role,
-            sub: decoded.sub
+            sub: decoded.sub,
+            name: decoded.name,
+            unit: decoded.unit
         });
     };
 
