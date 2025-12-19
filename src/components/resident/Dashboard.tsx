@@ -18,8 +18,8 @@ export const ResidentDashboard: React.FC = () => {
         // Find next future reservation
         const now = new Date();
         const futureReservations = reservations
-          .filter(r => new Date(r.date + 'T' + r.start_time) > now)
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          .filter(r => new Date(r.start_time) > now)
+          .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
         if (futureReservations.length > 0) {
           setNextReservation(futureReservations[0]);
@@ -78,9 +78,9 @@ export const ResidentDashboard: React.FC = () => {
                 <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wide mb-1">Próxima Reserva</h3>
                 <p className="text-xl font-bold text-slate-900">{nextReservation.areaName || 'Área Comum'}</p>
                 <div className="flex items-center gap-3 text-sm text-slate-500 mt-2">
-                  <span className="flex items-center gap-1"><Clock size={16} /> {new Date(nextReservation.date).toLocaleDateString('pt-BR')}</span>
+                  <span className="flex items-center gap-1"><Clock size={16} /> {new Date(nextReservation.start_time).toLocaleDateString('pt-BR')}</span>
                   <span>•</span>
-                  <span>{nextReservation.start_time.slice(0, 5)} - {nextReservation.end_time.slice(0, 5)}</span>
+                  <span>{new Date(nextReservation.start_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(nextReservation.end_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               </div>
               <div className="bg-emerald-50 text-emerald-600 p-3 rounded-full">
