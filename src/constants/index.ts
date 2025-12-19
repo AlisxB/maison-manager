@@ -38,6 +38,7 @@ export const RESIDENT_NAV: NavItem[] = [
   { id: 'dashboard', label: 'Meu Lar', icon: Home, view: 'resident_dashboard' },
   { id: 'announcements', label: 'Avisos', icon: Megaphone, view: 'resident_announcements' },
   { id: 'notifications', label: 'Minhas Notificações', icon: Bell, view: 'resident_notifications' },
+  { id: 'financial', label: 'Minhas Finanças', icon: Landmark, view: 'resident_financial' },
   { id: 'consumption', label: 'Consumo', icon: BarChart3, view: 'resident_consumption' },
   { id: 'reservations', label: 'Reservas', icon: Calendar, view: 'resident_reservations' },
   { id: 'report_issue', label: 'Notificar Intercorrência', icon: ShieldAlert, view: 'resident_report_issue' },

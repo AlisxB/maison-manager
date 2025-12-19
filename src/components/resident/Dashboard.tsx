@@ -1,10 +1,41 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Home, Clock, CheckCircle, MessageSquare, ShieldAlert, Megaphone, FileText, BarChart3, ChevronRight } from 'lucide-react';
-import { MOCK_ISSUES } from '../../mock';
+import { MOCK_ISSUES, MOCK_ANNOUNCEMENTS } from '../../mock';
+import { useAuth } from '../../context/AuthContext';
+import { ReservationService, Reservation } from '../../services/reservationService';
 
 export const ResidentDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const [nextReservation, setNextReservation] = useState<Reservation | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch Reservations (RLS ensures we only see ours)
+        const reservations = await ReservationService.getAll();
+
+        // Find next future reservation
+        const now = new Date();
+        const futureReservations = reservations
+          .filter(r => new Date(r.date + 'T' + r.start_time) > now)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        if (futureReservations.length > 0) {
+          setNextReservation(futureReservations[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   const getStatusPT = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'Resolved': return 'Resolvido';
       case 'In Progress': return 'Em Análise';
       case 'Open': return 'Aberto';
@@ -17,8 +48,10 @@ export const ResidentDashboard: React.FC = () => {
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-3xl font-bold mb-2">Bem-vinda de volta, Alice!</h2>
-          <p className="text-emerald-100 mb-6">Unidade 101-A • Maison Heights</p>
+          <h2 className="text-3xl font-bold mb-2">Bem-vinda de volta {(user as any)?.name ? `, ${(user as any).name.split(' ')[0]}` : ''}!</h2>
+          <p className="text-emerald-100 mb-6">
+            Unidade {(user as any)?.unit?.number || '---'}-{(user as any)?.unit?.block || '-'} • Maison Heights
+          </p>
           <div className="flex gap-3">
             <button className="bg-white text-emerald-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
               Pagar Condomínio
@@ -36,6 +69,26 @@ export const ResidentDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Quick Actions */}
         <div className="lg:col-span-2 space-y-6">
+
+          {/* Next Reservation Widget (Dynamic) */}
+          {nextReservation && (
+            <div className="bg-white border border-emerald-100 rounded-xl p-6 shadow-sm flex items-center justify-between relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+              <div>
+                <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wide mb-1">Próxima Reserva</h3>
+                <p className="text-xl font-bold text-slate-900">{nextReservation.areaName || 'Área Comum'}</p>
+                <div className="flex items-center gap-3 text-sm text-slate-500 mt-2">
+                  <span className="flex items-center gap-1"><Clock size={16} /> {new Date(nextReservation.date).toLocaleDateString('pt-BR')}</span>
+                  <span>•</span>
+                  <span>{nextReservation.start_time.slice(0, 5)} - {nextReservation.end_time.slice(0, 5)}</span>
+                </div>
+              </div>
+              <div className="bg-emerald-50 text-emerald-600 p-3 rounded-full">
+                <Clock size={24} />
+              </div>
+            </div>
+          )}
+
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <Clock size={20} className="text-emerald-600" />
             Ações Rápidas
@@ -72,10 +125,10 @@ export const ResidentDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                   <span className="text-xs font-medium text-slate-500 hidden sm:block">
-                     {getStatusPT(issue.status)}
-                   </span>
-                   <ChevronRight size={16} className="text-slate-400" />
+                  <span className="text-xs font-medium text-slate-500 hidden sm:block">
+                    {getStatusPT(issue.status)}
+                  </span>
+                  <ChevronRight size={16} className="text-slate-400" />
                 </div>
               </div>
             ))}
@@ -86,24 +139,24 @@ export const ResidentDashboard: React.FC = () => {
         <div className="space-y-6">
           <h3 className="text-lg font-bold text-slate-900">Mural da Comunidade</h3>
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-6 relative overflow-hidden">
-             {/* Decorative top strip */}
+            {/* Decorative top strip */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-blue-500"></div>
-            
+
             <div className="space-y-4">
-              <div className="pb-4 border-b border-slate-100">
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">Manutenção</span>
-                <h4 className="font-semibold text-slate-900 mt-2">Manutenção da Piscina</h4>
-                <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                  A piscina principal estará fechada para limpeza nesta terça-feira, das 08h às 14h.
-                </p>
-              </div>
-              <div>
-                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase">Evento</span>
-                <h4 className="font-semibold text-slate-900 mt-2">Churrasco de Verão</h4>
-                <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                  Junte-se a nós no terraço neste sábado! Bebidas e petiscos por conta da casa.
-                </p>
-              </div>
+              {MOCK_ANNOUNCEMENTS.slice(0, 2).map((ann) => (
+                <div key={ann.id} className="pb-4 border-b border-slate-100 last:border-0 last:pb-0">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase
+                       ${ann.type === 'Manutenção' ? 'text-emerald-600 bg-emerald-50' :
+                      ann.type === 'Evento' ? 'text-indigo-600 bg-indigo-50' :
+                        'text-blue-600 bg-blue-50'}`}>
+                    {ann.type}
+                  </span>
+                  <h4 className="font-semibold text-slate-900 mt-2">{ann.title}</h4>
+                  <p className="text-sm text-slate-500 mt-1 leading-relaxed line-clamp-2">
+                    {ann.description}
+                  </p>
+                </div>
+              ))}
             </div>
             <button className="w-full text-center text-sm text-emerald-600 font-medium hover:underline">Ver Todos os Avisos</button>
           </div>

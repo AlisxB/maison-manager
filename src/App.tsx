@@ -27,8 +27,10 @@ import { ResidentReservations } from './components/resident/Reservations';
 import { ResidentAnnouncements } from './components/resident/Announcements';
 import { ResidentNotifications } from './components/resident/Notifications';
 import { ResidentReportIssue } from './components/resident/ReportIssue';
+// ... imports
 import { ResidentConsumption } from './components/resident/Consumption';
 import { ResidentProfile } from './components/resident/Profile';
+import { ResidentFinancial } from './components/resident/MyFinancials';
 
 const AppContent: React.FC = () => {
   const { signed, user, signOut, loading } = useAuth();
@@ -70,6 +72,7 @@ const AppContent: React.FC = () => {
       case 'resident_reservations': return <ResidentReservations />;
       case 'resident_report_issue': return <ResidentReportIssue />;
       case 'resident_profile': return <ResidentProfile />;
+      case 'resident_financial': return <ResidentFinancial />;
 
       default: return <div className="p-4 text-red-500">View not found: {currentView}</div>;
     }
