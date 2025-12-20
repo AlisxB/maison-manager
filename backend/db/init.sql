@@ -49,6 +49,10 @@ CREATE TABLE IF NOT EXISTS users (
     email_hash VARCHAR(64) NOT NULL,
     phone_encrypted TEXT,
     phone_hash VARCHAR(64),
+    
+    department VARCHAR(100),
+    work_hours VARCHAR(100),
+
     cpf_encrypted TEXT,
     cpf_hash VARCHAR(64),
     

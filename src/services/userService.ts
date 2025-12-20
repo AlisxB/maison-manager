@@ -12,6 +12,8 @@ export interface User {
     unit?: Unit;
     status: string;
     created_at: string;
+    department?: string;
+    work_hours?: string;
     pets?: { type: string; quantity: number }[];
 }
 

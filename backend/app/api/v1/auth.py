@@ -58,6 +58,7 @@ async def login_access_token(
             "condo_id": str(user.condominium_id),
             "role": user.role,
             "name": user.name,
+            "email": form_data.username,
             "unit": unit_label
         },
         expires_delta=access_token_expires,

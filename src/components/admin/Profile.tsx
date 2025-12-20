@@ -11,7 +11,9 @@ import {
   History,
   X,
   User as UserIcon,
-  AlertTriangle
+  AlertTriangle,
+  Building,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserService } from '../../services/userService';
@@ -19,11 +21,13 @@ import { UserService } from '../../services/userService';
 export const AdminProfile: React.FC = () => {
   const { user } = useAuth();
 
-  // Local state for form (initialized with real user data)
+  // Local state for form
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
+    department: '',
+    work_hours: '',
     role: ''
   });
 
@@ -35,28 +39,42 @@ export const AdminProfile: React.FC = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
       setFormData({
         name: user.name || '',
         email: user.email || '',
-        phone: user.phone || '(11) 99999-9999', // Fallback if empty in DB
+        phone: user.phone || '(11) 99999-9999',
+        department: user.department || 'Gestão Executiva',
+        work_hours: user.work_hours || '08:00 - 18:00 (Seg a Sex)',
         role: user.role === 'ADMIN' ? 'Administrador' : user.role
       });
     }
   }, [user]);
 
   const handleSave = async () => {
+    if (!user?.id) return;
+
+    setLoading(true);
     try {
-      if (user?.id) {
-        // Example of how we might save if backend supported it fully
-        // await UserService.update(user.id, { name: formData.name, phone: formData.phone });
-        alert("Dados atualizados com sucesso! (Simulação)");
-        setIsEditModalOpen(false);
-      }
+      await UserService.update(user.id, {
+        name: formData.name,
+        email: formData.email, // Added Email Update
+        phone: formData.phone,
+        department: formData.department,
+        work_hours: formData.work_hours
+      });
+      alert("Dados atualizados com sucesso!");
+      setIsEditModalOpen(false);
+      // Page reload to reflect changes
+      window.location.reload();
     } catch (error) {
+      console.error(error);
       alert("Erro ao atualizar perfil");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -166,7 +184,27 @@ export const AdminProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Fields Removed: Registration, Department, Work Hours, Digital Signature */}
+            <hr className="my-8 border-slate-100" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Departamento</label>
+                  <div className="flex items-center gap-3 bg-slate-50 px-5 py-3.5 rounded-2xl border border-slate-100">
+                    <Building size={18} className="text-slate-400" />
+                    <span className="text-sm font-bold text-slate-700">{formData.department}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Horário de Atendimento</label>
+                  <div className="flex items-center gap-3 bg-slate-50 px-5 py-3.5 rounded-2xl border border-slate-100">
+                    <Clock size={18} className="text-slate-400" />
+                    <span className="text-sm font-bold text-slate-700">{formData.work_hours}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Security Log */}
@@ -220,24 +258,39 @@ export const AdminProfile: React.FC = () => {
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-[#fcfbf9] rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative border border-slate-200">
-            <button onClick={() => setIsEditModalOpen(false)} className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 z-10 p-2 bg-white rounded-full shadow-sm">
+            <button
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={loading}
+              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 z-10 p-2 bg-white rounded-full shadow-sm"
+            >
               <X size={20} />
             </button>
             <div className="px-10 py-10">
               <div className="mb-8">
                 <h3 className="text-2xl font-black text-slate-800 tracking-tight">Editar Meus Dados</h3>
-                <p className="text-sm text-slate-500 font-medium mt-1">Atualize suas informações de contato.</p>
+                <p className="text-sm text-slate-500 font-medium mt-1">Atualize suas informações de contato e profissionais.</p>
               </div>
 
               <div className="space-y-6">
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome Completo</label>
-                  <input
-                    type="text"
-                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
-                    value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome Completo</label>
+                    <input
+                      type="text"
+                      className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">E-mail Corporativo</label>
+                    <input
+                      type="email"
+                      className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -250,11 +303,37 @@ export const AdminProfile: React.FC = () => {
                   />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Departamento</label>
+                    <input
+                      type="text"
+                      className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                      value={formData.department}
+                      onChange={e => setFormData({ ...formData, department: e.target.value })}
+                      placeholder="Ex: Financeiro"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Horário</label>
+                    <input
+                      type="text"
+                      className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                      value={formData.work_hours}
+                      onChange={e => setFormData({ ...formData, work_hours: e.target.value })}
+                      placeholder="Ex: 08:00 - 18:00"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">Cargo (Papel): {formData.role}</p>
+
                 <button
                   onClick={handleSave}
-                  className="w-full py-5 bg-[#437476] text-white font-black rounded-3xl hover:bg-[#365e5f] hover:-translate-y-1 transition-all shadow-xl shadow-[#437476]/30 text-sm uppercase tracking-widest active:scale-[0.98] mt-4"
+                  disabled={loading}
+                  className="w-full py-5 bg-[#437476] text-white font-black rounded-3xl hover:bg-[#365e5f] hover:-translate-y-1 transition-all shadow-xl shadow-[#437476]/30 text-sm uppercase tracking-widest active:scale-[0.98] mt-4 disabled:opacity-50"
                 >
-                  Salvar Alterações
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
             </div>

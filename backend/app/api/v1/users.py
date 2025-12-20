@@ -202,6 +202,11 @@ async def update_user(
     
     if user_in.unit_id is not None:
         db_user.unit_id = user_in.unit_id
+    
+    if user_in.department:
+        db_user.department = user_in.department
+    if user_in.work_hours:
+        db_user.work_hours = user_in.work_hours
 
     # Update Phone
     if user_in.phone:

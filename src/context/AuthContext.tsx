@@ -8,6 +8,7 @@ interface User {
     condo_id: string;
     role: Role;
     sub: string;
+    email: string;
     name?: string;
     unit?: string;
 }
@@ -43,6 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         condo_id: decoded.condo_id,
                         role: decoded.role as Role,
                         sub: decoded.sub,
+                        email: decoded.email,
                         name: decoded.name,
                         unit: decoded.unit
                     });
@@ -65,6 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             condo_id: decoded.condo_id,
             role: decoded.role as Role,
             sub: decoded.sub,
+            email: decoded.email,
             name: decoded.name,
             unit: decoded.unit
         });
