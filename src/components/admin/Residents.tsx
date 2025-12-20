@@ -169,16 +169,31 @@ export const AdminResidents: React.FC = () => {
                                 <td className="px-6 py-4">{getUnitName(res.unit_id)}</td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col text-xs">
-                                        {/* Tratamento para email criptografado simulado */}
-                                        <span>{res.email.startsWith('ENC(') ? '***********' : res.email}</span>
+                                        {/* Backend agora decripta. Se falhar, mostra o valor cru ou placeholder do backend */}
+                                        <span>{res.email}</span>
                                         {/* Phone não vem no UserRead atual, precisaria ajustar backend. Mostrando placeholder se nulo */}
                                         <span className="text-slate-400">-</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">{res.profile_type || res.role}</td>
+                                <td className="px-6 py-4">
+                                    {/* Tradução de Role/Profile */}
+                                    {(() => {
+                                        const type = res.profile_type || res.role;
+                                        const map: Record<string, string> = {
+                                            'ADMIN': 'Administrador',
+                                            'RESIDENT': 'Morador',
+                                            'PORTER': 'Porteiro',
+                                            'FINANCIAL': 'Financeiro',
+                                            'OWNER': 'Proprietário',
+                                            'TENANT': 'Inquilino',
+                                            'STAFF': 'Funcionário'
+                                        };
+                                        return map[type] || type;
+                                    })()}
+                                </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${res.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                        {res.status}
+                                        {res.status === 'ACTIVE' ? 'Ativo' : res.status === 'PENDING' ? 'Pendente' : 'Inativo'}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">

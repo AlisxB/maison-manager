@@ -28,24 +28,34 @@ async def read_users(
     # Se quisermos descriptografar campos, precisaríamos usar func.pgp_sym_decrypt
     # Mas aqui vamos focar na estrutura
     # Eager load Unit relationship
-    query = select(User).options(joinedload(User.unit)).offset(skip).limit(limit)
-    result = await db.execute(query)
-    users = result.scalars().all()
+    # Descriptografia via SQL (PGCRYPTO)
+    # Apenas tenta descriptografar se o campo não for nulo para evitar erros.
+    # Usa a chave fixa da aplicação (simulação) ou variável de ambiente.
+    query = select(
+        User,
+        text("CASE WHEN email_encrypted IS NOT NULL THEN pgp_sym_decrypt(email_encrypted::bytea, 'super_secure_key_for_pgcrypto') ELSE NULL END as decrypted_email"),
+        text("CASE WHEN phone_encrypted IS NOT NULL THEN pgp_sym_decrypt(phone_encrypted::bytea, 'super_secure_key_for_pgcrypto') ELSE NULL END as decrypted_phone")
+    ).options(joinedload(User.unit)).offset(skip).limit(limit)
     
-    # Hack para conformidade com Pydantic para Lista
-    for u in users:
-        # Se for "ENC(email)", removemos o prefixo para exibir (simulação)
-        if u.email_encrypted and u.email_encrypted.startswith("ENC("):
-            u.email = u.email_encrypted[4:-1]
-        elif u.email_encrypted and "@" in u.email_encrypted and not u.email_encrypted.startswith("\\x"):
-            # Se parecer um email válido (ex: migração antiga), usa
-            u.email = u.email_encrypted
-        else:
-            # Se for criptografia "real" (pgcrypto) que não conseguimos decifrar aqui sem a chave:
-            # Retornamos um placeholder válido para não quebrar o contrato Pydantic EmailStr
-            u.email = "admin@encrypted.com" 
+    result = await db.execute(query)
+    
+    # O resultado agora contém tuplas (User, decrypted_email, decrypted_phone)
+    users_data = []
+    for row in result.all():
+        user_obj = row[0]
+        # Injeta os valores descriptografados no objeto SQLAlchemy (transiente)
+        if row[1]:
+            user_obj.email = row[1]
+        
+        # Se falhou desencriptar ou é nulo, mantém o comportamento seguro
+        if not user_obj.email or user_obj.email == "admin@encrypted.com":
+             # Tenta fallback para formato antigo simples se existir
+             if user_obj.email_encrypted and u.email_encrypted.startswith("ENC("):
+                  user_obj.email = user_obj.email_encrypted[4:-1]
+        
+        users_data.append(user_obj)
             
-    return users
+    return users_data
 
 @router.post("/", response_model=UserRead)
 async def create_user(
