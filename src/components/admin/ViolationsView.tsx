@@ -104,7 +104,10 @@ export const ViolationsView: React.FC = () => {
                                             <div className="flex items-center gap-2">
                                                 <h4 className="font-bold text-slate-800">{v.type === 'FINE' ? 'Multa' : 'Advertência'}</h4>
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${v.status === 'PAID' || v.status === 'RESOLVED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                    {v.status}
+                                                    {v.status === 'OPEN' && 'Enviado'}
+                                                    {v.status === 'PAID' && 'Pago'}
+                                                    {v.status === 'RESOLVED' && 'Resolvido'}
+                                                    {!['OPEN', 'PAID', 'RESOLVED'].includes(v.status) && v.status}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-3 text-xs text-slate-500">

@@ -447,7 +447,11 @@ export const AdminReservations: React.FC = () => {
                                                         res.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                                                             'bg-red-50 text-red-700 border-red-100'
                                                         }`}>
-                                                        {res.status}
+                                                        {res.status === 'CONFIRMED' && 'Confirmada'}
+                                                        {res.status === 'PENDING' && 'Pendente'}
+                                                        {res.status === 'REJECTED' && 'Rejeitada'}
+                                                        {res.status === 'CANCELLED' && 'Cancelada'}
+                                                        {res.status === 'BLOCKED' && 'Bloqueado'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">

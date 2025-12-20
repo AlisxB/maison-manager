@@ -144,7 +144,12 @@ export const AdminUnits: React.FC = () => {
                                     <td className="px-6 py-4 font-bold text-slate-700">{u.block || '-'}</td>
                                     <td className="px-6 py-4 font-bold text-slate-800">{u.number}</td>
                                     <td className="px-6 py-4">
-                                        <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-xs font-bold uppercase">{u.type || 'Apartamento'}</span>
+                                        <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-xs font-bold uppercase">
+                                            {u.type === 'Apartment' && 'Apartamento'}
+                                            {u.type === 'House' && 'Casa'}
+                                            {u.type === 'Store' && 'Loja'}
+                                            {!['Apartment', 'House', 'Store'].includes(u.type || '') && (u.type || 'Apartamento')}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 text-right text-slate-400">
                                         ...

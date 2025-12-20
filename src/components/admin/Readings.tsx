@@ -394,7 +394,12 @@ export const AdminReadings: React.FC = () => {
                             </div>
                             <div className="text-right">
                                 <p className="text-lg font-bold text-slate-800">R$ {r.total_value.toFixed(2)}</p>
-                                <p className="text-sm font-medium text-slate-600">{r.consumption_kwh} kWh <span className={`ml-2 px-2 py-0.5 rounded-full text-xs text-white ${r.status === 'PAID' ? 'bg-green-500' : r.status === 'OVERDUE' ? 'bg-red-500' : 'bg-yellow-500'}`}>{r.status}</span></p>
+                                <p className="text-sm font-medium text-slate-600">{r.consumption_kwh} kWh <span className={`ml-2 px-2 py-0.5 rounded-full text-xs text-white ${r.status === 'PAID' ? 'bg-green-500' : r.status === 'OVERDUE' ? 'bg-red-500' : 'bg-yellow-500'}`}>
+                                    {r.status === 'PAID' && 'Pago'}
+                                    {r.status === 'OVERDUE' && 'Atrasado'}
+                                    {r.status === 'PENDING' && 'Pendente'}
+                                    {!['PAID', 'OVERDUE', 'PENDING'].includes(r.status) && r.status}
+                                </span></p>
                             </div>
                         </div>
                     ))}
