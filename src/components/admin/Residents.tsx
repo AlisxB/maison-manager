@@ -35,7 +35,7 @@ export const AdminResidents: React.FC = () => {
         try {
             setLoading(true);
             const [usersData, unitsData] = await Promise.all([
-                UserService.getAll(),
+                UserService.getAll({ status: 'ACTIVE' }),
                 UnitService.getAll()
             ]);
             setResidents(usersData);

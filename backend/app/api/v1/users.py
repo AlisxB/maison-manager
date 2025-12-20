@@ -14,23 +14,22 @@ router = APIRouter()
 async def read_users(
     db: Annotated[AsyncSession, Depends(deps.get_db)],
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
+    status: str = None
 ):
     """
     Listar usuários.
-    
-    A MÁGICA DO RLS:
-    Não filtramos por condomínio aqui. O banco de dados aplica automaticamente 
-    a política 'users_visibility_policy' baseada nas variáveis de sessão
-    definidas em deps.get_db.
     """
     query = select(
         User,
-        # Safeguard: Only decrypt if it looks like PGP packet (not starting with ENC placeholder)
-        # Actually, checking for 'ENC(' is safer for my current mixed data state.
         text("CASE WHEN email_encrypted IS NOT NULL AND email_encrypted NOT LIKE 'ENC(%' THEN pgp_sym_decrypt(email_encrypted::bytea, 'super_secure_key_for_pgcrypto') ELSE NULL END as decrypted_email"),
         text("CASE WHEN phone_encrypted IS NOT NULL AND phone_encrypted NOT LIKE 'ENC(%' THEN pgp_sym_decrypt(phone_encrypted::bytea, 'super_secure_key_for_pgcrypto') ELSE NULL END as decrypted_phone")
-    ).options(joinedload(User.unit)).offset(skip).limit(limit)
+    ).options(joinedload(User.unit))
+
+    if status:
+        query = query.where(User.status == status)
+
+    query = query.offset(skip).limit(limit)
     
     result = await db.execute(query)
     
@@ -208,6 +207,8 @@ async def update_user(
             db_user.department = user_in.department
         if user_in.work_hours:
             db_user.work_hours = user_in.work_hours
+        if user_in.status:
+            db_user.status = user_in.status
 
         # Update Phone
         if user_in.phone:

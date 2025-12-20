@@ -25,8 +25,8 @@ export interface Unit {
 }
 
 export const UserService = {
-    getAll: async () => {
-        const response = await api.get<User[]>('/users/');
+    getAll: async (params?: any) => {
+        const response = await api.get<User[]>('/users/', { params });
         return response.data;
     },
 
