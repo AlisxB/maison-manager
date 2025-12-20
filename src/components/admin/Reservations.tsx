@@ -89,7 +89,7 @@ export const AdminReservations: React.FC = () => {
             const [resData, areasData, usersData] = await Promise.all([
                 ReservationService.getAll(),
                 CommonAreaService.getAll(),
-                UserService.getAll()
+                UserService.getAll({ status: 'ACTIVE' })
             ]);
 
             // Enrich Reservations & Populate Blocked Dates
