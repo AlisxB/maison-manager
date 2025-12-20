@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, TIMESTAMP, Text, JSON, DECIMAL, CheckConstraint, text, Numeric, DateTime
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -50,8 +50,14 @@ class User(Base):
     work_hours = Column(String(100), nullable=True)
     
     last_notification_check = Column(TIMESTAMP(timezone=True), nullable=True)
+
+    cpf_encrypted = Column(Text, nullable=True)
+    cpf_hash = Column(String(64), nullable=True)
+    photo_url = Column(Text, nullable=True)
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+    deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
 class Unit(Base):
     __tablename__ = "units"
@@ -232,3 +238,14 @@ class Announcement(Base):
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     target_audience: Mapped[str] = mapped_column(String(100), default="Todos os moradores")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+class AccessLog(Base):
+    __tablename__ = "access_logs"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    ip_address = Column(INET, nullable=True)
+    user_agent = Column(Text, nullable=True)
+    location = Column(String(100), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))

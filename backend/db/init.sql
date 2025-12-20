@@ -202,6 +202,29 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
+-- Access Logs (Login History)
+CREATE TABLE IF NOT EXISTS access_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ip_address INET,
+    user_agent TEXT,
+    location VARCHAR(100), -- GeoIP placeholder
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE access_logs ENABLE ROW LEVEL SECURITY;
+
+-- User can see own logs, Admin can see all? Usually user sees own.
+CREATE POLICY access_logs_policy ON access_logs
+    USING (
+        condominium_id = current_condo_id()
+        AND user_id = current_user_id()
+    )
+    WITH CHECK (
+        condominium_id = current_condo_id()
+        AND user_id = current_user_id()
+    );
+
 -- 3. Functions & Policies (Zero Trust Logic)
 
 CREATE OR REPLACE FUNCTION audit_trigger_func() RETURNS TRIGGER AS $$
@@ -256,6 +279,14 @@ BEGIN
     END IF;
     
     RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Secure Login Lookup (Bypass RLS)
+CREATE OR REPLACE FUNCTION get_user_by_email_hash(p_hash VARCHAR) 
+RETURNS SETOF users AS $$
+BEGIN
+    RETURN QUERY SELECT * FROM users WHERE email_hash = p_hash;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
