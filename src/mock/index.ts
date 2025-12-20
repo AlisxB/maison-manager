@@ -10,39 +10,39 @@ export const MOCK_RESIDENTS: Resident[] = [
 ];
 
 export const MOCK_REQUESTS: RegistrationRequest[] = [
-  { 
-    id: 'req1', 
-    name: 'Lucas Mendes', 
-    email: 'lucas.m@email.com', 
-    unit: '405-C', 
-    date: 'Há 2 horas', 
-    status: 'Pendente', 
+  {
+    id: 'req1',
+    name: 'Lucas Mendes',
+    email: 'lucas.m@email.com',
+    unit: '405-C',
+    date: 'Há 2 horas',
+    status: 'Pendente',
     type: 'Inquilino',
     phone: '(11) 98765-4321',
     cpf: '123.456.789-00',
     moveInDate: '2025-12-28',
     observations: 'Possuo um cachorro de pequeno porte. Contrato de aluguel anexado.'
   },
-  { 
-    id: 'req2', 
-    name: 'Fernanda Lima', 
-    email: 'fer.lima@email.com', 
-    unit: '102-A', 
-    date: 'Há 5 horas', 
-    status: 'Pendente', 
+  {
+    id: 'req2',
+    name: 'Fernanda Lima',
+    email: 'fer.lima@email.com',
+    unit: '102-A',
+    date: 'Há 5 horas',
+    status: 'Pendente',
     type: 'Proprietário',
     phone: '(21) 99999-8888',
     cpf: '987.654.321-11',
     moveInDate: '2026-01-05',
     observations: 'Compra recente, aguardando chaves.'
   },
-  { 
-    id: 'req3', 
-    name: 'Roberto Carlos', 
-    email: 'rc.king@email.com', 
-    unit: 'Cobertura B', 
-    date: 'Ontem', 
-    status: 'Pendente', 
+  {
+    id: 'req3',
+    name: 'Roberto Carlos',
+    email: 'rc.king@email.com',
+    unit: 'Cobertura B',
+    date: 'Ontem',
+    status: 'Pendente',
     type: 'Proprietário',
     phone: '(11) 97777-6666',
     cpf: '555.444.333-22',
@@ -61,45 +61,45 @@ export const MOCK_TRANSACTIONS: Transaction[] = [
 ];
 
 export const MOCK_ISSUES: Issue[] = [
-  { 
-    id: '101', 
-    title: 'Vazamento na Garagem G1', 
-    category: 'Maintenance', 
-    status: 'Open', 
-    date: '2023-10-25', 
-    reportedBy: 'Alice Freeman', 
+  {
+    id: '101',
+    title: 'Vazamento na Garagem G1',
+    category: 'Maintenance',
+    status: 'OPEN',
+    date: '2023-10-25',
+    reportedBy: 'Alice Freeman',
     unit: '101-A',
     description: 'Notei uma poça d’água perto da vaga 45 no subsolo G1. Parece estar pingando da tubulação vermelha.'
   },
-  { 
-    id: '102', 
-    title: 'Ar condicionado da Academia', 
-    category: 'Maintenance', 
-    status: 'In Progress', 
-    date: '2023-10-24', 
-    reportedBy: 'Bob Smith', 
+  {
+    id: '102',
+    title: 'Ar condicionado da Academia',
+    category: 'Maintenance',
+    status: 'IN_PROGRESS',
+    date: '2023-10-24',
+    reportedBy: 'Bob Smith',
     unit: '102-B',
     description: 'O equipamento de ar condicionado da academia não está gelando, apenas ventilando. O ambiente está muito quente.',
     adminResponse: 'Técnico agendado para visita no dia 26/10.'
   },
-  { 
-    id: '103', 
-    title: 'Barulho excessivo Unidade 505', 
-    category: 'Noise', 
-    status: 'Resolved', 
-    date: '2023-10-20', 
-    reportedBy: 'Diana Prince', 
+  {
+    id: '103',
+    title: 'Barulho excessivo Unidade 505',
+    category: 'Noise',
+    status: 'RESOLVED',
+    date: '2023-10-20',
+    reportedBy: 'Diana Prince',
     unit: 'Penthouse',
     description: 'Som alto e arrastar de móveis após as 23h na unidade 505.',
     adminResponse: 'Notificação enviada e morador orientado.'
   },
-  { 
-    id: '104', 
-    title: 'Portão da garagem travando', 
-    category: 'Security', 
-    status: 'Open', 
-    date: '2023-10-26', 
-    reportedBy: 'Portaria', 
+  {
+    id: '104',
+    title: 'Portão da garagem travando',
+    category: 'Security',
+    status: 'OPEN',
+    date: '2023-10-26',
+    reportedBy: 'Portaria',
     unit: 'N/A',
     description: 'O motor do portão principal está fazendo um barulho estranho e travando na abertura.'
   },
@@ -115,9 +115,9 @@ export const MOCK_FINANCIALS: FinancialRecord[] = [
 ];
 
 export const MOCK_RESERVATIONS: Reservation[] = [
-  { id: 'r1', area: 'Deck com Churrasqueira', date: '2025-12-20', time: '18:00 - 22:00', status: 'Confirmed', residentName: 'Alice Freeman', unit: '101-A' },
-  { id: 'r2', area: 'Salão de Festas', date: '2025-12-28', time: '12:00 - 18:00', status: 'Pending', residentName: 'Bob Smith', unit: '102-B' },
-  { id: 'r3', area: 'Quadra de Tênis', date: '2025-12-10', time: '08:00 - 10:00', status: 'Rejected', residentName: 'Charlie Davis', unit: '201-A' },
+  { id: 'r1', area: 'Deck com Churrasqueira', date: '2025-12-20', time: '18:00 - 22:00', status: 'CONFIRMED', residentName: 'Alice Freeman', unit: '101-A' },
+  { id: 'r2', area: 'Salão de Festas', date: '2025-12-28', time: '12:00 - 18:00', status: 'PENDING', residentName: 'Bob Smith', unit: '102-B' },
+  { id: 'r3', area: 'Quadra de Tênis', date: '2025-12-10', time: '08:00 - 10:00', status: 'REJECTED', residentName: 'Charlie Davis', unit: '201-A' },
 ];
 
 export const MOCK_ANNOUNCEMENTS: Announcement[] = [
@@ -150,23 +150,23 @@ export const MOCK_INFRACTIONS: Infraction[] = [
     id: 'inf1',
     residentId: '1',
     residentName: 'Alice Freeman',
-    type: 'notification',
+    type: 'WARNING',
     date: '2025-11-10',
     time: '22:30',
     reason: 'Barulho excessivo relatado por vizinhos após o horário de silêncio.',
-    status: 'Sent',
+    status: 'OPEN',
     article: 'Art. 12 - Barulho excessivo após as 22h'
   },
   {
     id: 'inf2',
     residentId: '1',
     residentName: 'Alice Freeman',
-    type: 'fine',
+    type: 'FINE',
     date: '2025-12-02',
     time: '09:15',
     reason: 'Estacionamento em vaga de visitante por mais de 24 horas sem autorização.',
     value: 150.00,
-    status: 'Sent',
+    status: 'OPEN',
     article: 'Art. 15 - Uso indevido da vaga de garagem'
   }
 ];

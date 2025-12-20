@@ -51,7 +51,7 @@ export interface Issue {
   id: string;
   title: string;
   category: 'Maintenance' | 'Security' | 'Noise' | 'Other';
-  status: 'Open' | 'In Progress' | 'Resolved';
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   date: string;
   reportedBy: string;
   unit: string;
@@ -70,7 +70,7 @@ export interface Reservation {
   area: string;
   date: string;
   time: string;
-  status: 'Pending' | 'Confirmed' | 'Rejected';
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'BLOCKED';
   residentName: string;
   unit?: string;
 }
@@ -79,12 +79,12 @@ export interface Infraction {
   id: string;
   residentId: string;
   residentName: string;
-  type: 'notification' | 'fine';
+  type: 'WARNING' | 'FINE';
   date: string;
   time: string;
   reason: string;
   value?: number;
-  status: 'Draft' | 'Sent' | 'Paid' | 'Appealed';
+  status: 'OPEN' | 'PAID' | 'RESOLVED' | 'SENT';
   article?: string;
 }
 
