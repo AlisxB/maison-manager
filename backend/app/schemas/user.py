@@ -17,6 +17,17 @@ class UserCreate(UserBase):
     phone: Optional[str] = None
     cpf: Optional[str] = None
 
+# Schema para Atualização (Tudo opcional)
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    role: Optional[str] = None
+    profile_type: Optional[str] = None
+    unit_id: Optional[UUID] = None
+    password: Optional[str] = None
+    phone: Optional[str] = None
+
+
 # Schema para nested Unit
 class UnitNested(BaseModel):
     id: UUID
@@ -32,6 +43,7 @@ class UserRead(UserBase):
     id: UUID
     status: str
     created_at: datetime
+    phone: Optional[str] = None
     unit: Optional[UnitNested] = None
     # Nota: Email é retornado como está no modelo Pydantic (vindo do payload descriptografado 
     # ou texto criptografado se o banco não descriptografar automaticamente).
