@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import MainLayout from './layouts/MainLayout';
 import AuthScreen from './components/auth/AuthScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CondominiumProvider } from './context/CondominiumContext';
 import { Role } from './types/index';
 
 // Admin Components (Modularized)
@@ -101,7 +102,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <CondominiumProvider>
+        <AppContent />
+      </CondominiumProvider>
     </AuthProvider>
   );
 };
