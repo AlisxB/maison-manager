@@ -256,13 +256,21 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Helpers to get session variables
 CREATE OR REPLACE FUNCTION current_condo_id() RETURNS UUID AS $$
 BEGIN
-    RETURN NULLIF(current_setting('app.current_condo_id', true), '')::UUID;
+    BEGIN
+        RETURN NULLIF(current_setting('app.current_condo_id', true), '')::UUID;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION current_user_id() RETURNS UUID AS $$
 BEGIN
-    RETURN NULLIF(current_setting('app.current_user_id', true), '')::UUID;
+    BEGIN
+        RETURN NULLIF(current_setting('app.current_user_id', true), '')::UUID;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
