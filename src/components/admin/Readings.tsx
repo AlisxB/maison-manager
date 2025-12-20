@@ -119,7 +119,7 @@ export const AdminReadings: React.FC = () => {
             <div className="flex space-x-4 border-b border-slate-200">
                 <button
                     onClick={() => setActiveTab('water')}
-                    className={`pb-3 px-4 text-sm font-medium flex items-center space-x-2 border-b-2 transition-colors ${activeTab === 'water' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                    className={`pb-3 px-4 text-sm font-medium flex items-center space-x-2 border-b-2 transition-colors ${activeTab === 'water' ? 'border-[#437476] text-[#437476]' : 'border-transparent text-slate-500 hover:text-slate-700'
                         }`}
                 >
                     <Droplets size={18} />
@@ -149,7 +149,7 @@ export const AdminReadings: React.FC = () => {
                 <div className="lg:col-span-1">
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-6">
                         <h3 className="font-bold text-slate-800 mb-4 flex items-center space-x-2">
-                            <Plus size={20} className="text-blue-600" />
+                            <Plus size={20} className="text-[#437476]" />
                             <span>Nova Leitura: {activeTab === 'water' ? 'Água' : activeTab === 'gas' ? 'Gás' : 'Energia'}</span>
                         </h3>
 
@@ -160,7 +160,7 @@ export const AdminReadings: React.FC = () => {
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Unidade</label>
                                     <select
                                         required
-                                        className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#437476]/20"
                                         value={waterForm.unitId}
                                         onChange={e => setWaterForm({ ...waterForm, unitId: e.target.value })}
                                     >
@@ -202,7 +202,7 @@ export const AdminReadings: React.FC = () => {
                                         onChange={e => setWaterForm({ ...waterForm, image: e.target.value })}
                                     />
                                 </div>
-                                <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-all">
+                                <button type="submit" className="w-full bg-[#437476] text-white py-3 rounded-xl font-medium hover:bg-[#365e5f] transition-all">
                                     Salvar Leitura
                                 </button>
                             </form>
@@ -332,7 +332,7 @@ export const AdminReadings: React.FC = () => {
                         return (
                             <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
                                 <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-blue-50 text-blue-500 rounded-lg">
+                                    <div className="p-3 bg-[#437476]/10 text-[#437476] rounded-lg">
                                         <Droplets size={20} />
                                     </div>
                                     <div>
@@ -345,7 +345,7 @@ export const AdminReadings: React.FC = () => {
                                 <div className="text-right">
                                     <p className="text-lg font-bold text-slate-800">{r.value_m3} m³</p>
                                     {r.image_url && (
-                                        <a href={r.image_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center justify-end gap-1">
+                                        <a href={r.image_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#437476] hover:underline flex items-center justify-end gap-1">
                                             <FileText size={12} /> Comprovante
                                         </a>
                                     )}

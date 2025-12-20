@@ -110,7 +110,7 @@ export const AdminUnits: React.FC = () => {
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f] transition-colors"
                 >
                     <PlusCircle size={18} /> Nova Unidade
                 </button>
@@ -194,7 +194,7 @@ export const AdminUnits: React.FC = () => {
                                 <input
                                     type="text"
                                     placeholder="Ex: A"
-                                    className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#437476]/20"
                                     value={form.block}
                                     onChange={e => setForm({ ...form, block: e.target.value })}
                                 />
@@ -208,7 +208,7 @@ export const AdminUnits: React.FC = () => {
                                         type="text"
                                         required={!form.isBatch}
                                         placeholder="Ex: 101"
-                                        className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#437476]/20"
                                         value={form.number}
                                         onChange={e => setForm({ ...form, number: e.target.value })}
                                     />
@@ -223,7 +223,7 @@ export const AdminUnits: React.FC = () => {
                                             min="1" max="50"
                                             required={form.isBatch}
                                             placeholder="Ex: 10"
-                                            className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                            className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#437476]/20"
                                             value={form.floors}
                                             onChange={e => setForm({ ...form, floors: parseInt(e.target.value) || 0 })}
                                         />
@@ -259,7 +259,7 @@ export const AdminUnits: React.FC = () => {
                                     <option value="Store">Loja</option>
                                 </select>
                             </div>
-                            <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                            <button type="submit" className="w-full bg-[#437476] text-white py-3 rounded-lg font-bold hover:bg-[#365e5f] transition-colors">
                                 {form.isBatch ? 'Gerar Unidades' : 'Criar Unidade'}
                             </button>
                         </form>

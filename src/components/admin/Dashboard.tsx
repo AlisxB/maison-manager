@@ -131,7 +131,7 @@ export const AdminDashboard: React.FC = () => {
           value={stats.occupancy.residents_count}
           subtext={`${stats.occupancy.occupied_units} unidades ocupadas`}
           icon={Users}
-          iconClassName="text-blue-500"
+          iconClassName="text-[#437476]"
           colorClass="text-slate-800"
         />
         <StatCard

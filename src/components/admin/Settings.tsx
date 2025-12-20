@@ -592,18 +592,18 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase">Nome Completo</label>
-                                <input required className="w-full p-2 border rounded-lg mt-1" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                <input required className="w-full p-2 border border-slate-200 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-[#437476]/20" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase">E-mail Corporativo</label>
-                                <input required type="email" className="w-full p-2 border rounded-lg mt-1" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                <input required type="email" className="w-full p-2 border border-slate-200 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-[#437476]/20" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase">Senha {isEditing && '(Deixe em branco para manter)'}</label>
                                 <input
                                     type="password"
                                     required={!isEditing}
-                                    className="w-full p-2 border rounded-lg mt-1"
+                                    className="w-full p-2 border border-slate-200 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-[#437476]/20"
                                     value={formData.password}
                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
                                     placeholder={isEditing ? '******' : ''}
@@ -611,7 +611,7 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase">Cargo / Função</label>
-                                <select className="w-full p-2 border rounded-lg mt-1 bg-white" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                                <select className="w-full p-2 border border-slate-200 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#437476]/20" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
                                     <option value="PORTER">Porteiro / Segurança</option>
                                     <option value="FINANCIAL">Gerente Financeiro</option>
                                     <option value="ADMIN">Administrador (Síndico)</option>
