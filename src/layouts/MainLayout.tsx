@@ -11,6 +11,7 @@ import {
 import { Role } from '../types';
 import { ADMIN_NAV, RESIDENT_NAV } from '../constants';
 import { useAuth } from '../context/AuthContext';
+import { useCondominium } from '../context/CondominiumContext';
 import { NotificationService, Notification } from '../services/notificationService';
 
 interface LayoutProps {
@@ -29,6 +30,7 @@ const MainLayout: React.FC<LayoutProps> = ({
   onLogout
 }) => {
   const { user } = useAuth();
+  const { condominium } = useCondominium();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -113,7 +115,9 @@ const MainLayout: React.FC<LayoutProps> = ({
           <Home size={24} fill="currentColor" strokeWidth={1.5} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Maison</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight">
+            {condominium?.sidebar_title || condominium?.name || 'Maison Manager'}
+          </h1>
         </div>
       </div>
 

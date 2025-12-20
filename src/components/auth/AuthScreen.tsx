@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useCondominium } from '../../context/CondominiumContext';
 import {
   Home,
   ArrowRight,
@@ -27,6 +27,7 @@ interface AuthScreenProps { }
 
 const AuthScreen: React.FC<AuthScreenProps> = () => {
   const { signIn } = useAuth();
+  const { condominium } = useCondominium();
   const [view, setView] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -102,7 +103,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
               <div className="w-10 h-10 rounded-xl bg-[#437476] flex items-center justify-center text-white shadow-lg">
                 <Home size={22} fill="currentColor" />
               </div>
-              <h1 className="text-xl font-black text-slate-800 tracking-tighter">Maison <span className="text-[#437476]">Manager</span></h1>
+              <h1 className="text-xl font-black text-slate-800 tracking-tighter">{condominium?.login_title || condominium?.name || 'Maison Manager'}</h1>
             </div>
             <button
               onClick={() => setView('login')}
@@ -264,12 +265,12 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                       {['Sim', 'Não'].map((opt) => (
                         <label key={opt} className="flex items-center gap-3 cursor-pointer group">
                           <div
-                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${regForm.hasPets === opt ? 'border-[#437476] bg-white' : 'border-slate-300 group-hover:border-[#437476]'}`}
+                            className={`w - 6 h - 6 rounded - full border - 2 flex items - center justify - center transition - all ${regForm.hasPets === opt ? 'border-[#437476] bg-white' : 'border-slate-300 group-hover:border-[#437476]'} `}
                             onClick={() => setRegForm({ ...regForm, hasPets: opt })}
                           >
                             {regForm.hasPets === opt && <div className="w-3.5 h-3.5 rounded-full bg-[#437476] animate-in zoom-in-50 duration-300" />}
                           </div>
-                          <span className={`text-sm font-black transition-colors ${regForm.hasPets === opt ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-600'}`}>{opt}</span>
+                          <span className={`text - sm font - black transition - colors ${regForm.hasPets === opt ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-600'} `}>{opt}</span>
                         </label>
                       ))}
                     </div>
@@ -411,7 +412,9 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
             <Home size={32} fill="currentColor" />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-4xl font-black text-slate-800 tracking-tight">Maison <span className="text-[#437476]">Manager</span></h2>
+        <h2 className="mt-6 text-center text-4xl font-black text-slate-800 tracking-tight">
+          {condominium?.login_title || condominium?.name || 'Maison Manager'}
+        </h2>
         <p className="mt-2 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Gestão Condominial Inteligente</p>
       </div>
 

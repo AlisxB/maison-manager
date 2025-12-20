@@ -267,7 +267,10 @@ function LogsView({ onBack }: { onBack: () => void }) {
     );
 }
 
+import { useCondominium } from '../../context/CondominiumContext';
+
 function CondoDataView({ onBack, onSave, isSaving }: { onBack: () => void, onSave: () => void, isSaving: boolean }) {
+    const { refreshCondo } = useCondominium();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<CondominiumUpdate>({});
     const [loading, setLoading] = useState(true);
@@ -281,6 +284,8 @@ function CondoDataView({ onBack, onSave, isSaving }: { onBack: () => void, onSav
             const data = await CondominiumService.getMe();
             setFormData({
                 name: data.name,
+                sidebar_title: data.sidebar_title,
+                login_title: data.login_title,
                 address: data.address,
                 contact_email: data.contact_email,
                 gate_phone: data.gate_phone
@@ -295,6 +300,7 @@ function CondoDataView({ onBack, onSave, isSaving }: { onBack: () => void, onSav
     const handleSaveLocal = async () => {
         try {
             await CondominiumService.updateMe(formData);
+            await refreshCondo(); // Update global context immediately
             onSave();
             setIsEditing(false);
         } catch (error) {
@@ -317,15 +323,42 @@ function CondoDataView({ onBack, onSave, isSaving }: { onBack: () => void, onSav
             </div>
             <div className="p-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase">Nome do Condomínio</label>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nome do Condomínio</label>
                         <input
                             type="text"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476] transition-all"
                             value={formData.name || ''}
                             disabled={!isEditing}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white disabled:bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-[#437476]"
                         />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Título na Sidebar</label>
+                            <input
+                                type="text"
+                                placeholder="Ex: Maison Manager"
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476] transition-all"
+                                value={formData.sidebar_title || ''}
+                                disabled={!isEditing}
+                                onChange={e => setFormData({ ...formData, sidebar_title: e.target.value })}
+                            />
+                            <p className="text-[10px] text-slate-400">Exibido no menu lateral esquerdo.</p>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Título no Login</label>
+                            <input
+                                type="text"
+                                placeholder="Ex: Maison Manager"
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476] transition-all"
+                                value={formData.login_title || ''}
+                                disabled={!isEditing}
+                                onChange={e => setFormData({ ...formData, login_title: e.target.value })}
+                            />
+                            <p className="text-[10px] text-slate-400">Exibido na tela de autenticação.</p>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase">CNPJ (Criptografado)</label>

@@ -3,6 +3,8 @@ import api from './api';
 export interface Condominium {
     id: string;
     name: string;
+    sidebar_title?: string;
+    login_title?: string;
     cnpj: string; // Decrypted
     address: string;
     contact_email?: string; // Decrypted
@@ -12,6 +14,8 @@ export interface Condominium {
 
 export interface CondominiumUpdate {
     name?: string;
+    sidebar_title?: string;
+    login_title?: string;
     address?: string;
     contact_email?: string;
     gate_phone?: string;
