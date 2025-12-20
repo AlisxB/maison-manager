@@ -65,7 +65,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
     // Para simplificar a demo, vamos pré-preencher o form
     if (role === 'ADMIN') {
       setEmail('admin@maison.com');
-      setPassword('Admin123#');
+      setPassword('admin');
     } else {
       alert('Usuário demo de residente não criado no seed. Use Admin.');
     }
@@ -531,12 +531,12 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
               type="button"
               onClick={async () => {
                 try {
-                  const formData = new FormData();
+                  const formData = new URLSearchParams();
                   formData.append('username', email);
                   formData.append('password', password);
 
                   const response = await api.post('/auth/login', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                   });
 
                   signIn(response.data.access_token);
