@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS users (
     
     role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'RESIDENT', 'PORTER', 'FINANCIAL')),
     profile_type VARCHAR(20) CHECK (profile_type IN ('OWNER', 'TENANT', 'STAFF')), 
-    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('ACTIVE', 'PENDING', 'INACTIVE')),
+    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('ACTIVE', 'PENDING', 'INACTIVE', 'REJECTED')),
     last_notification_check TIMESTAMP WITH TIME ZONE,
 
     photo_url TEXT,
