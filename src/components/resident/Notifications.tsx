@@ -83,10 +83,12 @@ export const ResidentNotifications: React.FC = () => {
 
                         <div className="flex gap-2">
                            <span className={`text-xs font-bold uppercase px-2 py-1 rounded border ${violation.status === 'PAID' ? 'bg-green-50 text-green-700 border-green-100' :
-                                 'bg-slate-100 text-slate-600 border-slate-200'
+                              'bg-slate-100 text-slate-600 border-slate-200'
                               }`}>
-                              {violation.status === 'OPEN' ? 'Em Aberto' :
-                                 violation.status === 'PAID' ? 'Pago' : violation.status}
+                              {violation.status === 'OPEN' && 'Em Aberto'}
+                              {violation.status === 'PAID' && 'Pago'}
+                              {violation.status === 'RESOLVED' && 'Resolvido'}
+                              {!['OPEN', 'PAID', 'RESOLVED'].includes(violation.status) && violation.status}
                            </span>
                            <button
                               onClick={() => setSelectedViolation(violation)}

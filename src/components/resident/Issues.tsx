@@ -73,7 +73,13 @@ export const ResidentIssues: React.FC = () => {
                                 <div className="flex items-center gap-3">
                                     {getStatusBadge(issue.status)}
                                     <span className="text-xs text-slate-400">{new Date(issue.created_at).toLocaleDateString()}</span>
-                                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{issue.category}</span>
+                                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                                        {issue.category === 'Maintenance' && 'Manutenção'}
+                                        {issue.category === 'Noise' && 'Barulho'}
+                                        {issue.category === 'Security' && 'Segurança'}
+                                        {issue.category === 'Other' && 'Outro'}
+                                        {!['Maintenance', 'Noise', 'Security', 'Other'].includes(issue.category) && issue.category}
+                                    </span>
                                 </div>
                             </div>
                             <h3 className="text-lg font-bold text-slate-800 mb-2">{issue.title}</h3>

@@ -139,7 +139,10 @@ export const ResidentFinancial: React.FC = () => {
                                             <span className="text-xs text-slate-400">{new Date(v.created_at).toLocaleDateString()}</span>
                                         </div>
                                         <span className={`text-xs font-bold uppercase ${v.status === 'OPEN' ? 'text-red-500' : 'text-green-500'}`}>
-                                            {v.status === 'OPEN' ? 'Em Aberto' : v.status}
+                                            {v.status === 'OPEN' && 'Em Aberto'}
+                                            {v.status === 'PAID' && 'Pago'}
+                                            {v.status === 'RESOLVED' && 'Resolvido'}
+                                            {!['OPEN', 'PAID', 'RESOLVED'].includes(v.status) && v.status}
                                         </span>
                                     </div>
                                     <p className="text-sm text-slate-700 mb-2">{v.description}</p>
@@ -180,7 +183,13 @@ export const ResidentFinancial: React.FC = () => {
                                         {/* Mocking price logic or assuming standard fee if not in model */}
                                         <p className="font-bold text-slate-900">Included</p>
                                         {/* Ideally we fetch price from CommonArea or Reservation if it has 'total_price' */}
-                                        <p className="text-xs text-slate-400">{r.status}</p>
+                                        <p className="text-xs text-slate-400">
+                                            {r.status === 'CONFIRMED' && 'Confirmado'}
+                                            {r.status === 'PENDING' && 'Pendente'}
+                                            {r.status === 'REJECTED' && 'Rejeitado'}
+                                            {r.status === 'CANCELLED' && 'Cancelado'}
+                                            {!['CONFIRMED', 'PENDING', 'REJECTED', 'CANCELLED'].includes(r.status) && r.status}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
