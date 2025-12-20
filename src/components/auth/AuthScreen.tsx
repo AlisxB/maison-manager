@@ -46,6 +46,21 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
     confirmPassword: ''
   });
 
+  const [units, setUnits] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch Public Units
+  React.useEffect(() => {
+    if (view === 'register') {
+      api.get('/auth/units')
+        .then(response => setUnits(response.data))
+        .catch(console.error);
+    }
+  }, [view]);
+
+  const uniqueBlocks = Array.from(new Set(units.map(u => u.block))).sort();
+  const availableUnits = units.filter(u => u.block === regForm.block).sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }));
+
   const handleDemoLogin = (role: Role) => {
     // Para simplificar a demo, vamos pré-preencher o form
     if (role === 'ADMIN') {
@@ -60,14 +75,60 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
     alert('Funcionalidade de recuperação de senha enviada para o e-mail informado (Simulação).');
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (regForm.password !== regForm.confirmPassword) {
       alert('As senhas não coincidem!');
       return;
     }
-    alert('Solicitação de acesso enviada com sucesso! Aguarde a aprovação da administração.');
-    setView('login');
+    // Validação de Senha Forte
+    const password = regForm.password;
+    if (password.length < 6) {
+      alert("A senha deve ter no mínimo 6 caracteres.");
+      return;
+    }
+    if (!/^[A-Z]/.test(password)) {
+      alert("A primeira letra da senha deve ser maiúscula.");
+      return;
+    }
+    if (!/[!@#$%^&*()\-+]/.test(password)) {
+      alert("A senha deve conter pelo menos um caractere especial (!@#$%^&*()-+).");
+      return;
+    }
+
+
+
+    if (!regForm.unit_id) {
+      alert("Selecione uma unidade válida.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.post('/auth/register', {
+        name: regForm.name,
+        email: regForm.email,
+        phone: regForm.phone,
+        password: regForm.password,
+        unit_id: regForm.unit_id,
+        has_pets: regForm.hasPets === 'Sim',
+        pets_description: regForm.petsList.map(p => `${p.quantity}x ${p.type}`).join(', ')
+      });
+      alert('Solicitação de acesso enviada com sucesso! Aguarde a aprovação da administração.');
+      setView('login');
+    } catch (error: any) {
+      console.error(error);
+      const detail = error.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        alert('Erro de Validação:\n' + detail.map((err: any) => `- ${err.loc?.[1] || err.loc?.[0] || 'Campo'}: ${err.msg}`).join('\n'));
+      } else if (typeof detail === 'object') {
+        alert('Erro: ' + JSON.stringify(detail));
+      } else {
+        alert(detail || "Erro ao solicitar acesso.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddPetRow = () => {
@@ -198,12 +259,12 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                         required
                         className="block w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium appearance-none"
                         value={regForm.block}
-                        onChange={e => setRegForm({ ...regForm, block: e.target.value })}
+                        onChange={e => setRegForm({ ...regForm, block: e.target.value, unit: '', unit_id: '' })}
                       >
                         <option value="">Selecione...</option>
-                        <option value="A">Bloco A</option>
-                        <option value="B">Bloco B</option>
-                        <option value="C">Bloco C</option>
+                        {uniqueBlocks.map(block => (
+                          <option key={block} value={block}>Bloco {block}</option>
+                        ))}
                       </select>
                       <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
                         <ChevronDown size={18} />
@@ -216,14 +277,18 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#437476] transition-colors">
                         <Building size={18} />
                       </div>
-                      <input
-                        type="text"
+                      <select
                         required
-                        placeholder="Ex: 101"
-                        className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
-                        value={regForm.unit}
-                        onChange={e => setRegForm({ ...regForm, unit: e.target.value })}
-                      />
+                        className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium appearance-none"
+                        value={regForm.unit_id}
+                        onChange={e => setRegForm({ ...regForm, unit_id: e.target.value })}
+                        disabled={!regForm.block}
+                      >
+                        <option value="">Selecione a Unidade...</option>
+                        {availableUnits.map(u => (
+                          <option key={u.id} value={u.id}>{u.number}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -395,8 +460,8 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
           <p className="mt-12 text-center text-[10px] text-slate-400 font-black uppercase tracking-[0.4em] opacity-40">
             &copy; 2025 Maison Manager. Excelência em Gestão.
           </p>
-        </div>
-      </div>
+        </div >
+      </div >
     );
   }
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -29,6 +29,7 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     department: Optional[str] = None
     work_hours: Optional[str] = None
+    status: Optional[str] = None
 
 
 # Schema para nested Unit
@@ -61,3 +62,28 @@ class UserRead(UserBase):
     
     class Config:
         from_attributes = True
+
+# Schema para Registro Público (Novo Morador)
+class UserRegister(BaseModel):
+    name: str = Field(..., min_length=3)
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+    phone: str = Field(..., min_length=10)
+    unit_id: UUID
+    # Campos opcionais para facilitar cadastro
+    has_pets: Optional[bool] = False
+    pets_description: Optional[str] = None
+
+    @field_validator('password')
+    def password_complexity(cls, v):
+        if len(v) < 6:
+             raise ValueError('A senha deve ter no mínimo 6 caracteres.')
+        if not v[0].isupper():
+             raise ValueError('A primeira letra da senha deve ser maiúscula.')
+        
+        # Check for special characters
+        special_characters = "!@#$%^&*()-+"
+        if not any(c in special_characters for c in v):
+             raise ValueError(f'A senha deve conter pelo menos um caractere especial: {special_characters}')
+        
+        return v

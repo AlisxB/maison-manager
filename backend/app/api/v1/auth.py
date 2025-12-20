@@ -7,7 +7,9 @@ from sqlalchemy.orm import joinedload
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core import security, config, deps
 from app.models.all import User, AccessLog
+from app.models.all import User, AccessLog, Unit
 from app.schemas.token import Token
+from app.schemas.user import UserRegister
 import hashlib
 
 router = APIRouter()
@@ -42,6 +44,9 @@ async def login_access_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
             
+        if user.status == 'PENDING':
+             raise HTTPException(status_code=403, detail="Seu cadastro está em análise. Aguarde a aprovação da administração.")
+        
         if user.status != 'ACTIVE':
             raise HTTPException(status_code=400, detail="Usuário inativo")
 
@@ -88,3 +93,81 @@ async def login_access_token(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Login Error: {str(e)}")
+
+@router.get("/units")
+async def get_public_units(
+    db: Annotated[AsyncSession, Depends(deps.get_db_no_context)]
+):
+    """
+    Listar unidades (Publico - para cadastro).
+    """
+    try:
+        # Busca todas as unidades para o usuario escolher no cadastro
+        stmt = select(Unit).order_by(Unit.block, Unit.number)
+        result = await db.execute(stmt)
+        units = result.scalars().all()
+        
+        return [
+            {
+                "id": str(u.id), 
+                "block": u.block, 
+                "number": u.number, 
+                "condominium_id": str(u.condominium_id)
+            } 
+            for u in units
+        ]
+    except Exception as e:
+         print(f"Error fetching units: {e}")
+         return []
+
+@router.post("/register")
+async def register_user(
+    user_in: UserRegister,
+    db: Annotated[AsyncSession, Depends(deps.get_db_no_context)]
+):
+    """
+    Cadastro público de moradores. Status inicial = PENDING.
+    """
+    try:
+        # 1. Check if email exists
+        email_hash = hashlib.sha256(user_in.email.lower().encode('utf-8')).hexdigest()
+        
+        stmt = select(User).from_statement(
+             text("SELECT * FROM get_user_by_email_hash(CAST(:hash AS VARCHAR))")
+        ).params(hash=email_hash)
+        result = await db.execute(stmt)
+        if result.scalars().first():
+             raise HTTPException(status_code=400, detail="Este email já está cadastrado.")
+
+        # 2. Get Unit to get Condominium ID
+        unit = await db.get(Unit, user_in.unit_id)
+        if not unit:
+             raise HTTPException(status_code=404, detail="Unidade não encontrada.")
+             
+        # 3. Create User
+        db_user = User(
+            condominium_id=unit.condominium_id,
+            unit_id=unit.id,
+            name=user_in.name,
+            email_encrypted=f"ENC({user_in.email})",
+            email_hash=email_hash,
+            phone_encrypted=f"ENC({user_in.phone})",
+            password_hash=security.get_password_hash(user_in.password),
+            role='RESIDENT',
+            profile_type='TENANT', # Default
+            status='PENDING'
+        )
+        
+        db.add(db_user)
+        await db.commit()
+        await db.refresh(db_user)
+        
+        return {"message": "Cadastro realizado com sucesso. Aguarde aprovação."}
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        await db.rollback()
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro ao registrar: {str(e)}")
