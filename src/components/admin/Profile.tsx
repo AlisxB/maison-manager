@@ -31,11 +31,7 @@ export const AdminProfile: React.FC = () => {
     role: ''
   });
 
-  const [lastLogins] = useState([
-    { id: 1, date: '17/12/2025', time: '08:12', device: 'Chrome - Windows 11', location: 'São Paulo, SP' },
-    { id: 2, date: '16/12/2025', time: '14:45', device: 'Safari - iPhone 15', location: 'São Paulo, SP' },
-    { id: 3, date: '16/12/2025', time: '09:02', device: 'Chrome - Windows 11', location: 'São Paulo, SP' },
-  ]);
+  const [lastLogins, setLastLogins] = useState<any[]>([]);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -51,8 +47,29 @@ export const AdminProfile: React.FC = () => {
         work_hours: user.work_hours || '08:00 - 18:00 (Seg a Sex)',
         role: user.role === 'ADMIN' ? 'Administrador' : user.role
       });
+
+      // Fetch History
+      UserService.getAccessHistory().then(logs => {
+        setLastLogins(logs.map(log => ({
+          id: log.id,
+          date: new Date(log.created_at).toLocaleDateString(),
+          time: new Date(log.created_at).toLocaleTimeString().slice(0, 5),
+          device: getDeviceName(log.user_agent),
+          location: log.location || 'Desconhecido'
+        })));
+      }).catch(err => console.error("History fetch error:", err));
     }
   }, [user]);
+
+  const getDeviceName = (ua: string) => {
+    if (!ua) return 'Desconhecido';
+    if (ua.includes('Windows')) return 'Windows';
+    if (ua.includes('Mac')) return 'Mac OS';
+    if (ua.includes('Linux')) return 'Linux';
+    if (ua.includes('Android')) return 'Android';
+    if (ua.includes('iPhone')) return 'iPhone';
+    return 'Navegador Web';
+  };
 
   const handleSave = async () => {
     if (!user?.id) return;

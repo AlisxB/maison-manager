@@ -48,8 +48,21 @@ export const UserService = {
     delete: async (id: string) => {
         const response = await api.delete(`/users/${id}`);
         return response.data;
+    },
+
+    getAccessHistory: async () => {
+        const response = await api.get<AccessLog[]>('/users/me/access-history');
+        return response.data;
     }
 };
+
+export interface AccessLog {
+    id: string;
+    ip_address: string;
+    user_agent: string;
+    location: string;
+    created_at: string;
+}
 
 export const UnitService = {
     getAll: async () => {
