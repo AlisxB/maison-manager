@@ -103,39 +103,41 @@ export const AdminSettings: React.FC = () => {
 
 /* --- SUB-COMPONENTS --- */
 
-const SettingsMenu: React.FC<{ onNavigate: (view: SettingsView) => void }> = ({ onNavigate }) => (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
-        {[
-            { id: 'condo_data', title: 'Dados do Condomínio', desc: 'Nome, endereço e CNPJ.', icon: Building },
-            { id: 'units', title: 'Gestão de Unidades', desc: 'Gerenciar blocos, unidades e criar lotes.', icon: Building },
-            { id: 'inventory', title: 'Gestão de Estoque', desc: 'Controle de suprimentos e materiais.', icon: Package },
-            { id: 'users', title: 'Gestão de Usuários Administrativos', desc: 'Adicionar ou remover administradores e porteiros.', icon: Users },
-            { id: 'booking_rules', title: 'Regras de Reservas', desc: 'Definir horários, limites e valores.', icon: Calendar },
-            { id: 'bylaws', title: 'Regimentos Internos', desc: 'Normas, convenções e multas.', icon: Book },
-            { id: 'notifications', title: 'Notificações Automáticas', desc: 'Configurar e-mails e alertas do sistema.', icon: Bell },
-            { id: 'logs', title: 'Logs do Sistema (Auditoria)', desc: 'Rastrear todas as alterações realizadas.', icon: History },
-        ].map((item) => (
-            <button
-                key={item.id}
-                onClick={() => onNavigate(item.id as SettingsView)}
-                className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group text-left"
-            >
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-slate-100 text-slate-500 rounded-xl group-hover:bg-[#437476] group-hover:text-white transition-colors">
-                        <item.icon size={22} />
+function SettingsMenu({ onNavigate }: { onNavigate: (view: SettingsView) => void }) {
+    return (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+            {[
+                { id: 'condo_data', title: 'Dados do Condomínio', desc: 'Nome, endereço e CNPJ.', icon: Building },
+                { id: 'units', title: 'Gestão de Unidades', desc: 'Gerenciar blocos, unidades e criar lotes.', icon: Building },
+                { id: 'inventory', title: 'Gestão de Estoque', desc: 'Controle de suprimentos e materiais.', icon: Package },
+                { id: 'users', title: 'Gestão de Usuários Administrativos', desc: 'Adicionar ou remover administradores e porteiros.', icon: Users },
+                { id: 'booking_rules', title: 'Regras de Reservas', desc: 'Definir horários, limites e valores.', icon: Calendar },
+                { id: 'bylaws', title: 'Regimentos Internos', desc: 'Normas, convenções e multas.', icon: Book },
+                { id: 'notifications', title: 'Notificações Automáticas', desc: 'Configurar e-mails e alertas do sistema.', icon: Bell },
+                { id: 'logs', title: 'Logs do Sistema (Auditoria)', desc: 'Rastrear todas as alterações realizadas.', icon: History },
+            ].map((item) => (
+                <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id as SettingsView)}
+                    className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group text-left"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-slate-100 text-slate-500 rounded-xl group-hover:bg-[#437476] group-hover:text-white transition-colors">
+                            <item.icon size={22} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-800">{item.title}</h3>
+                            <p className="text-sm text-slate-500">{item.desc}</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="font-bold text-slate-800">{item.title}</h3>
-                        <p className="text-sm text-slate-500">{item.desc}</p>
-                    </div>
-                </div>
-                <ChevronRight size={20} className="text-slate-300 group-hover:text-[#437476] transition-colors" />
-            </button>
-        ))}
-    </div>
-);
+                    <ChevronRight size={20} className="text-slate-300 group-hover:text-[#437476] transition-colors" />
+                </button>
+            ))}
+        </div>
+    );
+}
 
-const LogsView: React.FC<{ onBack: () => void }> = () => {
+function LogsView({ onBack }: { onBack: () => void }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -263,9 +265,9 @@ const LogsView: React.FC<{ onBack: () => void }> = () => {
             </div>
         </div>
     );
-};
+}
 
-const CondoDataView: React.FC<{ onBack: () => void, onSave: () => void, isSaving: boolean }> = ({ onSave, isSaving }) => {
+function CondoDataView({ onBack, onSave, isSaving }: { onBack: () => void, onSave: () => void, isSaving: boolean }) {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<CondominiumUpdate>({});
     const [loading, setLoading] = useState(true);
@@ -373,9 +375,9 @@ const CondoDataView: React.FC<{ onBack: () => void, onSave: () => void, isSaving
             </div>
         </div>
     );
-};
+}
 
-const UserManagementView: React.FC<{ onBack: () => void }> = () => {
+function UserManagementView({ onBack }: { onBack: () => void }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -471,6 +473,15 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
         }
     };
 
+    const getRoleLabel = (role: string) => {
+        switch (role) {
+            case 'ADMIN': return 'Administrador';
+            case 'PORTER': return 'Porteiro';
+            case 'FINANCIAL': return 'Financeiro';
+            default: return role;
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -517,7 +528,7 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getRoleBadge(user.role)}`}>
-                                                {user.role}
+                                                {getRoleLabel(user.role)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -586,9 +597,9 @@ const UserManagementView: React.FC<{ onBack: () => void }> = () => {
             )}
         </div>
     );
-};
+}
 
-const BookingRulesView: React.FC<{ onBack: () => void, onSave: () => void, isSaving: boolean }> = ({ onSave, isSaving }) => {
+function BookingRulesView({ onBack, onSave, isSaving }: { onBack: () => void, onSave: () => void, isSaving: boolean }) {
     const [openAccordion, setOpenAccordion] = useState<string | null>(null);
     const [areas, setAreas] = useState<CommonArea[]>([]);
     const [loading, setLoading] = useState(true);
@@ -755,9 +766,9 @@ const BookingRulesView: React.FC<{ onBack: () => void, onSave: () => void, isSav
             )}
         </div>
     );
-};
+}
 
-const NotificationConfigView: React.FC<{ onBack: () => void, onSave: () => void, isSaving: boolean }> = ({ onSave, isSaving }) => {
+function NotificationConfigView({ onBack, onSave, isSaving }: { onBack: () => void, onSave: () => void, isSaving: boolean }) {
     const events = [
         { id: 1, label: 'Nova reserva criada', email: true, app: true },
         { id: 2, label: 'Intercorrência resolvida', email: false, app: true },
@@ -814,9 +825,9 @@ const NotificationConfigView: React.FC<{ onBack: () => void, onSave: () => void,
             </div>
         </div>
     );
-};
+}
 
-const BylawsView: React.FC<{ onBack: () => void }> = () => {
+function BylawsView({ onBack }: { onBack: () => void }) {
     const [bylaws, setBylaws] = useState<Bylaw[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -955,4 +966,4 @@ const BylawsView: React.FC<{ onBack: () => void }> = () => {
             )}
         </div>
     );
-};
+}
