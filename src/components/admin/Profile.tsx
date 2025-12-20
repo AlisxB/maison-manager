@@ -95,6 +95,53 @@ export const AdminProfile: React.FC = () => {
     }
   };
 
+  const [passwordForm, setPasswordForm] = useState({
+    current: '',
+    new: '',
+    confirm: ''
+  });
+
+  const handlePasswordUpdate = async () => {
+    if (!passwordForm.current) {
+      alert("Por favor, informe sua senha atual.");
+      return;
+    }
+    if (passwordForm.new !== passwordForm.confirm) {
+      alert("A nova senha e a confirmação não coincidem.");
+      return;
+    }
+
+    // Validação Forte (Frontend)
+    const hasUpperCase = /[A-Z]/.test(passwordForm.new);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.new);
+    const minLength = passwordForm.new.length >= 6;
+
+    if (!minLength || !hasUpperCase || !hasSpecialChar) {
+      alert("A senha deve ter:\n- Mínimo 6 caracteres\n- Letra Maiúscula\n- Caractere Especial");
+      return;
+    }
+
+    // Optional: We could verify current password by trying to login or adding a backend check.
+    // For this MVP, we use the Admin power to reset password directly.
+
+    setLoading(true);
+    try {
+      // @ts-ignore
+      await UserService.update(user!.id, {
+        password: passwordForm.new,
+        current_password: passwordForm.current
+      });
+      alert("Senha alterada com sucesso!");
+      setIsPasswordModalOpen(false);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao alterar senha.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -371,18 +418,76 @@ export const AdminProfile: React.FC = () => {
 
               <div className="space-y-4 text-left">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Senha Atual</label>
-                  <input type="password" placeholder="••••••••" className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all" />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Senha Atual (Opcional)</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    value={passwordForm.current}
+                    onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                  />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nova Senha</label>
-                  <input type="password" placeholder="Mínimo 8 caracteres" className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all" />
+                  <input
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    value={passwordForm.new}
+                    onChange={e => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                  />
                 </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirmar Nova Senha</label>
+                  <input
+                    type="password"
+                    placeholder="Repita a nova senha"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    value={passwordForm.confirm}
+                    onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                  />
+                </div>
+
+                {/* Password Requirements Requirements UI */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-2">
+                  <p className="text-[10px] uppercase font-black text-slate-400 mb-2">Requisitos de Segurança:</p>
+                  <ul className="space-y-1">
+                    <li className={`text-xs font-bold flex items-center gap-2 ${passwordForm.new.length >= 6 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${passwordForm.new.length >= 6 ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      Mínimo de 6 caracteres
+                    </li>
+                    <li className={`text-xs font-bold flex items-center gap-2 ${/[A-Z]/.test(passwordForm.new) ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(passwordForm.new) ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      Letra Maiúscula
+                    </li>
+                    <li className={`text-xs font-bold flex items-center gap-2 ${/[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.new) ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${/[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.new) ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      Caractere Especial (!@#...)
+                    </li>
+                    <li className={`text-xs font-bold flex items-center gap-2 ${passwordForm.new && passwordForm.new === passwordForm.confirm ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${passwordForm.new && passwordForm.new === passwordForm.confirm ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      Senhas coincidem
+                    </li>
+                  </ul>
+                </div>
+
               </div>
 
               <div className="flex flex-col gap-3 mt-10">
-                <button onClick={() => setIsPasswordModalOpen(false)} className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl hover:bg-black transition-all shadow-xl shadow-slate-200 uppercase tracking-widest text-[11px]">Confirmar Nova Senha</button>
-                <button onClick={() => setIsPasswordModalOpen(false)} className="w-full py-4 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-600">Cancelar</button>
+                <button
+                  onClick={handlePasswordUpdate}
+                  disabled={loading}
+                  className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl hover:bg-black transition-all shadow-xl shadow-slate-200 uppercase tracking-widest text-[11px] disabled:opacity-50"
+                >
+                  {loading ? 'Atualizando...' : 'Confirmar Nova Senha'}
+                </button>
+                <button
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  disabled={loading}
+                  className="w-full py-4 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-600"
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
           </div>
