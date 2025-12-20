@@ -14,6 +14,8 @@ class Condominium(Base):
     
     id = uuid_pk()
     name = Column(String(255), nullable=False)
+    sidebar_title = Column(String(255))
+    login_title = Column(String(255))
     # Encrypted fields are just text to the app, handled by DB/pgcrypto
     cnpj_encrypted = Column(Text, nullable=False)
     cnpj_hash = Column(String(64), unique=True, nullable=False)

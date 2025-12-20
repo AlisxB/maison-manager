@@ -7,6 +7,8 @@ from decimal import Decimal
 # --- Condominium Schemas ---
 class CondominiumBase(BaseModel):
     name: str = Field(min_length=3)
+    sidebar_title: Optional[str] = None
+    login_title: Optional[str] = None
     address: str = Field(min_length=5)
     contact_email: Optional[EmailStr] = None
     gate_phone: Optional[str] = None

@@ -11,6 +11,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS condominiums (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
+    sidebar_title VARCHAR(255),
+    login_title VARCHAR(255),
     cnpj_encrypted TEXT NOT NULL,
     cnpj_hash VARCHAR(64) UNIQUE NOT NULL,
     address TEXT NOT NULL,

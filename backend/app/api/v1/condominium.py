@@ -24,6 +24,8 @@ async def get_my_condominium(
         SELECT 
             id, 
             name, 
+            sidebar_title,
+            login_title,
             pgp_sym_decrypt(cnpj_encrypted::bytea, 'super_secure_key_for_pgcrypto') as cnpj,
             address,
             pgp_sym_decrypt(contact_email_encrypted::bytea, 'super_secure_key_for_pgcrypto') as contact_email,
@@ -60,6 +62,8 @@ async def update_my_condominium(
         UPDATE condominiums
         SET 
             name = :name,
+            sidebar_title = :sidebar_title,
+            login_title = :login_title,
             address = :address
             -- Add encryption logic for contacts if needed future
         WHERE id = :condo_id
@@ -68,6 +72,8 @@ async def update_my_condominium(
     
     await db.execute(update_query, {
         "name": condo_in.name,
+        "sidebar_title": condo_in.sidebar_title,
+        "login_title": condo_in.login_title,
         "address": condo_in.address,
         "condo_id": current_user.condo_id
     })
