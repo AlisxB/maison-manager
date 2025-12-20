@@ -25,6 +25,7 @@ class UserUpdate(BaseModel):
     profile_type: Optional[str] = None
     unit_id: Optional[UUID] = None
     password: Optional[str] = None
+    current_password: Optional[str] = None
     phone: Optional[str] = None
     department: Optional[str] = None
     work_hours: Optional[str] = None

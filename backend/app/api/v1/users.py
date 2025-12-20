@@ -192,60 +192,85 @@ async def update_user(
     # if str(db_user.id) == "22222222-2222-2222-2222-222222222222" and str(current_user.id) != str(db_user.id):
     #     raise HTTPException(status_code=403, detail="Cannot edit Master Admin")
 
-    # Update fields
-    if user_in.name:
-        db_user.name = user_in.name
-    if user_in.role:
-        db_user.role = user_in.role
-    if user_in.profile_type:
-        db_user.profile_type = user_in.profile_type
-    
-    if user_in.unit_id is not None:
-        db_user.unit_id = user_in.unit_id
-    
-    if user_in.department:
-        db_user.department = user_in.department
-    if user_in.work_hours:
-        db_user.work_hours = user_in.work_hours
-
-    # Update Phone
-    if user_in.phone:
-        db_user.phone_encrypted = f"ENC({user_in.phone})"
-
-    # Update Email
-    if user_in.email:
-         new_email_hash = hashlib.sha256(user_in.email.lower().encode('utf-8')).hexdigest()
-         if new_email_hash != db_user.email_hash:
-             db_user.email_encrypted = f"ENC({user_in.email})"
-             db_user.email_hash = new_email_hash
-    
-    # If password provided and not empty/star
-    if user_in.password and user_in.password != "******":
-        db_user.password_hash = security.get_password_hash(user_in.password)
+    try:
+        # Update fields
+        if user_in.name:
+            db_user.name = user_in.name
+        if user_in.role:
+            db_user.role = user_in.role
+        if user_in.profile_type:
+            db_user.profile_type = user_in.profile_type
         
-    db.add(db_user)
-    await db.commit()
-    
-    # Reload with relationships to avoid MissingGreenlet
-    stmt = select(User).options(joinedload(User.unit)).where(User.id == db_user.id)
-    result = await db.execute(stmt)
-    db_user = result.scalars().first()
-    
-    # Initialize transient attributes for Pydantic response
-    db_user.email = None
-    db_user.phone = None
-    
-    if user_in.email:
-        db_user.email = user_in.email
-    elif db_user.email_encrypted and db_user.email_encrypted.startswith("ENC("):
-        db_user.email = db_user.email_encrypted[4:-1]
+        if user_in.unit_id is not None:
+            db_user.unit_id = user_in.unit_id
         
-    if user_in.phone:
-        db_user.phone = user_in.phone
-    elif db_user.phone_encrypted and db_user.phone_encrypted.startswith("ENC("):
-        db_user.phone = db_user.phone_encrypted[4:-1]
-    
-    return db_user
+        if user_in.department:
+            db_user.department = user_in.department
+        if user_in.work_hours:
+            db_user.work_hours = user_in.work_hours
+
+        # Update Phone
+        if user_in.phone:
+            db_user.phone_encrypted = f"ENC({user_in.phone})"
+
+        # Update Email
+        if user_in.email:
+             new_email_hash = hashlib.sha256(user_in.email.lower().encode('utf-8')).hexdigest()
+             if new_email_hash != db_user.email_hash:
+                 db_user.email_encrypted = f"ENC({user_in.email})"
+                 db_user.email_hash = new_email_hash
+        
+        # If password provided and not empty/star
+        if user_in.password and user_in.password != "******":
+            # Enforce current password for self-updates
+            if str(db_user.id) == str(current_user.user_id):
+                 if not user_in.current_password:
+                      raise HTTPException(status_code=400, detail="Senha atual é obrigatória.")
+                 if not security.verify_password(user_in.current_password, db_user.password_hash):
+                      raise HTTPException(status_code=401, detail="Senha atual incorreta.")
+
+            print(f"DEBUG: Hashing password: {user_in.password[:2]}***") 
+            db_user.password_hash = security.get_password_hash(user_in.password)
+            
+        db.add(db_user)
+        await db.commit()
+        
+        # Reload with relationships to avoid MissingGreenlet
+        stmt = select(User).options(joinedload(User.unit)).where(User.id == db_user.id)
+        result = await db.execute(stmt)
+        db_user = result.scalars().first()
+        
+        # Initialize transient attributes for Pydantic response
+        db_user.email = None
+        db_user.phone = None
+        
+        # 1. From Input
+        if user_in.email:
+            db_user.email = user_in.email
+        # 2. From "ENC()" format (Python seeder)
+        elif db_user.email_encrypted and db_user.email_encrypted.startswith("ENC("):
+             db_user.email = db_user.email_encrypted[4:-1]
+        # 3. Fallback for Native SQL Seeder (pgcrypto) or unknown
+        # Since we can't easily decrypt PGP here without SQL, we return a fallback or the hash
+        else:
+             # Just a placeholder so Pydantic doesn't crash 500
+             db_user.email = "encrypted@maison.com"  
+
+        if user_in.phone:
+            db_user.phone = user_in.phone
+        elif db_user.phone_encrypted and db_user.phone_encrypted.startswith("ENC("):
+            db_user.phone = db_user.phone_encrypted[4:-1]
+        
+        return db_user
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"ERROR updating user: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro fatal ao atualizar usuário: {str(e)}"
+        )
 
 @router.delete("/{id}")
 async def delete_user(
