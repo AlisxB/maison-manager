@@ -214,16 +214,6 @@ CREATE TABLE IF NOT EXISTS access_logs (
 );
 ALTER TABLE access_logs ENABLE ROW LEVEL SECURITY;
 
--- User can see own logs, Admin can see all? Usually user sees own.
-CREATE POLICY access_logs_policy ON access_logs
-    USING (
-        condominium_id = current_condo_id()
-        AND user_id = current_user_id()
-    )
-    WITH CHECK (
-        condominium_id = current_condo_id()
-        AND user_id = current_user_id()
-    );
 
 -- 3. Functions & Policies (Zero Trust Logic)
 
@@ -379,6 +369,17 @@ CREATE POLICY audit_policy ON audit_logs
     USING (
         condominium_id = current_condo_id()
         AND current_app_role() = 'ADMIN'
+    );
+
+-- Access Logs Policy (Moved here to ensure functions exist)
+CREATE POLICY access_logs_policy ON access_logs
+    USING (
+        condominium_id = current_condo_id()
+        AND user_id = current_user_id()
+    )
+    WITH CHECK (
+        condominium_id = current_condo_id()
+        AND user_id = current_user_id()
     );
 
 -- Readings Policies
