@@ -81,8 +81,9 @@ export const AdminInventory: React.FC = () => {
             }
             setShowModal(false);
             fetchItems();
-        } catch (error) {
-            alert('Erro ao salvar item');
+        } catch (error: any) {
+            console.error('Error saving item:', error);
+            alert(error.response?.data?.detail || 'Erro ao salvar item');
         }
     };
 
