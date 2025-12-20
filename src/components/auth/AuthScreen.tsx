@@ -50,7 +50,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
     // Para simplificar a demo, vamos pré-preencher o form
     if (role === 'ADMIN') {
       setEmail('admin@maison.com');
-      setPassword('admin');
+      setPassword('Admin123#');
     } else {
       alert('Usuário demo de residente não criado no seed. Use Admin.');
     }
