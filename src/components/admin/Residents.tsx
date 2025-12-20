@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    Search, Filter, UserPlus, Edit2, User as UserIcon, Mail, Phone, Building, Calendar, Cat, X, Trash2, PlusCircle
+    Search, Filter, UserPlus, Edit2, User as UserIcon, Mail, Phone, Building, Calendar, Cat, X, Trash2, PlusCircle, Eye
 } from 'lucide-react';
 import { MOCK_RESIDENTS } from '../../mock'; // Removido
 import { UserService, UnitService, User, Unit } from '../../services/userService';
@@ -24,6 +24,8 @@ export const AdminResidents: React.FC = () => {
     const [residents, setResidents] = useState<User[]>([]);
     const [units, setUnits] = useState<Unit[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [viewingResident, setViewingResident] = useState<User | null>(null);
 
     React.useEffect(() => {
         loadData();
@@ -49,6 +51,47 @@ export const AdminResidents: React.FC = () => {
         if (!unitId) return '-';
         const unit = units.find(u => u.id === unitId);
         return unit ? `${unit.block ? 'Bloco ' + unit.block + ' - ' : ''}${unit.number}` : '-';
+    };
+
+    const resetForm = () => {
+        setResidentForm({
+            name: '',
+            email: '',
+            phone: '',
+            block: '',
+            unit: '',
+            entryDate: new Date().toISOString().split('T')[0],
+            exitDate: '',
+            registeredBy: 'JOAO',
+            hasPets: false,
+            petsList: [{ quantity: 1, type: '' }],
+            password: ''
+        });
+        setEditingId(null);
+    };
+
+    const handleEdit = (resident: User) => {
+        const targetUnitId = resident.unit_id || resident.unit?.id;
+        const unit = units.find(u => u.id === targetUnitId);
+        setResidentForm({
+            name: resident.name,
+            email: resident.email,
+            phone: resident.phone || '',
+            block: unit?.block || '',
+            unit: unit?.number || '',
+            entryDate: '2025-01-01', // Mock or fetch actual
+            exitDate: '',
+            registeredBy: 'ADMIN',
+            hasPets: resident.pets && resident.pets.length > 0,
+            petsList: resident.pets && resident.pets.length > 0 ? resident.pets.map(p => ({ quantity: 1, type: p.type })) : [{ quantity: 1, type: '' }],
+            password: '' // Don't fill password on edit
+        });
+        setEditingId(resident.id);
+        setIsAddResidentModalOpen(true);
+    };
+
+    const handleDetails = (resident: User) => {
+        setViewingResident(resident);
     };
 
     const handleSaveResident = async () => {
@@ -87,15 +130,23 @@ export const AdminResidents: React.FC = () => {
                 role: 'RESIDENT',
                 profile_type: 'TENANT', // Default
                 unit_id: targetUnit?.id,
-                password: residentForm.password || 'mudar123', // Usa a senha definida ou padrão se vazia
+                // Only send password if editing and non-empty, or creating (default applied in backend if missing but safer here)
+                ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : { password: residentForm.password || 'mudar123' }),
             };
 
-            await UserService.create(payload);
-            alert('Morador cadastrado com sucesso!');
+            if (editingId) {
+                await UserService.update(editingId, payload);
+                alert('Morador atualizado com sucesso!');
+            } else {
+                await UserService.create(payload);
+                alert('Morador cadastrado com sucesso!');
+            }
+
             setIsAddResidentModalOpen(false);
+            resetForm(); // Clear form
             loadData(); // Recarregar
         } catch (error: any) {
-            const msg = error.response?.data?.detail || 'Erro ao cadastrar morador';
+            const msg = error.response?.data?.detail || (editingId ? 'Erro ao atualizar morador' : 'Erro ao cadastrar morador');
             alert(msg);
             console.error(error);
         }
@@ -129,7 +180,7 @@ export const AdminResidents: React.FC = () => {
                     <p className="text-sm text-slate-500 mt-1">Gerencie os moradores e unidades.</p>
                 </div>
                 <button
-                    onClick={() => setIsAddResidentModalOpen(true)}
+                    onClick={() => { resetForm(); setIsAddResidentModalOpen(true); }}
                     className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f]"
                 >
                     <UserPlus size={16} /> Novo Morador
@@ -171,8 +222,7 @@ export const AdminResidents: React.FC = () => {
                                     <div className="flex flex-col text-xs">
                                         {/* Backend agora decripta. Se falhar, mostra o valor cru ou placeholder do backend */}
                                         <span>{res.email}</span>
-                                        {/* Phone não vem no UserRead atual, precisaria ajustar backend. Mostrando placeholder se nulo */}
-                                        <span className="text-slate-400">-</span>
+                                        <span className="text-slate-400">{res.phone || '-'}</span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
@@ -197,7 +247,20 @@ export const AdminResidents: React.FC = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <button className="text-slate-400 hover:text-[#437476] mx-1"><Edit2 size={16} /></button>
+                                    <button
+                                        onClick={() => handleDetails(res)}
+                                        className="text-slate-400 hover:text-[#437476] mx-1"
+                                        title="Ver Detalhes"
+                                    >
+                                        <Eye size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleEdit(res)}
+                                        className="text-slate-400 hover:text-[#437476] mx-1"
+                                        title="Editar"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -210,8 +273,8 @@ export const AdminResidents: React.FC = () => {
                     <div className="bg-[#fcfbf9] rounded-lg shadow-xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
                         <div className="px-8 py-6 border-b border-slate-100 bg-white flex justify-between items-center">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-700">Detalhes do Morador</h3>
-                                <p className="text-sm text-slate-500 mt-1">Preencha os detalhes abaixo para registrar um novo morador.</p>
+                                <h3 className="text-xl font-bold text-slate-700">{editingId ? 'Editar Morador' : 'Novo Morador'}</h3>
+                                <p className="text-sm text-slate-500 mt-1">{editingId ? 'Atualize as informações do morador.' : 'Preencha os detalhes abaixo para registrar um novo morador.'}</p>
                             </div>
                             <button
                                 onClick={() => setIsAddResidentModalOpen(false)}
@@ -254,18 +317,20 @@ export const AdminResidents: React.FC = () => {
                                             />
                                         </div>
                                     </div>
-                                    <div className="col-span-1">
-                                        <label className="block text-sm font-bold text-slate-600 mb-2">Senha Inicial</label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                placeholder="Defina a senha inicial"
-                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
-                                                value={residentForm.password}
-                                                onChange={e => setResidentForm({ ...residentForm, password: e.target.value })}
-                                            />
+                                    {!editingId && (
+                                        <div className="col-span-1">
+                                            <label className="block text-sm font-bold text-slate-600 mb-2">Senha Inicial</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Defina a senha inicial"
+                                                    className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
+                                                    value={residentForm.password}
+                                                    onChange={e => setResidentForm({ ...residentForm, password: e.target.value })}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 {/* Linha: Telefone | Bloco | Unidade */}
@@ -286,15 +351,20 @@ export const AdminResidents: React.FC = () => {
                                     {/* Calculated Lists */}
                                     {(() => {
                                         // 1. Identify Occupied Units
-                                        const occupiedUnitIds = new Set(residents.filter(r => r.unit_id).map(r => r.unit_id));
+                                        const occupiedUnitIds = new Set(residents.filter(r => r.unit_id || r.unit?.id).map(r => r.unit_id || r.unit?.id));
 
                                         // 2. Extract Unique Blocks
                                         const uniqueBlocks = Array.from(new Set(units.map(u => u.block).filter(Boolean))).sort();
 
-                                        // 3. Filter Units for Selected Block (Available Only)
+                                        // 3. Filter Units for Selected Block (Available Only OR Current User's Unit)
+                                        // We need the ID of the unit currently assigned to the user being edited (if any)
+                                        // We can find it via residents list using editingId
+                                        const currentUser = editingId ? residents.find(r => r.id === editingId) : null;
+                                        const currentUserUnitId = currentUser ? (currentUser.unit_id || currentUser.unit?.id) : null;
+
                                         const availableUnitsForBlock = units
                                             .filter(u => u.block === residentForm.block)
-                                            .filter(u => !occupiedUnitIds.has(u.id))
+                                            .filter(u => !occupiedUnitIds.has(u.id) || (currentUserUnitId && u.id === currentUserUnitId))
                                             .sort((a, b) => {
                                                 const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
                                                 const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
@@ -468,9 +538,86 @@ export const AdminResidents: React.FC = () => {
                                 </div>
 
                                 <button className="w-full py-4 bg-[#437476] text-white font-medium rounded-lg hover:bg-[#365e5f] shadow-sm transition-colors text-base" onClick={handleSaveResident}>
-                                    Salvar Morador
+                                    {editingId ? 'Atualizar Morador' : 'Salvar Morador'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {viewingResident && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-700">Detalhes do Morador</h3>
+                                <p className="text-xs text-slate-500">Visualização completa das informações.</p>
+                            </div>
+                            <button
+                                onClick={() => setViewingResident(null)}
+                                className="text-slate-400 hover:text-slate-600 bg-white border border-slate-200 p-1.5 rounded-full transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 rounded-full bg-[#437476]/10 flex items-center justify-center text-[#437476] text-2xl font-bold">
+                                    {viewingResident.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">{viewingResident.name}</h2>
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        {viewingResident.status === 'ACTIVE' ? 'Ativo' : viewingResident.status}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email</label>
+                                    <p className="text-sm font-medium text-slate-700">{viewingResident.email}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unidade</label>
+                                    <p className="text-sm font-medium text-slate-700">{getUnitName(viewingResident.unit_id)}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo</label>
+                                    <p className="text-sm font-medium text-slate-700">{viewingResident.profile_type || viewingResident.role}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Data de Cadastro</label>
+                                    <p className="text-sm font-medium text-slate-700">{new Date(viewingResident.created_at).toLocaleDateString('pt-BR')}</p>
+                                </div>
+                            </div>
+
+                            {viewingResident.pets && viewingResident.pets.length > 0 && (
+                                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                    <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                        <Cat size={16} /> Animais de Estimação
+                                    </h4>
+                                    <ul className="space-y-2">
+                                        {viewingResident.pets.map((pet, idx) => (
+                                            <li key={idx} className="text-sm text-slate-600 flex justify-between border-b last:border-0 border-slate-200 pb-2 last:pb-0">
+                                                <span>{pet.type}</span>
+                                                <span className="font-medium bg-white px-2 py-0.5 rounded border border-slate-200 text-xs">{pet.quantity}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                            <button
+                                onClick={() => setViewingResident(null)}
+                                className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg text-sm hover:bg-slate-50"
+                            >
+                                Fechar
+                            </button>
                         </div>
                     </div>
                 </div>

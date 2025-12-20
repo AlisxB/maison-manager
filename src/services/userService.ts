@@ -5,12 +5,14 @@ export interface User {
     id: string;
     name: string;
     email: string;
+    phone?: string;
     role: string;
     profile_type: string;
     unit_id?: string;
     unit?: Unit;
     status: string;
     created_at: string;
+    pets?: { type: string; quantity: number }[];
 }
 
 export interface Unit {
