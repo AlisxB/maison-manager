@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 from sqlalchemy.orm import joinedload
 from app.core import deps, security
-from app.models.all import User
+from app.models.all import User, AccessLog
 from app.schemas.user import UserRead, UserCreate, UserUpdate
 import hashlib
 
@@ -281,4 +281,24 @@ async def delete_user(
     await db.delete(db_user)
     await db.commit()
     
+    await db.delete(db_user)
+    await db.commit()
+    
     return {"status": "success"}
+
+@router.get("/me/access-history")
+async def get_access_history(
+    db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)],
+    limit: int = 5
+):
+    """
+    Retorna o histórico de acessos do usuário atual.
+    """
+    result = await db.execute(
+        select(AccessLog)
+        .where(AccessLog.user_id == current_user.user_id)
+        .order_by(AccessLog.created_at.desc())
+        .limit(limit)
+    )
+    return result.scalars().all()
