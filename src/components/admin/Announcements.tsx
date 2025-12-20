@@ -52,9 +52,9 @@ export const AdminAnnouncements: React.FC = () => {
                 audience: 'Todos os moradores'
             });
             fetchAnnouncements();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error creating announcement:", error);
-            alert("Erro ao publicar aviso.");
+            alert(error.response?.data?.detail || "Erro ao publicar aviso. Verifique o console.");
         }
     };
 
