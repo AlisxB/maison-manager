@@ -2,11 +2,24 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1 import auth, users, units, reservations, common_areas, readings, financial, dashboard, inventory, condominium, audit, bylaws, violations, occurrences, announcements, profile, notifications
+from app.core.database import AsyncSessionLocal
+from app.db.init_db import init_db
+import logging
+
+logger = logging.getLogger("uvicorn")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+@app.on_event("startup")
+async def startup_event():
+    async with AsyncSessionLocal() as session:
+        try:
+            await init_db(session)
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}")
 
 # Configuração de CORS
 # Em produção, restritir origins para o domínio do frontend
