@@ -44,6 +44,28 @@ export const AdminDashboard: React.FC = () => {
     );
   };
 
+  /* Translation Helpers */
+  const monthMap: Record<string, string> = {
+    'Jan': 'Jan', 'Feb': 'Fev', 'Mar': 'Mar', 'Apr': 'Abr', 'May': 'Mai', 'Jun': 'Jun',
+    'Jul': 'Jul', 'Aug': 'Ago', 'Sep': 'Set', 'Oct': 'Out', 'Nov': 'Nov', 'Dec': 'Dez'
+  };
+
+  const getTranslatedMonth = (englishName: string) => monthMap[englishName] || englishName;
+
+  const utilityMap: Record<string, string> = {
+    'water': 'Água',
+    'gas': 'Gás',
+    'energy': 'Energia'
+  };
+
+  const getResidentStatusBadge = (status: string) => {
+    const s = status.toUpperCase();
+    if (s === 'ACTIVE' || s === 'ATIVO') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-50 text-emerald-600">Ativo</span>;
+    if (s === 'PENDING' || s === 'PENDENTE') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-amber-50 text-amber-600">Pendente</span>;
+    if (s === 'INACTIVE' || s === 'INATIVO') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-slate-100 text-slate-500">Inativo</span>;
+    return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-slate-50 text-slate-600">{status}</span>;
+  };
+
   const ChartCard = ({ title, subtext, color, dataKey }: any) => (
     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col h-80">
       <div className="mb-6">
@@ -59,12 +81,24 @@ export const AdminDashboard: React.FC = () => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={stats?.charts || []}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} dy={10} />
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+              dy={10}
+              tickFormatter={(val) => getTranslatedMonth(val)}
+            />
             <Tooltip
               cursor={{ fill: '#f8fafc' }}
               contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold', color: '#475569' }}
+              formatter={(value: number, name: string) => [
+                value,
+                utilityMap[name] || name
+              ]}
+              labelFormatter={(label) => getTranslatedMonth(label)}
             />
-            <Bar dataKey={dataKey} fill={color} radius={[6, 6, 6, 6]} barSize={24} />
+            <Bar dataKey={dataKey} fill={color} radius={[6, 6, 6, 6]} barSize={24} name={utilityMap[dataKey] || dataKey} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -156,10 +190,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-[9px] font-bold text-slate-300">{res.start_date}</span>
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${res.status === 'Ativo' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                      }`}>
-                      {res.status}
-                    </span>
+                    {getResidentStatusBadge(res.status)}
                   </div>
                 </div>
               ))
