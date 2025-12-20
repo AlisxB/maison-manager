@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Home, Clock, CheckCircle, MessageSquare, ShieldAlert, Megaphone, FileText, BarChart3, ChevronRight, X, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useCondominium } from '../../context/CondominiumContext';
 import { ReservationService, Reservation, CommonAreaService, CommonArea } from '../../services/reservationService';
 import { OccurrenceService, Occurrence, OccurrenceCreate } from '../../services/occurrenceService';
 import { AnnouncementService, Announcement } from '../../services/announcementService';
@@ -11,6 +12,7 @@ interface DashboardProps {
 
 export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user } = useAuth();
+  const { condominium } = useCondominium();
   const [nextReservation, setNextReservation] = useState<Reservation | null>(null);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -147,7 +149,7 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="relative z-10">
           <h2 className="text-3xl font-bold mb-2">Bem-vinda de volta {(user as any)?.name ? `, ${(user as any).name.split(' ')[0]}` : ''}!</h2>
           <p className="text-emerald-100 mb-6">
-            Unidade {(user as any)?.unit?.number || (user as any)?.unit || '---'} • Maison Heights
+            Unidade {(user as any)?.unit?.number || (user as any)?.unit || '---'} • {condominium?.name || 'Maison Heights'}
           </p>
           <div className="flex gap-3">
             <button className="bg-white text-emerald-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
