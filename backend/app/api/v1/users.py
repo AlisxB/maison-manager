@@ -5,7 +5,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import joinedload
 from app.core import deps, security
 from app.models.all import User
-from app.schemas.user import UserRead, UserCreate
+from app.schemas.user import UserRead, UserCreate, UserUpdate
 import hashlib
 
 router = APIRouter()
@@ -24,17 +24,12 @@ async def read_users(
     a política 'users_visibility_policy' baseada nas variáveis de sessão
     definidas em deps.get_db.
     """
-    # Exemplo de Select simples
-    # Se quisermos descriptografar campos, precisaríamos usar func.pgp_sym_decrypt
-    # Mas aqui vamos focar na estrutura
-    # Eager load Unit relationship
-    # Descriptografia via SQL (PGCRYPTO)
-    # Apenas tenta descriptografar se o campo não for nulo para evitar erros.
-    # Usa a chave fixa da aplicação (simulação) ou variável de ambiente.
     query = select(
         User,
-        text("CASE WHEN email_encrypted IS NOT NULL THEN pgp_sym_decrypt(email_encrypted::bytea, 'super_secure_key_for_pgcrypto') ELSE NULL END as decrypted_email"),
-        text("CASE WHEN phone_encrypted IS NOT NULL THEN pgp_sym_decrypt(phone_encrypted::bytea, 'super_secure_key_for_pgcrypto') ELSE NULL END as decrypted_phone")
+        # Safeguard: Only decrypt if it looks like PGP packet (not starting with ENC placeholder)
+        # Actually, checking for 'ENC(' is safer for my current mixed data state.
+        text("CASE WHEN email_encrypted IS NOT NULL AND email_encrypted NOT LIKE 'ENC(%' THEN pgp_sym_decrypt(email_encrypted::bytea, 'super_secure_key_for_pgcrypto') ELSE NULL END as decrypted_email"),
+        text("CASE WHEN phone_encrypted IS NOT NULL AND phone_encrypted NOT LIKE 'ENC(%' THEN pgp_sym_decrypt(phone_encrypted::bytea, 'super_secure_key_for_pgcrypto') ELSE NULL END as decrypted_phone")
     ).options(joinedload(User.unit)).offset(skip).limit(limit)
     
     result = await db.execute(query)
@@ -43,6 +38,10 @@ async def read_users(
     users_data = []
     for row in result.all():
         user_obj = row[0]
+        # Initialize attributes to avoid AttributeError
+        user_obj.email = None
+        user_obj.phone = None
+        
         # Injeta os valores descriptografados no objeto SQLAlchemy (transiente)
         if row[1]:
             user_obj.email = row[1]
@@ -50,8 +49,14 @@ async def read_users(
         # Se falhou desencriptar ou é nulo, mantém o comportamento seguro
         if not user_obj.email or user_obj.email == "admin@encrypted.com":
              # Tenta fallback para formato antigo simples se existir
-             if user_obj.email_encrypted and u.email_encrypted.startswith("ENC("):
+             if user_obj.email_encrypted and user_obj.email_encrypted.startswith("ENC("):
                   user_obj.email = user_obj.email_encrypted[4:-1]
+
+        # Lógica similar para Phone
+        if row[2]:
+            user_obj.phone = row[2]
+        elif user_obj.phone_encrypted and user_obj.phone_encrypted.startswith("ENC("):
+            user_obj.phone = user_obj.phone_encrypted[4:-1]
         
         users_data.append(user_obj)
             
@@ -118,6 +123,7 @@ async def create_user(
         role=user_in.role,
         profile_type=user_in.profile_type,
         unit_id=user_in.unit_id,
+        phone_encrypted=f"ENC({user_in.phone})" if user_in.phone else None,
         status="ACTIVE"
     )
     
@@ -157,7 +163,7 @@ async def create_user(
 @router.put("/{id}", response_model=UserRead)
 async def update_user(
     id: str,
-    user_in: UserCreate, # Using Create schema for simplicity, ideally UserUpdate
+    user_in: UserUpdate,
     db: Annotated[AsyncSession, Depends(deps.get_db)],
     current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
 ):
@@ -167,20 +173,46 @@ async def update_user(
     """
     if current_user.role != 'ADMIN':
         raise HTTPException(status_code=403, detail="Not authorized")
-        
-    db_user = await db.get(User, id)
-    if not db_user or str(db_user.condominium_id) != str(current_user.condo_id):
-        raise HTTPException(status_code=404, detail="User not found")
+    
+    
+    try:
+        db_user = await db.get(User, id)
+        if not db_user or str(db_user.condominium_id) != str(current_user.condo_id):
+            raise HTTPException(status_code=404, detail="User not found")
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro db.get: {str(e)}")
         
     # Prevent editing Master Admin by others (optional, but good practice)
     # if str(db_user.id) == "22222222-2222-2222-2222-222222222222" and str(current_user.id) != str(db_user.id):
     #     raise HTTPException(status_code=403, detail="Cannot edit Master Admin")
 
-    db_user.name = user_in.name
-    # Update other fields... complex due to encryption/hashing.
-    # For now, let's just update basic info + role + status
-    db_user.role = user_in.role
-    db_user.profile_type = user_in.profile_type
+    # Prevent editing Master Admin by others (optional, but good practice)
+    # if str(db_user.id) == "22222222-2222-2222-2222-222222222222" and str(current_user.id) != str(db_user.id):
+    #     raise HTTPException(status_code=403, detail="Cannot edit Master Admin")
+
+    # Update fields
+    if user_in.name:
+        db_user.name = user_in.name
+    if user_in.role:
+        db_user.role = user_in.role
+    if user_in.profile_type:
+        db_user.profile_type = user_in.profile_type
+    
+    if user_in.unit_id is not None:
+        db_user.unit_id = user_in.unit_id
+
+    # Update Phone
+    if user_in.phone:
+        db_user.phone_encrypted = f"ENC({user_in.phone})"
+
+    # Update Email
+    if user_in.email:
+         new_email_hash = hashlib.sha256(user_in.email.lower().encode('utf-8')).hexdigest()
+         if new_email_hash != db_user.email_hash:
+             db_user.email_encrypted = f"ENC({user_in.email})"
+             db_user.email_hash = new_email_hash
     
     # If password provided and not empty/star
     if user_in.password and user_in.password != "******":
@@ -188,10 +220,26 @@ async def update_user(
         
     db.add(db_user)
     await db.commit()
-    await db.refresh(db_user)
     
-    # Mock email for response
-    db_user.email = user_in.email
+    # Reload with relationships to avoid MissingGreenlet
+    stmt = select(User).options(joinedload(User.unit)).where(User.id == db_user.id)
+    result = await db.execute(stmt)
+    db_user = result.scalars().first()
+    
+    # Initialize transient attributes for Pydantic response
+    db_user.email = None
+    db_user.phone = None
+    
+    if user_in.email:
+        db_user.email = user_in.email
+    elif db_user.email_encrypted and db_user.email_encrypted.startswith("ENC("):
+        db_user.email = db_user.email_encrypted[4:-1]
+        
+    if user_in.phone:
+        db_user.phone = user_in.phone
+    elif db_user.phone_encrypted and db_user.phone_encrypted.startswith("ENC("):
+        db_user.phone = db_user.phone_encrypted[4:-1]
+    
     return db_user
 
 @router.delete("/{id}")
@@ -212,7 +260,12 @@ async def delete_user(
     if str(id) == MASTER_ADMIN_ID:
         raise HTTPException(status_code=403, detail="O Administrador Master não pode ser excluído.")
         
-    db_user = await db.get(User, id)
+    
+    # Use select with eager load to avoid MissingGreenlet on response serialization
+    stmt = select(User).options(joinedload(User.unit)).where(User.id == id)
+    result = await db.execute(stmt)
+    db_user = result.scalars().first()
+    
     if not db_user or str(db_user.condominium_id) != str(current_user.condo_id):
         raise HTTPException(status_code=404, detail="User not found")
         
