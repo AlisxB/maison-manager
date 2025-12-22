@@ -484,6 +484,7 @@ CREATE TABLE IF NOT EXISTS occurrences (
     description TEXT NOT NULL,
     category VARCHAR(50) NOT NULL CHECK (category IN ('Maintenance', 'Noise', 'Security', 'Other')),
     status VARCHAR(50) DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
+    is_anonymous BOOLEAN DEFAULT FALSE,
     admin_response TEXT,
     photo_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
