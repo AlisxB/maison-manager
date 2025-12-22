@@ -31,7 +31,7 @@ async def login_access_token(
         # Nota: RLS impede select direto sem contexto. A função SECURITY DEFINER resolve isso.
         stmt = select(User).from_statement(
             text("SELECT * FROM get_user_by_email_hash(CAST(:hash AS VARCHAR))")
-        ).params(hash=email_hash).options(joinedload(User.unit))
+        ).params(hash=email_hash)
         
         result = await db.execute(stmt)
         user = result.scalars().first()
@@ -50,12 +50,25 @@ async def login_access_token(
         if user.status != 'ACTIVE':
             raise HTTPException(status_code=400, detail="Usuário inativo")
 
-        # 4. Gerar Token com Payload rico (User, Condo, Role)
+        # 4. Gerar Token com Payload rico
+        # Fetch Unit safely (RLS might hide it unless we set context, or we just try)
         unit_label = None
-        if user.unit:
-            unit_label = user.unit.number
-            if user.unit.block:
-                unit_label = f"{user.unit.block}-{user.unit.number}"
+        if user.unit_id:
+            try:
+                # Set context to allow reading unit if RLS is strict
+                await db.execute(text("SELECT set_config('app.current_condo_id', :cid, false)"), {"cid": str(user.condominium_id)})
+                
+                # Fetch unit explicitly
+                unit_res = await db.execute(select(Unit).where(Unit.id == user.unit_id))
+                unit_obj = unit_res.scalars().first()
+                
+                if unit_obj:
+                    unit_label = unit_obj.number
+                    if unit_obj.block:
+                        unit_label = f"{unit_obj.block}-{unit_obj.number}"
+            except Exception as e:
+                print(f"Failed to fetch unit for token: {e}")
+                # Fallback: ignore unit in token
 
         access_token_expires = timedelta(minutes=config.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = security.create_access_token(
