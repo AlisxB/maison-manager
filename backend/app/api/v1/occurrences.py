@@ -6,6 +6,11 @@ from app.core import deps
 from app.models.all import Occurrence
 from app.schemas.occurrence import OccurrenceCreate, OccurrenceRead, OccurrenceUpdate
 from app.core.security import get_password_hash # Not needed here but good import checks
+import logging
+import traceback
+from uuid import UUID
+
+logger = logging.getLogger("uvicorn")
 
 router = APIRouter()
 
@@ -22,16 +27,21 @@ async def read_occurrences(
     - Admin: Sees all (for current condo).
     - Resident: Sees own.
     """
-    query = select(Occurrence).order_by(Occurrence.created_at.desc())
-    
-    # Explicit Application-Level Security (Defense in Depth)
-    # Even if RLS is on, we filter here to be 100% sure.
-    if current_user.role == 'RESIDENT':
-        query = query.where(Occurrence.user_id == current_user.user_id)
+    try:
+        query = select(Occurrence).order_by(Occurrence.created_at.desc())
         
-    query = query.offset(skip).limit(limit)
-    result = await db.execute(query)
-    return result.scalars().all()
+        # Explicit Application-Level Security (Defense in Depth)
+        # Even if RLS is on, we filter here to be 100% sure.
+        if current_user.role == 'RESIDENT':
+            query = query.where(Occurrence.user_id == current_user.user_id)
+            
+        query = query.offset(skip).limit(limit)
+        result = await db.execute(query)
+        return result.scalars().all()
+    except Exception as e:
+        logger.error(f"Error reading occurrences: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/", response_model=OccurrenceRead)
 async def create_occurrence(
@@ -42,15 +52,30 @@ async def create_occurrence(
     """
     Report a new issue.
     """
-    db_obj = Occurrence(
-        condominium_id=current_user.condo_id,
-        user_id=current_user.user_id,
-        **occurrence.dict()
-    )
-    db.add(db_obj)
-    await db.commit()
-    await db.refresh(db_obj)
-    return db_obj
+    try:
+        logger.info(f"Creating occurrence for user {current_user.user_id} in condo {current_user.condo_id}")
+        
+        # Ensure UUIDs are valid UUID objects, handling string input if necessary
+        cid = UUID(str(current_user.condo_id))
+        uid = UUID(str(current_user.user_id))
+        
+        logger.debug(f"Payload: {occurrence.dict()}")
+
+        db_obj = Occurrence(
+            condominium_id=cid,
+            user_id=uid,
+            **occurrence.dict()
+        )
+        db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
+        
+        logger.info(f"Occurrence created successfully: {db_obj.id}")
+        return db_obj
+    except Exception as e:
+        logger.error(f"Error creating occurrence: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @router.patch("/{id}", response_model=OccurrenceRead)
 async def update_occurrence(
