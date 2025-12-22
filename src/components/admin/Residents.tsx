@@ -131,8 +131,10 @@ export const AdminResidents: React.FC = () => {
                 profile_type: 'TENANT', // Default
                 unit_id: targetUnit?.id,
                 // Only send password if editing and non-empty, or creating (default applied in backend if missing but safer here)
-                ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : { password: residentForm.password || 'mudar123' }),
+                ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : { password: residentForm.password || 'Mudar@123' }),
             };
+
+
 
             if (editingId) {
                 await UserService.update(editingId, payload);
@@ -317,20 +319,20 @@ export const AdminResidents: React.FC = () => {
                                             />
                                         </div>
                                     </div>
-                                    {!editingId && (
-                                        <div className="col-span-1">
-                                            <label className="block text-sm font-bold text-slate-600 mb-2">Senha Inicial</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Defina a senha inicial"
-                                                    className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
-                                                    value={residentForm.password}
-                                                    onChange={e => setResidentForm({ ...residentForm, password: e.target.value })}
-                                                />
-                                            </div>
+                                    <div className="col-span-1">
+                                        <label className="block text-sm font-bold text-slate-600 mb-2">
+                                            {editingId ? 'Redefinir Senha' : 'Senha Inicial'}
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder={editingId ? "Deixe em branco para manter" : "Padrão: Mudar@123"}
+                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
+                                                value={residentForm.password}
+                                                onChange={e => setResidentForm({ ...residentForm, password: e.target.value })}
+                                            />
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
 
                                 {/* Linha: Telefone | Bloco | Unidade */}
