@@ -17,6 +17,11 @@ class OccurrenceUpdate(BaseModel):
     admin_response: Optional[str] = None
     # Residents might want to update description if OPEN, but let's keep it simple for now (Admin only updates usually)
 
+class UserSummary(BaseModel):
+    id: UUID
+    name: str
+    unit_id: Optional[UUID] = None
+
 class OccurrenceRead(OccurrenceBase):
     id: UUID
     condominium_id: UUID
@@ -26,6 +31,8 @@ class OccurrenceRead(OccurrenceBase):
     admin_response: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    
+    user: Optional[UserSummary] = None
 
     class Config:
         from_attributes = True

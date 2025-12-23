@@ -13,6 +13,11 @@ export interface Occurrence {
     is_anonymous?: boolean;
     created_at: string;
     updated_at: string;
+    user?: {
+        id: string;
+        name: string;
+        unit_id?: string;
+    };
 }
 
 export interface OccurrenceCreate {

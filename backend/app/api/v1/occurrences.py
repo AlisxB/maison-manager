@@ -2,6 +2,7 @@ from typing import List, Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.orm import joinedload
 from app.core import deps
 from app.models.all import Occurrence
 from app.schemas.occurrence import OccurrenceCreate, OccurrenceRead, OccurrenceUpdate
@@ -28,7 +29,7 @@ async def read_occurrences(
     - Resident: Sees own.
     """
     try:
-        query = select(Occurrence).order_by(Occurrence.created_at.desc())
+        query = select(Occurrence).options(joinedload(Occurrence.user)).order_by(Occurrence.created_at.desc())
         
         # Explicit Application-Level Security (Defense in Depth)
         # Even if RLS is on, we filter here to be 100% sure.
@@ -68,7 +69,11 @@ async def create_occurrence(
         )
         db.add(db_obj)
         await db.commit()
-        await db.refresh(db_obj)
+        
+        # We must reload with the User relationship to avoid MissingGreenlet when Pydantic serializes
+        stmt = select(Occurrence).options(joinedload(Occurrence.user)).where(Occurrence.id == db_obj.id)
+        result = await db.execute(stmt)
+        db_obj = result.scalars().first()
         
         logger.info(f"Occurrence created successfully: {db_obj.id}")
         return db_obj

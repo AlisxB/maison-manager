@@ -92,8 +92,13 @@ export const AdminIssues: React.FC = () => {
                                         <User size={14} /> Anônimo
                                     </span>
                                 ) : (
-                                    <span className="flex items-center gap-1">
-                                        <User size={14} /> Morador (ID: {issue.user_id.substring(0, 8)}...)
+                                    <span className="flex items-center gap-1" title={issue.user?.name || "Desconhecido"}>
+                                        <User size={14} />
+                                        {issue.user ? (
+                                            <span className="font-medium text-slate-700">{issue.user.name}</span>
+                                        ) : (
+                                            <span>Morador (ID: {issue.user_id.substring(0, 8)}...)</span>
+                                        )}
                                     </span>
                                 )}
                             </div>

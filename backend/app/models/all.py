@@ -229,6 +229,8 @@ class Occurrence(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    user: Mapped["User"] = relationship("User")
+
 class Announcement(Base):
     __tablename__ = "announcements"
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
