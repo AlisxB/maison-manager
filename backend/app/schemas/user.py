@@ -7,8 +7,8 @@ from datetime import datetime
 class UserBase(BaseModel):
     name: str
     email: EmailStr
-    role: str = Field(..., pattern="^(ADMIN|RESIDENT|PORTER|FINANCIAL)$")
-    profile_type: Optional[str] = Field(None, pattern="^(OWNER|TENANT|STAFF)$")
+    role: str = Field(..., pattern="^(ADMIN|RESIDENTE|PORTEIRO|FINANCEIRO)$")
+    profile_type: Optional[str] = Field(None, pattern="^(PROPRIETARIO|INQUILINO|STAFF)$")
     unit_id: Optional[UUID] = None
 
 # Schema para Criação (Recebe senha em plain text)

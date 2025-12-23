@@ -10,7 +10,7 @@ class TransactionBase(BaseModel):
     amount: Decimal
     category: Optional[str] = None
     date: datetime.date
-    status: Optional[str] = 'paid'
+    status: Optional[str] = 'PAGO'
     observation: Optional[str] = None
 
 class TransactionCreate(TransactionBase):

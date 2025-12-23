@@ -47,7 +47,7 @@ class ElectricityReadingBase(BaseModel):
     due_date: date
     consumption_kwh: float
     total_value: float
-    status: str = 'PENDING' # PENDING, PAID, OVERDUE
+    status: str = 'PENDENTE' # PENDENTE, PAGO, ATRASADO
 
 class ElectricityReadingCreate(ElectricityReadingBase):
     pass

@@ -35,9 +35,9 @@ class User(Base):
     email_hash = Column(String(64), nullable=False)
     password_hash = Column(String(255), nullable=False)
     
-    role = Column(String(20), nullable=False) # ADMIN, RESIDENT, PORTER, FINANCIAL
-    profile_type = Column(String(20)) # OWNER, TENANT
-    status = Column(String(20), default="PENDING")
+    role = Column(String(20), nullable=False) # ADMIN, RESIDENTE, PORTEIRO, FINANCEIRO
+    profile_type = Column(String(20)) # PROPRIETARIO, INQUILINO, STAFF
+    status = Column(String(20), default="PENDENTE")
     
     unit = relationship("Unit")
     vehicles = relationship("Vehicle", back_populates="user", cascade="all, delete-orphan")
@@ -65,7 +65,7 @@ class Unit(Base):
     condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
     block = Column(String(50))
     number = Column(String(20), nullable=False)
-    type = Column(String(20), default="Apartment")
+    type = Column(String(20), default="Apartamento")
 
 class Vehicle(Base):
     __tablename__ = "vehicles"
@@ -102,7 +102,7 @@ class Reservation(Base):
     
     start_time = Column(TIMESTAMP(timezone=True), nullable=False)
     end_time = Column(TIMESTAMP(timezone=True), nullable=False)
-    status = Column(String(20), default="PENDING")
+    status = Column(String(20), default="PENDENTE")
     reason = Column(Text, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
@@ -156,7 +156,7 @@ class ReadingElectricity(Base):
     due_date = Column(TIMESTAMP(timezone=True), nullable=False)
     consumption_kwh = Column(DECIMAL(10, 2), nullable=False)
     total_value = Column(DECIMAL(10, 2), nullable=False)
-    status = Column(String(20), default='PENDING')
+    status = Column(String(20), default='PENDENTE')
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
@@ -184,7 +184,7 @@ class Transaction(Base):
     amount = Column(DECIMAL(10, 2), nullable=False)
     category = Column(String(50))
     date = Column(TIMESTAMP(timezone=True), nullable=False) # Store as date content in timestamp col or just Date type? DB says DATE. SQLAlchemy Date maps to python date.
-    status = Column(String(20), default='paid')
+    status = Column(String(20), default='PAGO')
     observation = Column(Text)
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
@@ -204,8 +204,8 @@ class Violation(Base):
     condominium_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("condominiums.id"), nullable=False)
     resident_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     bylaw_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bylaws.id"), nullable=True)
-    type: Mapped[str] = mapped_column(String(50), nullable=False) # 'WARNING', 'FINE'
-    status: Mapped[str] = mapped_column(String(50), default='OPEN') # 'OPEN', 'PAID', 'APPEALED', 'RESOLVED'
+    type: Mapped[str] = mapped_column(String(50), nullable=False) # 'ADVERTENCIA', 'MULTA'
+    status: Mapped[str] = mapped_column(String(50), default='ABERTO') # 'ABERTO', 'PAGO', 'RECORRIDO', 'RESOLVIDO'
     description: Mapped[str] = mapped_column(Text, nullable=False)
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -219,8 +219,8 @@ class Occurrence(Base):
     
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    category: Mapped[str] = mapped_column(String(50), nullable=False) # 'Maintenance', 'Noise', 'Security', 'Other'
-    status: Mapped[str] = mapped_column(String(50), default='OPEN') # 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    category: Mapped[str] = mapped_column(String(50), nullable=False) # 'Manutenção', 'Barulho', 'Segurança', 'Outro'
+    status: Mapped[str] = mapped_column(String(50), default='ABERTO') # 'ABERTO', 'EM ANDAMENTO', 'RESOLVIDO', 'FECHADO'
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False)
     
     admin_response: Mapped[str] = mapped_column(Text, nullable=True)
