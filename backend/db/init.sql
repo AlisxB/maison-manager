@@ -456,8 +456,8 @@ CREATE TABLE IF NOT EXISTS violations (
     condominium_id UUID NOT NULL REFERENCES condominiums(id),
     resident_id UUID NOT NULL REFERENCES users(id), -- Recipient
     bylaw_id UUID REFERENCES bylaws(id), -- Linked rule (optional)
-    type VARCHAR(50) NOT NULL, -- 'WARNING' (Notificação) or 'FINE' (Multa)
-    status VARCHAR(50) DEFAULT 'OPEN', -- OPEN, PAID, APPEALED, RESOLVED
+    type VARCHAR(50) NOT NULL CHECK (type IN ('ADVERTENCIA', 'MULTA')), 
+    status VARCHAR(50) DEFAULT 'ABERTO' CHECK (status IN ('ABERTO', 'PAGO', 'RECORRIDO', 'RESOLVIDO')),
     description TEXT NOT NULL,
     amount DECIMAL(10, 2), -- Only for FINE
     occurred_at TIMESTAMP WITH TIME ZONE,
