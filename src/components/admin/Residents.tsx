@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
     Search, Filter, UserPlus, Edit2, User as UserIcon, Mail, Phone, Building, Calendar, Cat, X, Trash2, PlusCircle, Eye
 } from 'lucide-react';
@@ -6,6 +7,7 @@ import { MOCK_RESIDENTS } from '../../mock'; // Removido
 import { UserService, UnitService, User, Unit } from '../../services/userService';
 
 export const AdminResidents: React.FC = () => {
+    const { user } = useAuth();
     const [isAddResidentModalOpen, setIsAddResidentModalOpen] = useState(false);
     const [residentForm, setResidentForm] = useState({
         name: '',
@@ -15,7 +17,7 @@ export const AdminResidents: React.FC = () => {
         unit: '',
         entryDate: '2025-12-17',
         exitDate: '',
-        registeredBy: 'JOAO',
+        registeredBy: user?.name || 'Admin',
         hasPets: false,
         petsList: [{ quantity: 1, type: '' }],
         password: '' // Add password to state
@@ -35,7 +37,7 @@ export const AdminResidents: React.FC = () => {
         try {
             setLoading(true);
             const [usersData, unitsData] = await Promise.all([
-                UserService.getAll({ status: 'ACTIVE' }),
+                UserService.getAll({ status: 'ATIVO' }),
                 UnitService.getAll()
             ]);
             setResidents(usersData);
@@ -62,7 +64,7 @@ export const AdminResidents: React.FC = () => {
             unit: '',
             entryDate: new Date().toISOString().split('T')[0],
             exitDate: '',
-            registeredBy: 'JOAO',
+            registeredBy: user?.name || 'Admin',
             hasPets: false,
             petsList: [{ quantity: 1, type: '' }],
             password: ''
@@ -81,7 +83,7 @@ export const AdminResidents: React.FC = () => {
             unit: unit?.number || '',
             entryDate: '2025-01-01', // Mock or fetch actual
             exitDate: '',
-            registeredBy: 'ADMIN',
+            registeredBy: user?.name || 'Admin',
             hasPets: resident.pets && resident.pets.length > 0,
             petsList: resident.pets && resident.pets.length > 0 ? resident.pets.map(p => ({ quantity: 1, type: p.type })) : [{ quantity: 1, type: '' }],
             password: '' // Don't fill password on edit
@@ -127,8 +129,8 @@ export const AdminResidents: React.FC = () => {
                 name: residentForm.name,
                 email: residentForm.email,
                 phone: residentForm.phone,
-                role: 'RESIDENT',
-                profile_type: 'TENANT', // Default
+                role: 'RESIDENTE',
+                profile_type: 'INQUILINO', // Default
                 unit_id: targetUnit?.id,
                 // Only send password if editing and non-empty, or creating (default applied in backend if missing but safer here)
                 ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : { password: residentForm.password || 'Mudar@123' }),
@@ -148,7 +150,9 @@ export const AdminResidents: React.FC = () => {
             resetForm(); // Clear form
             loadData(); // Recarregar
         } catch (error: any) {
-            const msg = error.response?.data?.detail || (editingId ? 'Erro ao atualizar morador' : 'Erro ao cadastrar morador');
+            const msg = error.response?.data?.detail
+                ? (typeof error.response.data.detail === 'object' ? JSON.stringify(error.response.data.detail) : error.response.data.detail)
+                : (editingId ? 'Erro ao atualizar morador' : 'Erro ao cadastrar morador');
             alert(msg);
             console.error(error);
         }
@@ -234,18 +238,23 @@ export const AdminResidents: React.FC = () => {
                                         const map: Record<string, string> = {
                                             'ADMIN': 'Administrador',
                                             'RESIDENT': 'Morador',
+                                            'RESIDENTE': 'Morador',
                                             'PORTER': 'Porteiro',
+                                            'PORTEIRO': 'Porteiro',
                                             'FINANCIAL': 'Financeiro',
+                                            'FINANCEIRO': 'Financeiro',
                                             'OWNER': 'Proprietário',
+                                            'PROPRIETARIO': 'Proprietário',
                                             'TENANT': 'Inquilino',
+                                            'INQUILINO': 'Inquilino',
                                             'STAFF': 'Funcionário'
                                         };
                                         return map[type] || type;
                                     })()}
                                 </td>
                                 <td className="px-6 py-4 text-center">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${res.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                        {res.status === 'ACTIVE' ? 'Ativo' : res.status === 'PENDING' ? 'Pendente' : 'Inativo'}
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${res.status === 'ATIVO' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                                        {res.status === 'ATIVO' ? 'Ativo' : res.status === 'PENDENTE' ? 'Pendente' : 'Inativo'}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">
@@ -572,7 +581,7 @@ export const AdminResidents: React.FC = () => {
                                 <div>
                                     <h2 className="text-xl font-bold text-slate-800">{viewingResident.name}</h2>
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        {viewingResident.status === 'ACTIVE' ? 'Ativo' : viewingResident.status}
+                                        {viewingResident.status === 'ATIVO' ? 'Ativo' : viewingResident.status}
                                     </span>
                                 </div>
                             </div>
