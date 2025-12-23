@@ -9,7 +9,7 @@ export const AdminRequests: React.FC = () => {
 
     const fetchRequests = async () => {
         try {
-            const response = await api.get('/users?status=PENDING');
+            const response = await api.get('/users?status=PENDENTE');
             setRequests(response.data);
         } catch (error) {
             console.error("Erro ao buscar solicitações", error);
@@ -25,7 +25,7 @@ export const AdminRequests: React.FC = () => {
     const handleApprove = async () => {
         if (!selectedRequest) return;
         try {
-            await api.put(`/users/${selectedRequest.id}`, { status: 'ACTIVE' });
+            await api.put(`/users/${selectedRequest.id}`, { status: 'ATIVO' });
             alert(`Usuário ${selectedRequest.name} aprovado!`);
             setSelectedRequest(null);
             fetchRequests();
@@ -38,8 +38,8 @@ export const AdminRequests: React.FC = () => {
         if (!selectedRequest) return;
         if (!confirm("Tem certeza que deseja rejeitar esta solicitação?")) return;
         try {
-            // Opção: Deletar ou Marcar como REJECTED. Vamos marcar para histórico.
-            await api.put(`/users/${selectedRequest.id}`, { status: 'REJECTED' });
+            // Opção: Deletar ou Marcar como REJEITADO. Vamos marcar para histórico.
+            await api.put(`/users/${selectedRequest.id}`, { status: 'REJEITADO' });
             alert(`Solicitação rejeitada.`);
             setSelectedRequest(null);
             fetchRequests();
@@ -65,7 +65,7 @@ export const AdminRequests: React.FC = () => {
                             <div>
                                 <h3 className="font-bold text-slate-900">{req.name}</h3>
                                 <p className="text-sm text-slate-500">
-                                    {req.profile_type === 'TENANT' ? 'Inquilino' : 'Proprietário'} •
+                                    {req.profile_type === 'INQUILINO' ? 'Inquilino' : 'Proprietário'} •
                                     Unidade {req.unit ? `${req.unit.block}-${req.unit.number}` : 'N/A'}
                                 </p>
                                 <p className="text-xs text-slate-400 mt-1">{req.email} • {new Date(req.created_at).toLocaleDateString()}</p>
