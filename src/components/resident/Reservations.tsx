@@ -70,7 +70,7 @@ export const ResidentReservations: React.FC = () => {
       return allReservations.find(r => {
          const resDate = new Date(r.start_time);
          return r.common_area_id === selectedAreaId &&
-            (r.status === 'CONFIRMED' || r.status === 'BLOCKED') &&
+            (r.status === 'CONFIRMADO' || r.status === 'BLOQUEADO') &&
             resDate.getDate() === day &&
             resDate.getMonth() === currentMonth;
       });
@@ -152,7 +152,7 @@ export const ResidentReservations: React.FC = () => {
    const handleConfirmCancel = async () => {
       if (!reservationToCancel) return;
       try {
-         await ReservationService.updateStatus(reservationToCancel, 'CANCELLED');
+         await ReservationService.updateStatus(reservationToCancel, 'CANCELADO');
          fetchInitialData();
          setIsCancelModalOpen(false);
          setReservationToCancel(null);
@@ -359,16 +359,18 @@ export const ResidentReservations: React.FC = () => {
                      {myReservations.map((res) => {
                         const area = getArea(res.common_area_id);
                         const statusColors = {
-                           'CONFIRMED': 'bg-emerald-100 text-emerald-700',
-                           'REJECTED': 'bg-red-100 text-red-700',
-                           'PENDING': 'bg-amber-100 text-amber-700',
-                           'CANCELLED': 'bg-slate-100 text-slate-500'
+                           'CONFIRMADO': 'bg-emerald-100 text-emerald-700',
+                           'REJEITADO': 'bg-red-100 text-red-700',
+                           'PENDENTE': 'bg-amber-100 text-amber-700',
+                           'CANCELADO': 'bg-slate-100 text-slate-500',
+                           'BLOQUEADO': 'bg-red-100 text-red-400'
                         };
                         const statusLabels = {
-                           'CONFIRMED': 'Confirmado',
-                           'REJECTED': 'Rejeitado',
-                           'PENDING': 'Pendente',
-                           'CANCELLED': 'Cancelado'
+                           'CONFIRMADO': 'Confirmado',
+                           'REJEITADO': 'Rejeitado',
+                           'PENDENTE': 'Pendente',
+                           'CANCELADO': 'Cancelado',
+                           'BLOQUEADO': 'Bloqueado'
                         };
 
                         return (

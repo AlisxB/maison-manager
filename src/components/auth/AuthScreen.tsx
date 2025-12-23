@@ -573,7 +573,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
 
               <button
                 type="button"
-                onClick={() => handleDemoLogin('RESIDENT')}
+                onClick={() => handleDemoLogin('RESIDENTE')}
                 className="w-full group flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-[1.5rem] hover:border-emerald-600 hover:bg-emerald-50 transition-all duration-300 active:scale-[0.98] shadow-sm hover:shadow-md"
               >
                 <div className="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20 transition-transform group-hover:scale-110">

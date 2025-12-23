@@ -7,7 +7,7 @@ export const AdminIssues: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [selectedIssue, setSelectedIssue] = useState<Occurrence | null>(null);
     const [adminNote, setAdminNote] = useState('');
-    const [statusUpdate, setStatusUpdate] = useState<'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'>('OPEN');
+    const [statusUpdate, setStatusUpdate] = useState<'ABERTO' | 'EM ANDAMENTO' | 'RESOLVIDO' | 'FECHADO'>('ABERTO');
 
     const fetchIssues = async () => {
         setLoading(true);
@@ -49,11 +49,11 @@ export const AdminIssues: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'RESOLVED':
+            case 'RESOLVIDO':
                 return <span className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold uppercase"><CheckCircle size={12} /> Resolvido</span>;
-            case 'IN_PROGRESS':
-                return <span className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold uppercase"><Clock size={12} /> Em Análise</span>;
-            case 'CLOSED':
+            case 'EM ANDAMENTO':
+                return <span className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold uppercase"><Clock size={12} /> Em Andamento</span>;
+            case 'FECHADO':
                 return <span className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-bold uppercase"><CheckCircle size={12} /> Fechado</span>;
             default:
                 return <span className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold uppercase"><AlertTriangle size={12} /> Aberto</span>;
@@ -184,10 +184,10 @@ export const AdminIssues: React.FC = () => {
                                             value={statusUpdate}
                                             onChange={(e) => setStatusUpdate(e.target.value as any)}
                                         >
-                                            <option value="OPEN">Aberto</option>
-                                            <option value="IN_PROGRESS">Em Análise / Andamento</option>
-                                            <option value="RESOLVED">Resolvido</option>
-                                            <option value="CLOSED">Fechado</option>
+                                            <option value="ABERTO">Aberto</option>
+                                            <option value="EM ANDAMENTO">Em Andamento</option>
+                                            <option value="RESOLVIDO">Resolvido</option>
+                                            <option value="FECHADO">Fechado</option>
                                         </select>
                                     </div>
 

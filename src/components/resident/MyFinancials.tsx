@@ -36,7 +36,7 @@ export const ResidentFinancial: React.FC = () => {
     };
 
     // calculate total pending
-    const openFines = violations.filter(v => v.type === 'FINE' && v.status === 'OPEN').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const openFines = violations.filter(v => v.type === 'MULTA' && v.status === 'ABERTO').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
     // Reservations might not have 'paid' status in this system yet (it just says PENDING/CONFIRMED), defaulting to showing them as items.
     // We'll assume Confirmed reservations are "To Be Paid" or "Paid" depending on business logic. 
     // For this view, we'll list "Items to Pay" as Open Fines.
@@ -75,7 +75,7 @@ export const ResidentFinancial: React.FC = () => {
                         <h3 className="text-3xl font-bold text-slate-900">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(openFines)}
                         </h3>
-                        <p className="text-sm text-slate-500 mt-1">{violations.filter(v => v.type === 'FINE' && v.status === 'OPEN').length} infração(ões) em aberto</p>
+                        <p className="text-sm text-slate-500 mt-1">{violations.filter(v => v.type === 'MULTA' && v.status === 'ABERTO').length} infração(ões) em aberto</p>
                     </div>
                 </div>
 

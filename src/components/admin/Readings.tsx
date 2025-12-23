@@ -19,7 +19,7 @@ export const AdminReadings: React.FC = () => {
     // Forms
     const [waterForm, setWaterForm] = useState({ unitId: '', date: '', value: '', image: '' });
     const [gasForm, setGasForm] = useState({ supplier: '', date: '', totalPrice: '', cyl1: '', cyl2: '', cyl3: '', cyl4: '' });
-    const [elecForm, setElecForm] = useState({ date: '', kwh: '', totalValue: '', status: 'PENDING' });
+    const [elecForm, setElecForm] = useState({ date: '', kwh: '', totalValue: '', status: 'PENDENTE' });
 
     useEffect(() => {
         fetchUnits();
@@ -299,9 +299,9 @@ export const AdminReadings: React.FC = () => {
                                         value={elecForm.status}
                                         onChange={e => setElecForm({ ...elecForm, status: e.target.value })}
                                     >
-                                        <option value="PENDING">Pendente</option>
-                                        <option value="PAID">Pago</option>
-                                        <option value="OVERDUE">Em Atraso</option>
+                                        <option value="PENDENTE">Pendente</option>
+                                        <option value="PAGO">Pago</option>
+                                        <option value="ATRASADO">Em Atraso</option>
                                     </select>
                                 </div>
                                 <button type="submit" className="w-full bg-yellow-500 text-white py-3 rounded-xl font-medium hover:bg-yellow-600 transition-all">
@@ -394,11 +394,11 @@ export const AdminReadings: React.FC = () => {
                             </div>
                             <div className="text-right">
                                 <p className="text-lg font-bold text-slate-800">R$ {r.total_value.toFixed(2)}</p>
-                                <p className="text-sm font-medium text-slate-600">{r.consumption_kwh} kWh <span className={`ml-2 px-2 py-0.5 rounded-full text-xs text-white ${r.status === 'PAID' ? 'bg-green-500' : r.status === 'OVERDUE' ? 'bg-red-500' : 'bg-yellow-500'}`}>
-                                    {r.status === 'PAID' && 'Pago'}
-                                    {r.status === 'OVERDUE' && 'Atrasado'}
-                                    {r.status === 'PENDING' && 'Pendente'}
-                                    {!['PAID', 'OVERDUE', 'PENDING'].includes(r.status) && r.status}
+                                <p className="text-sm font-medium text-slate-600">{r.consumption_kwh} kWh <span className={`ml-2 px-2 py-0.5 rounded-full text-xs text-white ${r.status === 'PAGO' ? 'bg-green-500' : r.status === 'ATRASADO' ? 'bg-red-500' : 'bg-yellow-500'}`}>
+                                    {r.status === 'PAGO' && 'Pago'}
+                                    {r.status === 'ATRASADO' && 'Atrasado'}
+                                    {r.status === 'PENDENTE' && 'Pendente'}
+                                    {!['PAGO', 'ATRASADO', 'PENDENTE'].includes(r.status) && r.status}
                                 </span></p>
                             </div>
                         </div>

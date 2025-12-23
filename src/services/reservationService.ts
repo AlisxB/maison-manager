@@ -19,7 +19,7 @@ export interface Reservation {
     user_id: string;
     start_time: string;
     end_time: string;
-    status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'BLOCKED';
+    status: 'PENDENTE' | 'CONFIRMADO' | 'REJEITADO' | 'CANCELADO' | 'BLOQUEADO';
     total_price: number;
     created_at: string;
     reason?: string;
@@ -57,7 +57,7 @@ export const ReservationService = {
         return response.data;
     },
 
-    updateStatus: async (id: string, status: 'CONFIRMED' | 'REJECTED' | 'CANCELLED') => {
+    updateStatus: async (id: string, status: 'CONFIRMADO' | 'REJEITADO' | 'CANCELADO') => {
         const response = await api.patch<Reservation>(`/reservations/${id}`, { status });
         return response.data;
     }

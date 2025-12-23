@@ -1,7 +1,7 @@
 
 import { LucideIcon } from 'lucide-react';
 
-export type Role = 'ADMIN' | 'RESIDENT';
+export type Role = 'ADMIN' | 'RESIDENTE';
 
 export interface NavItem {
   id: string;
@@ -16,8 +16,8 @@ export interface Resident {
   unit: string;
   email: string;
   phone: string;
-  status: 'Ativo' | 'Pendente' | 'Inativo';
-  type: 'Proprietário' | 'Inquilino';
+  status: 'ATIVO' | 'PENDENTE' | 'INATIVO';
+  type: 'PROPRIETARIO' | 'INQUILINO';
   startDate: string;
   balance: number;
 }
@@ -28,8 +28,8 @@ export interface RegistrationRequest {
   email: string;
   unit: string;
   date: string;
-  status: 'Pendente';
-  type: 'Proprietário' | 'Inquilino';
+  status: 'PENDENTE';
+  type: 'PROPRIETARIO' | 'INQUILINO';
   phone?: string;
   cpf?: string;
   moveInDate?: string;
@@ -39,19 +39,19 @@ export interface RegistrationRequest {
 export interface Transaction {
   id: string;
   description: string;
-  type: 'income' | 'expense';
+  type: 'RECEITA' | 'DESPESA';
   category: string;
   date: string; // YYYY-MM-DD
   amount: number;
-  status: 'paid' | 'pending';
+  status: 'PAGO' | 'PENDENTE';
   observation?: string;
 }
 
 export interface Issue {
   id: string;
   title: string;
-  category: 'Maintenance' | 'Security' | 'Noise' | 'Other';
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  category: 'Manutenção' | 'Segurança' | 'Barulho' | 'Outro';
+  status: 'ABERTO' | 'EM ANDAMENTO' | 'RESOLVIDO' | 'FECHADO';
   date: string;
   reportedBy: string;
   unit: string;
@@ -70,7 +70,7 @@ export interface Reservation {
   area: string;
   date: string;
   time: string;
-  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'BLOCKED';
+  status: 'PENDENTE' | 'CONFIRMADO' | 'REJEITADO' | 'CANCELADO' | 'BLOQUEADO';
   residentName: string;
   unit?: string;
 }
@@ -79,12 +79,12 @@ export interface Infraction {
   id: string;
   residentId: string;
   residentName: string;
-  type: 'WARNING' | 'FINE';
+  type: 'ADVERTENCIA' | 'MULTA';
   date: string;
   time: string;
   reason: string;
   value?: number;
-  status: 'OPEN' | 'PAID' | 'RESOLVED' | 'SENT';
+  status: 'ABERTO' | 'PAGO' | 'RESOLVIDO' | 'RECORRIDO';
   article?: string;
 }
 

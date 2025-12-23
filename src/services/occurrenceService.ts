@@ -6,8 +6,8 @@ export interface Occurrence {
     user_id: string;
     title: string;
     description: string;
-    category: 'Maintenance' | 'Noise' | 'Security' | 'Other';
-    status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+    category: 'Manutenção' | 'Barulho' | 'Segurança' | 'Outro';
+    status: 'ABERTO' | 'EM ANDAMENTO' | 'RESOLVIDO' | 'FECHADO';
     admin_response?: string;
     photo_url?: string;
     is_anonymous?: boolean;
