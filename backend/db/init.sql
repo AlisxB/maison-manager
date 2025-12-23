@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS units (
     condominium_id UUID NOT NULL REFERENCES condominiums(id),
     block VARCHAR(50), 
     number VARCHAR(20) NOT NULL,
-    type VARCHAR(50) DEFAULT 'Apartment',
+    type VARCHAR(50) DEFAULT 'Apartamento',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(condominium_id, block, number)
 );
@@ -58,9 +58,9 @@ CREATE TABLE IF NOT EXISTS users (
     
     password_hash VARCHAR(255) NOT NULL,
     
-    role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'RESIDENT', 'PORTER', 'FINANCIAL')),
-    profile_type VARCHAR(20) CHECK (profile_type IN ('OWNER', 'TENANT', 'STAFF')), 
-    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('ACTIVE', 'PENDING', 'INACTIVE', 'REJECTED')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'RESIDENTE', 'PORTEIRO', 'FINANCEIRO')),
+    profile_type VARCHAR(20) CHECK (profile_type IN ('PROPRIETARIO', 'INQUILINO', 'STAFF')), 
+    status VARCHAR(20) DEFAULT 'PENDENTE' CHECK (status IN ('ATIVO', 'PENDENTE', 'INATIVO', 'REJEITADO')),
     last_notification_check TIMESTAMP WITH TIME ZONE,
 
     photo_url TEXT,
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS reservations (
     user_id UUID NOT NULL REFERENCES users(id),
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
     end_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'CONFIRMED', 'REJECTED', 'CANCELLED', 'BLOCKED')),
+    status VARCHAR(20) DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'CONFIRMADO', 'REJEITADO', 'CANCELADO', 'BLOQUEADO')),
     reason TEXT,
     total_price DECIMAL(10, 2) DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS readings_electricity (
     due_date DATE NOT NULL,
     consumption_kwh DECIMAL(10, 2) NOT NULL,
     total_value DECIMAL(10, 2) NOT NULL,
-    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'OVERDUE')),
+    status VARCHAR(20) DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'PAGO', 'ATRASADO')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE readings_electricity ENABLE ROW LEVEL SECURITY;
@@ -191,12 +191,12 @@ ALTER TABLE readings_electricity ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     condominium_id UUID NOT NULL REFERENCES condominiums(id),
-    type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense')),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('RECEITA', 'DESPESA')),
     description VARCHAR(255) NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     category VARCHAR(50),
     date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'paid' CHECK (status IN ('paid', 'pending')),
+    status VARCHAR(20) DEFAULT 'PAGO' CHECK (status IN ('PAGO', 'PENDENTE')),
     observation TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -335,7 +335,7 @@ CREATE POLICY users_visibility_policy ON users
     USING (
         condominium_id = current_condo_id() 
         AND (
-            current_app_role() IN ('ADMIN', 'PORTER') OR 
+            current_app_role() IN ('ADMIN', 'PORTEIRO') OR 
             id = current_user_id()
         )
     );
@@ -388,7 +388,7 @@ CREATE POLICY readings_water_policy ON readings_water
     USING (
         condominium_id = current_condo_id()
         AND (
-            current_app_role() IN ('ADMIN', 'PORTER') OR 
+            current_app_role() IN ('ADMIN', 'PORTEIRO') OR 
             unit_id IN (SELECT unit_id FROM users WHERE id = current_user_id())
         )
     );
@@ -396,17 +396,17 @@ CREATE POLICY readings_water_policy ON readings_water
 -- Gas: Admin/Financial sees all. Residents view-only.
 CREATE POLICY readings_gas_policy ON readings_gas
     USING (condominium_id = current_condo_id())
-    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO'));
 
 -- Electricity: Admin/Financial sees all. Residents view-only.
 CREATE POLICY readings_electricity_policy ON readings_electricity
     USING (condominium_id = current_condo_id())
-    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO'));
 
 
 CREATE POLICY transactions_policy ON transactions
     USING (condominium_id = current_condo_id())
-    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCIAL'));
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO'));
 
 -- Inventory Items
 CREATE TABLE IF NOT EXISTS inventory_items (
@@ -482,8 +482,8 @@ CREATE TABLE IF NOT EXISTS occurrences (
     user_id UUID NOT NULL REFERENCES users(id),
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    category VARCHAR(50) NOT NULL CHECK (category IN ('Maintenance', 'Noise', 'Security', 'Other')),
-    status VARCHAR(50) DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
+    category VARCHAR(50) NOT NULL CHECK (category IN ('Manutenção', 'Barulho', 'Segurança', 'Outro')),
+    status VARCHAR(50) DEFAULT 'ABERTO' CHECK (status IN ('ABERTO', 'EM ANDAMENTO', 'RESOLVIDO', 'FECHADO')),
     is_anonymous BOOLEAN DEFAULT FALSE,
     admin_response TEXT,
     photo_url TEXT,
@@ -516,14 +516,14 @@ CREATE POLICY occurrences_update_policy ON occurrences FOR UPDATE
         condominium_id = current_condo_id()
         AND (
             current_app_role() = 'ADMIN' OR
-            (user_id = current_user_id() AND status = 'OPEN')
+            (user_id = current_user_id() AND status = 'ABERTO')
         )
     )
     WITH CHECK (
         condominium_id = current_condo_id()
         AND (
             current_app_role() = 'ADMIN' OR
-            (user_id = current_user_id() AND status = 'OPEN')
+            (user_id = current_user_id() AND status = 'ABERTO')
         )
     );
 
@@ -625,16 +625,16 @@ INSERT INTO users (
     encode(digest('admin@maison.com', 'sha256'), 'hex'),
     '$2b$12$/Zx8NmnkAUYoy46tlLzK2ec8lzZ2ifMbuFiiRzXEUjngnfUgotfW2',
     'ADMIN',
-    'ACTIVE'
+    'ATIVO'
 );
 
 -- Insert Units
 INSERT INTO units (id, condominium_id, block, number, type)
 VALUES 
-(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'A', '101', 'Apartment'),
-(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'A', '102', 'Apartment'),
-(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'B', '201', 'Apartment'),
-(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'B', '202', 'Apartment');
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'A', '101', 'Apartamento'),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'A', '102', 'Apartamento'),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'B', '201', 'Apartamento'),
+(uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'B', '202', 'Apartamento');
 
 -- Insert Common Areas
 INSERT INTO common_areas (id, condominium_id, name, capacity, price_per_hour, min_booking_hours, max_booking_hours, is_active)
