@@ -5,7 +5,7 @@ from typing import List, Annotated
 from app.core import deps
 from app.models.all import ReadingWater, ReadingGas, ReadingElectricity, Transaction
 from app.schemas.readings import (
-    WaterReadingCreate, WaterReadingRead,
+    WaterReadingCreate, WaterReadingRead, WaterReadingUpdate,
     GasReadingCreate, GasReadingRead,
     ElectricityReadingCreate, ElectricityReadingRead
 )
@@ -53,6 +53,49 @@ async def read_water_readings(
         
     result = await db.execute(query)
     return result.scalars().all()
+
+@router.delete("/water/{id}")
+async def delete_water_reading(
+    id: str,
+    db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
+):
+    if current_user.role not in ['ADMIN', 'PORTER']:
+         raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(select(ReadingWater).where(ReadingWater.id == id, ReadingWater.condominium_id == current_user.condo_id))
+    reading = result.scalar_one_or_none()
+    
+    if not reading:
+        raise HTTPException(status_code=404, detail="Reading not found")
+        
+    await db.delete(reading)
+    await db.commit()
+    return {"message": "Reading deleted"}
+
+@router.put("/water/{id}", response_model=WaterReadingRead)
+async def update_water_reading(
+    id: str,
+    reading_in: WaterReadingUpdate,
+    db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
+):
+    if current_user.role not in ['ADMIN', 'PORTER']:
+         raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(select(ReadingWater).where(ReadingWater.id == id, ReadingWater.condominium_id == current_user.condo_id))
+    reading = result.scalar_one_or_none()
+    
+    if not reading:
+        raise HTTPException(status_code=404, detail="Reading not found")
+        
+    update_data = reading_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(reading, field, value)
+
+    await db.commit()
+    await db.refresh(reading)
+    return reading
 
 # --- Gas ---
 @router.post("/gas", response_model=GasReadingRead)

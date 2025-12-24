@@ -13,6 +13,11 @@ class WaterReadingBase(BaseModel):
 class WaterReadingCreate(WaterReadingBase):
     pass
 
+class WaterReadingUpdate(BaseModel):
+    reading_date: Optional[date] = None
+    value_m3: Optional[float] = None
+    image_url: Optional[str] = None
+
 class WaterReadingRead(WaterReadingBase):
     id: UUID
     condominium_id: UUID

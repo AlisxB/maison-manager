@@ -66,6 +66,13 @@ export const ReadingService = {
         const response = await api.get<WaterReading[]>('/readings/water');
         return response.data;
     },
+    updateWater: async (id: string, data: Partial<ReadingCreateWater>) => {
+        const response = await api.put<WaterReading>(`/readings/water/${id}`, data);
+        return response.data;
+    },
+    deleteWater: async (id: string) => {
+        await api.delete(`/readings/water/${id}`);
+    },
 
     // Gas
     createGas: async (data: ReadingCreateGas) => {
