@@ -13,7 +13,7 @@ export const ViolationsView: React.FC = () => {
     // Modal State
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState<Partial<ViolationCreate>>({
-        type: 'WARNING',
+        type: 'ADVERTENCIA',
         resident_id: '',
         bylaw_id: '',
         description: '',
@@ -44,7 +44,7 @@ export const ViolationsView: React.FC = () => {
 
     // Dynamic Filter for Bylaws based on selected Type
     const filteredBylaws = bylaws.filter(b => {
-        if (formData.type === 'FINE') return b.category === 'Multa';
+        if (formData.type === 'MULTA') return b.category === 'Multa';
         return b.category !== 'Multa';
     });
 
@@ -79,7 +79,7 @@ export const ViolationsView: React.FC = () => {
                     <p className="text-xs text-slate-500">Registro de ocorrências e penalidades.</p>
                 </div>
                 <button
-                    onClick={() => { setFormData({ type: 'WARNING', resident_id: '', bylaw_id: '', description: '', amount: 0, occurred_at: new Date().toISOString().slice(0, 16) }); setShowModal(true); }}
+                    onClick={() => { setFormData({ type: 'ADVERTENCIA', resident_id: '', bylaw_id: '', description: '', amount: 0, occurred_at: new Date().toISOString().slice(0, 16) }); setShowModal(true); }}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-all shadow-red-200 shadow-lg"
                 >
                     <Plus size={18} /> Nova Infração
@@ -96,18 +96,18 @@ export const ViolationsView: React.FC = () => {
                         violations.map(v => (
                             <div key={v.id} className="p-6 hover:bg-slate-50 transition-colors flex justify-between items-center">
                                 <div className="flex items-start gap-4">
-                                    <div className={`p-3 rounded-full ${v.type === 'FINE' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
-                                        {v.type === 'FINE' ? <Gavel size={20} /> : <AlertTriangle size={20} />}
+                                    <div className={`p-3 rounded-full ${v.type === 'MULTA' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                                        {v.type === 'MULTA' ? <Gavel size={20} /> : <AlertTriangle size={20} />}
                                     </div>
                                     <div>
                                         <div className="flex flex-col gap-1">
                                             <div className="flex items-center gap-2">
-                                                <h4 className="font-bold text-slate-800">{v.type === 'FINE' ? 'Multa' : 'Advertência'}</h4>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${v.status === 'PAID' || v.status === 'RESOLVED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                    {v.status === 'OPEN' && 'Enviado'}
-                                                    {v.status === 'PAID' && 'Pago'}
-                                                    {v.status === 'RESOLVED' && 'Resolvido'}
-                                                    {!['OPEN', 'PAID', 'RESOLVED'].includes(v.status) && v.status}
+                                                <h4 className="font-bold text-slate-800">{v.type === 'MULTA' ? 'Multa' : 'Advertência'}</h4>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${v.status === 'PAGO' || v.status === 'RESOLVIDO' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                    {v.status === 'ABERTO' && 'Aberto'}
+                                                    {v.status === 'PAGO' && 'Pago'}
+                                                    {v.status === 'RESOLVIDO' && 'Resolvido'}
+                                                    {!['ABERTO', 'PAGO', 'RESOLVIDO'].includes(v.status) && v.status}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-3 text-xs text-slate-500">
@@ -132,7 +132,7 @@ export const ViolationsView: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    {v.type === 'FINE' && v.amount !== null && (
+                                    {v.type === 'MULTA' && v.amount !== null && (
                                         <div className="text-right">
                                             <span className="block text-xs text-slate-400">Valor</span>
                                             <span className="font-bold text-slate-700">R$ {Number(v.amount).toFixed(2)}</span>
@@ -159,15 +159,15 @@ export const ViolationsView: React.FC = () => {
                             <div className="flex p-1 bg-slate-100 rounded-lg">
                                 <button
                                     type="button"
-                                    onClick={() => setFormData({ ...formData, type: 'WARNING' })}
-                                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${formData.type === 'WARNING' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}
+                                    onClick={() => setFormData({ ...formData, type: 'ADVERTENCIA' })}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${formData.type === 'ADVERTENCIA' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}
                                 >
                                     Advertência
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setFormData({ ...formData, type: 'FINE' })}
-                                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${formData.type === 'FINE' ? 'bg-white shadow text-red-600' : 'text-slate-500'}`}
+                                    onClick={() => setFormData({ ...formData, type: 'MULTA' })}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${formData.type === 'MULTA' ? 'bg-white shadow text-red-600' : 'text-slate-500'}`}
                                 >
                                     Multa Pecuniária
                                 </button>
@@ -183,9 +183,11 @@ export const ViolationsView: React.FC = () => {
                                     onChange={e => setFormData({ ...formData, resident_id: e.target.value })}
                                 >
                                     <option value="">Selecione...</option>
-                                    {residents.map(r => (
-                                        <option key={r.id} value={r.id}>{r.name} (Bloco {r.unit?.block} - {r.unit?.number})</option>
-                                    ))}
+                                    {residents
+                                        .filter(r => r.status === 'ATIVO') // Only active residents
+                                        .map(r => (
+                                            <option key={r.id} value={r.id}>{r.name} (Bloco {r.unit?.block} - {r.unit?.number})</option>
+                                        ))}
                                 </select>
                             </div>
 
@@ -203,7 +205,7 @@ export const ViolationsView: React.FC = () => {
                                     ))}
                                 </select>
                                 <p className="text-[10px] text-slate-400 mt-1">
-                                    *Listando apenas regras compatíveis com {formData.type === 'FINE' ? 'Multa' : 'Advertência'}.
+                                    *Listando apenas regras compatíveis com {formData.type === 'MULTA' ? 'Multa' : 'Advertência'}.
                                 </p>
                             </div>
 
@@ -232,7 +234,7 @@ export const ViolationsView: React.FC = () => {
                             </div>
 
                             {/* Amount (Only if Fine) */}
-                            {formData.type === 'FINE' && (
+                            {formData.type === 'MULTA' && (
                                 <div className="animate-in fade-in slide-in-from-top-2">
                                     <label className="text-xs font-bold text-slate-400 uppercase">Valor da Multa (R$)</label>
                                     <input
@@ -249,7 +251,7 @@ export const ViolationsView: React.FC = () => {
                             <div className="flex gap-2 pt-4">
                                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 bg-slate-100 rounded-lg text-slate-600 font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
                                 <button type="submit" className="flex-1 py-2 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-700 transition-all">
-                                    Gerar {formData.type === 'FINE' ? 'Multa' : 'Notificação'}
+                                    Gerar {formData.type === 'MULTA' ? 'Multa' : 'Notificação'}
                                 </button>
                             </div>
                         </form>

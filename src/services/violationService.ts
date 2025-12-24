@@ -5,8 +5,8 @@ export interface Violation {
     condominium_id: string;
     resident_id: string;
     bylaw_id?: string;
-    type: 'WARNING' | 'FINE';
-    status: 'OPEN' | 'PAID' | 'APPEALED' | 'RESOLVED';
+    type: 'ADVERTENCIA' | 'MULTA';
+    status: 'ABERTO' | 'PAGO' | 'RECORRIDO' | 'RESOLVIDO';
     description: string;
     amount?: number;
     occurred_at?: string;
@@ -16,7 +16,7 @@ export interface Violation {
 export interface ViolationCreate {
     resident_id: string;
     bylaw_id?: string;
-    type: 'WARNING' | 'FINE';
+    type: 'ADVERTENCIA' | 'MULTA';
     description: string;
     amount?: number;
     occurred_at?: string;
