@@ -35,7 +35,7 @@ export const AdminReadings: React.FC = () => {
         try {
             const [unitsData, usersData] = await Promise.all([
                 UnitService.getAll(),
-                UserService.getAll()
+                UserService.getAll({ status: 'ATIVO' })
             ]);
             setUnits(unitsData);
             setResidents(usersData.filter((u: any) => u.role === 'RESIDENT' || u.unit_id));

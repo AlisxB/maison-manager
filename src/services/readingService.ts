@@ -44,7 +44,7 @@ export interface ElectricityReading {
     due_date: string;
     consumption_kwh: number;
     total_value: number;
-    status: 'PENDING' | 'PAID' | 'OVERDUE';
+    status: 'PENDENTE' | 'PAGO' | 'ATRASADO';
     created_at: string;
 }
 
@@ -52,7 +52,7 @@ export interface ReadingCreateElectricity {
     due_date: string;
     consumption_kwh: number;
     total_value: number;
-    status: 'PENDING' | 'PAID' | 'OVERDUE';
+    status: 'PENDENTE' | 'PAGO' | 'ATRASADO';
 }
 
 // --- Service ---

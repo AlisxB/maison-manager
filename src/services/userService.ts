@@ -32,7 +32,7 @@ export const UserService = {
 
     getResidents: async () => {
         const response = await api.get<User[]>('/users/');
-        return response.data.filter(u => u.role === 'RESIDENT');
+        return response.data.filter(u => u.role === 'RESIDENTE');
     },
 
     create: async (data: any) => {
