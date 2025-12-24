@@ -124,7 +124,7 @@ async def get_summary(
         Transaction.condominium_id == current_user.condo_id,
         extract('month', Transaction.date) == month,
         extract('year', Transaction.date) == year,
-        Transaction.type == 'income'
+        Transaction.type == 'RECEITA'
     )
     income_res = await db.execute(income_stmt)
     income = income_res.scalar() or 0
@@ -134,7 +134,7 @@ async def get_summary(
         Transaction.condominium_id == current_user.condo_id,
         extract('month', Transaction.date) == month,
         extract('year', Transaction.date) == year,
-        Transaction.type == 'expense'
+        Transaction.type == 'DESPESA'
     )
     expense_res = await db.execute(expense_stmt)
     expense = expense_res.scalar() or 0
@@ -145,11 +145,11 @@ async def get_summary(
 
     total_income_stmt = select(func.sum(Transaction.amount)).where(
         Transaction.condominium_id == current_user.condo_id,
-        Transaction.type == 'income'
+        Transaction.type == 'RECEITA'
     )
     total_expense_stmt = select(func.sum(Transaction.amount)).where(
         Transaction.condominium_id == current_user.condo_id,
-        Transaction.type == 'expense'
+        Transaction.type == 'DESPESA'
     )
     
     ti_res = await db.execute(total_income_stmt)

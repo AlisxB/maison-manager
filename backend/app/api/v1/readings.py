@@ -73,12 +73,12 @@ async def create_gas_reading(
     # Auto-create Financial Expense
     expense = Transaction(
         condominium_id=current_user.condo_id,
-        type='expense',
+        type='DESPESA',
         description=f"Compra de Gás - {db_obj.supplier}",
         amount=db_obj.total_price,
         category='Utilidades',
         date=db_obj.purchase_date,
-        status='paid', # Assume purchase is paid
+        status='PAGO', # Assume purchase is paid
         observation="Gerado automaticamente pelo Módulo de Leituras"
     )
     db.add(expense)
@@ -114,12 +114,12 @@ async def create_electricity_reading(
     # Auto-create Financial Expense
     expense = Transaction(
         condominium_id=current_user.condo_id,
-        type='expense',
+        type='DESPESA',
         description="Conta de Luz",
         amount=db_obj.total_value,
         category='Utilidades',
         date=db_obj.due_date,
-        status='pending', # Bills start as pending
+        status='PENDENTE', # Bills start as pending
         observation="Gerado automaticamente pelo Módulo de Leituras"
     )
     db.add(expense)

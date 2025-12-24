@@ -63,7 +63,7 @@ async def create_violation(
         type=violation.type,
         description=violation.description,
         amount=violation.amount,
-        status='OPEN',
+        status='ABERTO',
         occurred_at=occurred,
         created_at=datetime.now()
     )
@@ -72,15 +72,15 @@ async def create_violation(
     # Integration with Financial Module (Fines -> Income)
     try:
         await db.flush() # Ensure ID is generated
-        if violation.type == 'FINE' and violation.amount and violation.amount > 0:
+        if violation.type == 'MULTA' and violation.amount and violation.amount > 0:
             new_transaction = Transaction(
                 condominium_id=current_user.condo_id,
-                type='income',
+                type='RECEITA',
                 description=f"Multa - Unidade do Infrator: {violation.resident_id}",
                 amount=violation.amount,
                 category='Multas',
                 date=datetime.now(),
-                status='pending',
+                status='PENDENTE',
                 observation=f"Gerado automaticamente pela Infração ID: {new_violation.id}. Motivo: {violation.description}"
             )
             db.add(new_transaction)
