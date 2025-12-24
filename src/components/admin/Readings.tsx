@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Droplets, Flame, Zap, Plus, Save, History, FileText } from 'lucide-react';
+import { Droplets, Flame, Zap, Plus, Save, History, FileText, Edit, Trash2, X, Filter } from 'lucide-react';
 import { ReadingService, WaterReading, GasReading, ElectricityReading } from '../../services/readingService';
 import { UnitService, UserService, Unit } from '../../services/userService';
 
@@ -18,8 +18,25 @@ export const AdminReadings: React.FC = () => {
 
     // Forms
     const [waterForm, setWaterForm] = useState({ unitId: '', date: '', value: '', image: '' });
+    const [editingWaterId, setEditingWaterId] = useState<string | null>(null);
     const [gasForm, setGasForm] = useState({ supplier: '', date: '', totalPrice: '', cyl1: '', cyl2: '', cyl3: '', cyl4: '' });
     const [elecForm, setElecForm] = useState({ date: '', kwh: '', totalValue: '', status: 'PENDENTE' });
+
+    // Filters
+    const [filterBlock, setFilterBlock] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState('');
+    const [selectedYear, setSelectedYear] = useState('');
+
+    const uniqueBlocks = Array.from(new Set(units.map(u => u.block))).sort();
+    const months = [
+        { value: '01', label: 'Janeiro' }, { value: '02', label: 'Fevereiro' },
+        { value: '03', label: 'Março' }, { value: '04', label: 'Abril' },
+        { value: '05', label: 'Maio' }, { value: '06', label: 'Junho' },
+        { value: '07', label: 'Julho' }, { value: '08', label: 'Agosto' },
+        { value: '09', label: 'Setembro' }, { value: '10', label: 'Outubro' },
+        { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' }
+    ];
+    const years = Array.from({ length: 3 }, (_, i) => (new Date().getFullYear() - 1 + i).toString()); // Previous, Current, Next year
 
     useEffect(() => {
         fetchUnits();
@@ -61,16 +78,51 @@ export const AdminReadings: React.FC = () => {
     const handleWaterSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await ReadingService.createWater({
-                unit_id: waterForm.unitId,
-                reading_date: waterForm.date,
-                value_m3: parseFloat(waterForm.value),
-                image_url: waterForm.image
-            });
-            alert('Leitura de Água salva!');
+            if (editingWaterId) {
+                await ReadingService.updateWater(editingWaterId, {
+                    unit_id: waterForm.unitId,
+                    reading_date: waterForm.date,
+                    value_m3: parseFloat(waterForm.value),
+                    image_url: waterForm.image
+                });
+                alert('Leitura atualizada!');
+            } else {
+                await ReadingService.createWater({
+                    unit_id: waterForm.unitId,
+                    reading_date: waterForm.date,
+                    value_m3: parseFloat(waterForm.value),
+                    image_url: waterForm.image
+                });
+                alert('Leitura de Água salva!');
+            }
             setWaterForm({ unitId: '', date: '', value: '', image: '' });
+            setEditingWaterId(null);
             fetchWaterReadings();
         } catch (err) { alert('Erro ao salvar'); }
+    };
+
+    const handleEditWater = (r: WaterReading) => {
+        setWaterForm({
+            unitId: r.unit_id,
+            date: r.reading_date,
+            value: r.value_m3.toString(),
+            image: r.image_url || ''
+        });
+        setEditingWaterId(r.id);
+    };
+
+    const handleDeleteWater = async (id: string) => {
+        if (!confirm('Tem certeza que deseja excluir esta leitura?')) return;
+        try {
+            await ReadingService.deleteWater(id);
+            alert('Leitura excluída!');
+            fetchWaterReadings();
+        } catch (err) { alert('Erro ao excluir'); }
+    };
+
+    const cancelWaterEdit = () => {
+        setWaterForm({ unitId: '', date: '', value: '', image: '' });
+        setEditingWaterId(null);
     };
 
     const handleGasSubmit = async (e: React.FormEvent) => {
@@ -149,8 +201,8 @@ export const AdminReadings: React.FC = () => {
                 <div className="lg:col-span-1">
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-6">
                         <h3 className="font-bold text-slate-800 mb-4 flex items-center space-x-2">
-                            <Plus size={20} className="text-[#437476]" />
-                            <span>Nova Leitura: {activeTab === 'water' ? 'Água' : activeTab === 'gas' ? 'Gás' : 'Energia'}</span>
+                            {editingWaterId ? <Edit size={20} className="text-[#437476]" /> : <Plus size={20} className="text-[#437476]" />}
+                            <span>{editingWaterId ? 'Editar Leitura' : activeTab === 'water' ? 'Nova Leitura: Água' : activeTab === 'gas' ? 'Nova Leitura: Gás' : 'Nova Leitura: Energia'}</span>
                         </h3>
 
                         {/* WATER FORM */}
@@ -169,7 +221,7 @@ export const AdminReadings: React.FC = () => {
                                             const resident = residents.find(r => r.unit_id === u.id);
                                             return (
                                                 <option key={u.id} value={u.id}>
-                                                    Bl {u.block} - Apt {u.number} {resident ? `(${resident.name})` : '(Vazio)'}
+                                                    Bloco {u.block} - Apart. {u.number} {resident ? `(${resident.name})` : '(Vazio)'}
                                                 </option>
                                             );
                                         })}
@@ -203,8 +255,13 @@ export const AdminReadings: React.FC = () => {
                                     />
                                 </div>
                                 <button type="submit" className="w-full bg-[#437476] text-white py-3 rounded-xl font-medium hover:bg-[#365e5f] transition-all">
-                                    Salvar Leitura
+                                    {editingWaterId ? 'Atualizar Leitura' : 'Salvar Leitura'}
                                 </button>
+                                {editingWaterId && (
+                                    <button type="button" onClick={cancelWaterEdit} className="w-full bg-slate-200 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-300 transition-all flex items-center justify-center gap-2">
+                                        <X size={18} /> Cancelar
+                                    </button>
+                                )}
                             </form>
                         )}
 
@@ -314,6 +371,59 @@ export const AdminReadings: React.FC = () => {
 
                 {/* List Column */}
                 <div className="lg:col-span-2 space-y-4">
+                    {/* Filters */}
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
+                        <div className="flex items-center gap-2 text-slate-500 mb-2 w-full sm:w-auto">
+                            <Filter size={18} />
+                            <span className="font-medium text-sm">Filtrar:</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1">Mês</label>
+                                <select
+                                    className="p-2 rounded-lg border border-slate-200 text-sm"
+                                    value={selectedMonth}
+                                    onChange={e => setSelectedMonth(e.target.value)}
+                                >
+                                    <option value="">Todos</option>
+                                    {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1">Ano</label>
+                                <select
+                                    className="p-2 rounded-lg border border-slate-200 text-sm"
+                                    value={selectedYear}
+                                    onChange={e => setSelectedYear(e.target.value)}
+                                >
+                                    <option value="">Todos</option>
+                                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        {activeTab === 'water' && (
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1">Bloco</label>
+                                <select
+                                    className="p-2 rounded-lg border border-slate-200 text-sm min-w-[100px]"
+                                    value={filterBlock}
+                                    onChange={e => setFilterBlock(e.target.value)}
+                                >
+                                    <option value="">Todos</option>
+                                    {uniqueBlocks.map(b => <option key={b} value={b}>{b}</option>)}
+                                </select>
+                            </div>
+                        )}
+                        {(selectedMonth || selectedYear || filterBlock) && (
+                            <button
+                                onClick={() => { setSelectedMonth(''); setSelectedYear(''); setFilterBlock(''); }}
+                                className="text-xs text-red-500 hover:text-red-700 underline self-center mb-1"
+                            >
+                                Limpar
+                            </button>
+                        )}
+                    </div>
+
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="font-bold text-slate-700 flex items-center gap-2">
                             <History size={20} />
@@ -327,82 +437,117 @@ export const AdminReadings: React.FC = () => {
                     </div>
 
                     {/* WATER LIST */}
-                    {activeTab === 'water' && waterReadings.map(r => {
-                        const unit = units.find(u => u.id === r.unit_id);
-                        return (
-                            <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-[#437476]/10 text-[#437476] rounded-lg">
-                                        <Droplets size={20} />
+                    {activeTab === 'water' && waterReadings
+                        .filter(r => {
+                            // Date Filter
+                            if (selectedYear && !r.reading_date.startsWith(selectedYear)) return false;
+                            if (selectedMonth && !r.reading_date.includes(`-${selectedMonth}-`)) return false;
+
+                            // Block Filter
+                            if (filterBlock) {
+                                const unit = units.find(u => u.id === r.unit_id);
+                                if (unit?.block !== filterBlock) return false;
+                            }
+                            return true;
+                        })
+                        .map(r => {
+                            const unit = units.find(u => u.id === r.unit_id);
+                            return (
+                                <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-3 bg-[#437476]/10 text-[#437476] rounded-lg">
+                                            <Droplets size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-800">
+                                                {unit ? `Bloco ${unit.block} - Apart. ${unit.number}` : 'Unidade Desconhecida'}
+                                            </h4>
+                                            <p className="text-sm text-slate-500">Data: {new Date(r.reading_date).toLocaleDateString('pt-BR')}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-800">
-                                            {unit ? `Bl ${unit.block} - Apt ${unit.number}` : 'Unidade Desconhecida'}
-                                        </h4>
-                                        <p className="text-sm text-slate-500">Data: {new Date(r.reading_date).toLocaleDateString('pt-BR')}</p>
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right">
+                                            <p className="text-lg font-bold text-slate-800">{r.value_m3} m³</p>
+                                            {r.image_url && (
+                                                <a href={r.image_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#437476] hover:underline flex items-center justify-end gap-1">
+                                                    <FileText size={12} /> Comprovante
+                                                </a>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => handleEditWater(r)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+                                                <Edit size={18} />
+                                            </button>
+                                            <button onClick={() => handleDeleteWater(r.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-lg font-bold text-slate-800">{r.value_m3} m³</p>
-                                    {r.image_url && (
-                                        <a href={r.image_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#437476] hover:underline flex items-center justify-end gap-1">
-                                            <FileText size={12} /> Comprovante
-                                        </a>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
 
                     {/* GAS LIST */}
-                    {activeTab === 'gas' && gasReadings.map(r => (
-                        <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                            <div className="flex justify-between items-start mb-3">
+                    {activeTab === 'gas' && gasReadings
+                        .filter(r => {
+                            if (selectedYear && !r.purchase_date.startsWith(selectedYear)) return false;
+                            if (selectedMonth && !r.purchase_date.includes(`-${selectedMonth}-`)) return false;
+                            return true;
+                        })
+                        .map(r => (
+                            <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-3 bg-orange-50 text-orange-500 rounded-lg">
+                                            <Flame size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-800">{r.supplier}</h4>
+                                            <p className="text-sm text-slate-500">Data: {new Date(r.purchase_date).toLocaleDateString('pt-BR')}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-lg font-bold text-slate-800">R$ {r.total_price.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 text-center text-xs bg-slate-50 p-2 rounded-lg text-slate-600">
+                                    <div>C1: {r.cylinder_1_kg}kg</div>
+                                    <div>C2: {r.cylinder_2_kg}kg</div>
+                                    <div>C3: {r.cylinder_3_kg}kg</div>
+                                    <div>C4: {r.cylinder_4_kg}kg</div>
+                                </div>
+                            </div>
+                        ))}
+
+                    {/* ELECTRICITY LIST */}
+                    {activeTab === 'electricity' && elecReadings
+                        .filter(r => {
+                            if (selectedYear && !r.due_date.startsWith(selectedYear)) return false;
+                            if (selectedMonth && !r.due_date.includes(`-${selectedMonth}-`)) return false;
+                            return true;
+                        })
+                        .map(r => (
+                            <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
                                 <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-orange-50 text-orange-500 rounded-lg">
-                                        <Flame size={20} />
+                                    <div className="p-3 bg-yellow-50 text-yellow-500 rounded-lg">
+                                        <Zap size={20} />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-slate-800">{r.supplier}</h4>
-                                        <p className="text-sm text-slate-500">Data: {new Date(r.purchase_date).toLocaleDateString('pt-BR')}</p>
+                                        <h4 className="font-bold text-slate-800">Fatura Energia</h4>
+                                        <p className="text-sm text-slate-500">Venc: {new Date(r.due_date).toLocaleDateString('pt-BR')}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-lg font-bold text-slate-800">R$ {r.total_price.toFixed(2)}</p>
+                                    <p className="text-lg font-bold text-slate-800">R$ {r.total_value.toFixed(2)}</p>
+                                    <p className="text-sm font-medium text-slate-600">{r.consumption_kwh} kWh <span className={`ml-2 px-2 py-0.5 rounded-full text-xs text-white ${r.status === 'PAGO' ? 'bg-green-500' : r.status === 'ATRASADO' ? 'bg-red-500' : 'bg-yellow-500'}`}>
+                                        {r.status === 'PAGO' && 'Pago'}
+                                        {r.status === 'ATRASADO' && 'Atrasado'}
+                                        {r.status === 'PENDENTE' && 'Pendente'}
+                                        {!['PAGO', 'ATRASADO', 'PENDENTE'].includes(r.status) && r.status}
+                                    </span></p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-4 gap-2 text-center text-xs bg-slate-50 p-2 rounded-lg text-slate-600">
-                                <div>C1: {r.cylinder_1_kg}kg</div>
-                                <div>C2: {r.cylinder_2_kg}kg</div>
-                                <div>C3: {r.cylinder_3_kg}kg</div>
-                                <div>C4: {r.cylinder_4_kg}kg</div>
-                            </div>
-                        </div>
-                    ))}
-
-                    {/* ELECTRICITY LIST */}
-                    {activeTab === 'electricity' && elecReadings.map(r => (
-                        <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-yellow-50 text-yellow-500 rounded-lg">
-                                    <Zap size={20} />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-slate-800">Fatura Energia</h4>
-                                    <p className="text-sm text-slate-500">Venc: {new Date(r.due_date).toLocaleDateString('pt-BR')}</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-lg font-bold text-slate-800">R$ {r.total_value.toFixed(2)}</p>
-                                <p className="text-sm font-medium text-slate-600">{r.consumption_kwh} kWh <span className={`ml-2 px-2 py-0.5 rounded-full text-xs text-white ${r.status === 'PAGO' ? 'bg-green-500' : r.status === 'ATRASADO' ? 'bg-red-500' : 'bg-yellow-500'}`}>
-                                    {r.status === 'PAGO' && 'Pago'}
-                                    {r.status === 'ATRASADO' && 'Atrasado'}
-                                    {r.status === 'PENDENTE' && 'Pendente'}
-                                    {!['PAGO', 'ATRASADO', 'PENDENTE'].includes(r.status) && r.status}
-                                </span></p>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
 
                     {/* Empty States */}
                     {(activeTab === 'water' && waterReadings.length === 0) && <div className="p-8 text-center text-slate-400">Nenhuma leitura de água registrada.</div>}
