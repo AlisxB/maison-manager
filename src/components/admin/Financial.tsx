@@ -49,10 +49,10 @@ export const AdminFinancial: React.FC = () => {
     ];
 
     const years = ['2023', '2024', '2025', '2026'];
-    const categories = ['Todas as Categorias', 'Condomínio', 'Reservas', 'Multas', 'Manutenção', 'Serviços', 'Utilidades', 'Pessoal'];
+    const categories = ['Todas as Categorias', 'Condomínio', 'Reservas', 'Multas', 'Manutenção', 'Serviços', 'Utilidades', 'Pessoal', 'Gás', 'Energia Elétrica'];
 
     const incomeCategories = ['Condomínio', 'Reservas', 'Multas', 'Outros'];
-    const expenseCategories = ['Manutenção', 'Serviços', 'Utilidades', 'Pessoal', 'Outros'];
+    const expenseCategories = ['Manutenção', 'Serviços', 'Utilidades', 'Pessoal', 'Gás', 'Energia Elétrica', 'Outros'];
 
     const loadData = async () => {
         setLoading(true);
@@ -313,8 +313,8 @@ export const AdminFinancial: React.FC = () => {
                                             <button
                                                 onClick={() => handleStatusToggle(t)}
                                                 className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all hover:scale-105 active:scale-95 ${t.status === 'paid'
-                                                        ? 'text-emerald-700 bg-emerald-50 border-emerald-100 hover:bg-emerald-100 cursor-pointer'
-                                                        : 'text-amber-700 bg-amber-50 border-amber-100 hover:bg-amber-100 cursor-pointer'
+                                                    ? 'text-emerald-700 bg-emerald-50 border-emerald-100 hover:bg-emerald-100 cursor-pointer'
+                                                    : 'text-amber-700 bg-amber-50 border-amber-100 hover:bg-amber-100 cursor-pointer'
                                                     }`}
                                                 title="Clique para alterar status"
                                             >
