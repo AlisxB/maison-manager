@@ -29,21 +29,21 @@ export interface CommonAreaUpdate extends Partial<CommonAreaCreate> {
 
 export const CommonAreaService = {
     getAll: async () => {
-        const response = await api.get<CommonArea[]>('/common-areas/');
+        const response = await api.get<CommonArea[]>('/reservations/areas');
         return response.data;
     },
 
     create: async (data: CommonAreaCreate) => {
-        const response = await api.post<CommonArea>('/common-areas/', data);
+        const response = await api.post<CommonArea>('/reservations/areas', data);
         return response.data;
     },
 
     update: async (id: string, data: CommonAreaUpdate) => {
-        const response = await api.put<CommonArea>(`/common-areas/${id}`, data);
+        const response = await api.put<CommonArea>(`/reservations/areas/${id}`, data);
         return response.data;
     },
 
     delete: async (id: string) => {
-        await api.delete(`/common-areas/${id}`);
+        await api.delete(`/reservations/areas/${id}`);
     }
 };

@@ -41,7 +41,7 @@ export interface ReservationCreate {
 
 export const CommonAreaService = {
     getAll: async () => {
-        const response = await api.get<CommonArea[]>('/common-areas/');
+        const response = await api.get<CommonArea[]>('/reservations/areas');
         return response.data;
     }
 };
