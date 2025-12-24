@@ -1,7 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1 import auth, users, units, reservations, common_areas, readings, financial, dashboard, inventory, condominium, audit, bylaws, violations, occurrences, announcements, profile, notifications
+from app.api.v1 import (
+    dashboard, condominium, audit, bylaws, 
+    profile, notifications
+)
+from app.users import router as users_router
+from app.users import auth as auth_router
+from app.units import router as units_router
+from app.financial import router as financial_router
+from app.readings import router as readings_router
+from app.occurrences import router as occurrences_router
+from app.violations import router as violations_router
+from app.announcements import router as announcements_router
+from app.assets import router as inventory_router
+from app.reservations import router as reservations_router
+
 from app.core.database import AsyncSessionLocal
 from app.db.init_db import init_db
 import logging
@@ -32,21 +46,25 @@ app.add_middleware(
 )
 
 # Rotas
-app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
-app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
-app.include_router(units.router, prefix=f"{settings.API_V1_STR}/units", tags=["units"])
-app.include_router(reservations.router, prefix=f"{settings.API_V1_STR}/reservations", tags=["reservations"])
-app.include_router(common_areas.router, prefix=f"{settings.API_V1_STR}/common-areas", tags=["common-areas"])
-app.include_router(readings.router, prefix=f"{settings.API_V1_STR}/readings", tags=["readings"])
-app.include_router(financial.router, prefix=f"{settings.API_V1_STR}/financial", tags=["financial"])
+app.include_router(auth_router.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(users_router.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+app.include_router(units_router.router, prefix=f"{settings.API_V1_STR}/units", tags=["units"])
+app.include_router(financial_router.router, prefix=f"{settings.API_V1_STR}/financial", tags=["financial"])
+app.include_router(readings_router.router, prefix=f"{settings.API_V1_STR}/readings", tags=["readings"])
+app.include_router(occurrences_router.router, prefix=f"{settings.API_V1_STR}/occurrences", tags=["occurrences"])
+app.include_router(violations_router.router, prefix=f"{settings.API_V1_STR}/violations", tags=["violations"])
+app.include_router(announcements_router.router, prefix=f"{settings.API_V1_STR}/announcements", tags=["announcements"])
+app.include_router(inventory_router.router, prefix=f"{settings.API_V1_STR}/inventory", tags=["inventory"])
+app.include_router(reservations_router.router, prefix=f"{settings.API_V1_STR}/reservations", tags=["reservations"])
+
+# Legacy / Pending Refactor
+# Reservations includes common-areas now
+# app.include_router(common_areas.router, prefix=f"{settings.API_V1_STR}/common-areas", tags=["common-areas"])
+
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", tags=["dashboard"])
-app.include_router(inventory.router, prefix=f"{settings.API_V1_STR}/inventory", tags=["inventory"])
 app.include_router(condominium.router, prefix=f"{settings.API_V1_STR}/condominium", tags=["condominium"])
 app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit", tags=["audit"])
 app.include_router(bylaws.router, prefix=f"{settings.API_V1_STR}/bylaws", tags=["bylaws"])
-app.include_router(violations.router, prefix=f"{settings.API_V1_STR}/violations", tags=["violations"])
-app.include_router(occurrences.router, prefix=f"{settings.API_V1_STR}/occurrences", tags=["occurrences"])
-app.include_router(announcements.router, prefix=f"{settings.API_V1_STR}/announcements", tags=["announcements"])
 app.include_router(profile.router, prefix=f"{settings.API_V1_STR}/profile", tags=["profile"])
 app.include_router(notifications.router, prefix=f"{settings.API_V1_STR}/notifications", tags=["notifications"])
 
