@@ -89,7 +89,7 @@ export const AdminReservations: React.FC = () => {
             const [resData, areasData, usersData] = await Promise.all([
                 ReservationService.getAll(),
                 CommonAreaService.getAll(),
-                UserService.getAll({ status: 'ACTIVE' })
+                UserService.getAll({ status: 'ATIVO' })
             ]);
 
             // Enrich Reservations & Populate Blocked Dates
@@ -98,7 +98,7 @@ export const AdminReservations: React.FC = () => {
                 const area = areasData.find(a => a.id === r.common_area_id);
                 const user = usersData.find(u => u.id === r.user_id);
 
-                if (r.status === 'BLOCKED') {
+                if (r.status === 'BLOQUEADO') {
                     const dateStr = new Date(r.start_time).toLocaleDateString('pt-BR').split('/').reverse().join('-');
                     blocks.push({ date: dateStr, reason: r.reason || 'Bloqueado', areaId: r.common_area_id });
                 }
@@ -146,7 +146,7 @@ export const AdminReservations: React.FC = () => {
                         common_area_id: areaId,
                         start_time: startDate.toISOString(),
                         end_time: endDate.toISOString(),
-                        status: 'BLOCKED',
+                        status: 'BLOQUEADO',
                         reason: blockForm.reason
                     })
                 ));
@@ -167,13 +167,13 @@ export const AdminReservations: React.FC = () => {
         if (selectedDateStr) {
             // Find the blocked reservation(s) for this date and cancel it
             const blocks = reservations.filter(r =>
-                r.status === 'BLOCKED' &&
+                r.status === 'BLOQUEADO' &&
                 new Date(r.start_time).toLocaleDateString('pt-BR').split('/').reverse().join('-') === selectedDateStr
             );
 
             if (blocks.length > 0) {
                 try {
-                    await Promise.all(blocks.map(b => ReservationService.updateStatus(b.id, 'CANCELLED')));
+                    await Promise.all(blocks.map(b => ReservationService.updateStatus(b.id, 'CANCELADO')));
                     alert(`Data ${formatDate(selectedDateStr)} desbloqueada com sucesso!`);
                     setIsUnlockModalOpen(false);
                     loadData();
@@ -281,8 +281,8 @@ export const AdminReservations: React.FC = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 text-slate-600">
                     {dayReservations.map(r => (
-                        <div key={r.id} className={`px-1 py-0.5 rounded text-[9px] font-medium truncate border ${r.status === 'CONFIRMED' ? 'bg-green-50 text-green-700 border-green-100' :
-                            r.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                        <div key={r.id} className={`px-1 py-0.5 rounded text-[9px] font-medium truncate border ${r.status === 'CONFIRMADO' ? 'bg-green-50 text-green-700 border-green-100' :
+                            r.status === 'PENDENTE' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                                 'bg-red-50 text-red-700 border-red-100'
                             }`}>
                             {r.areaName?.split(' ')[0] || 'Area'}
@@ -443,15 +443,15 @@ export const AdminReservations: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${res.status === 'CONFIRMED' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                        res.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${res.status === 'CONFIRMADO' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                        res.status === 'PENDENTE' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                                                             'bg-red-50 text-red-700 border-red-100'
                                                         }`}>
-                                                        {res.status === 'CONFIRMED' && 'Confirmada'}
-                                                        {res.status === 'PENDING' && 'Pendente'}
-                                                        {res.status === 'REJECTED' && 'Rejeitada'}
-                                                        {res.status === 'CANCELLED' && 'Cancelada'}
-                                                        {res.status === 'BLOCKED' && 'Bloqueado'}
+                                                        {res.status === 'CONFIRMADO' && 'Confirmada'}
+                                                        {res.status === 'PENDENTE' && 'Pendente'}
+                                                        {res.status === 'REJEITADO' && 'Rejeitada'}
+                                                        {res.status === 'CANCELADO' && 'Cancelada'}
+                                                        {res.status === 'BLOQUEADO' && 'Bloqueado'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
@@ -467,7 +467,7 @@ export const AdminReservations: React.FC = () => {
                                                             onClick={async () => {
                                                                 if (!window.confirm('Tem certeza que deseja CANCELAR esta reserva?')) return;
                                                                 try {
-                                                                    await ReservationService.updateStatus(res.id, 'CANCELLED');
+                                                                    await ReservationService.updateStatus(res.id, 'CANCELADO');
                                                                     loadData();
                                                                 } catch (e) { alert('Erro ao cancelar'); }
                                                             }}
@@ -496,8 +496,8 @@ export const AdminReservations: React.FC = () => {
                             </h3>
                         </div>
                         <div className="overflow-y-auto custom-scrollbar p-5 space-y-4 flex-1">
-                            {reservations.filter(r => r.status === 'PENDING').length > 0 ? (
-                                reservations.filter(r => r.status === 'PENDING').map(res => (
+                            {reservations.filter(r => r.status === 'PENDENTE').length > 0 ? (
+                                reservations.filter(r => r.status === 'PENDENTE').map(res => (
                                     <div key={res.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-[#437476] transition-all">
                                         <div className="flex justify-between items-start mb-3">
                                             <span className="font-black text-[#437476] text-[10px] uppercase tracking-wider">{res.areaName}</span>
@@ -520,7 +520,7 @@ export const AdminReservations: React.FC = () => {
                                             <button
                                                 onClick={async () => {
                                                     try {
-                                                        await ReservationService.updateStatus(res.id, 'CONFIRMED');
+                                                        await ReservationService.updateStatus(res.id, 'CONFIRMADO');
                                                         loadData();
                                                     } catch (e) { alert('Erro ao aprovar'); }
                                                 }}
@@ -531,7 +531,7 @@ export const AdminReservations: React.FC = () => {
                                             <button
                                                 onClick={async () => {
                                                     try {
-                                                        await ReservationService.updateStatus(res.id, 'REJECTED');
+                                                        await ReservationService.updateStatus(res.id, 'REJEITADO');
                                                         loadData();
                                                     } catch (e) { alert('Erro ao recusar'); }
                                                 }}

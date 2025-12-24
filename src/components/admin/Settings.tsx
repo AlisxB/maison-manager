@@ -469,7 +469,7 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
             } else {
                 await UserService.create({
                     ...formData,
-                    status: 'ACTIVE'
+                    status: 'ATIVO'
                 });
                 alert('Usuário criado!');
             }
@@ -565,8 +565,8 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`text-xs font-medium ${user.status === 'ACTIVE' ? 'text-green-600' : 'text-amber-500'}`}>
-                                                {user.status === 'ACTIVE' ? 'Ativo' : 'Pendente'}
+                                            <span className={`text-xs font-medium ${user.status === 'ATIVO' ? 'text-green-600' : 'text-amber-500'}`}>
+                                                {user.status === 'ATIVO' ? 'Ativo' : 'Pendente'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">

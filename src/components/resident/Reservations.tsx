@@ -79,7 +79,7 @@ export const ResidentReservations: React.FC = () => {
    const handleDateClick = (day: number) => {
       const blockingRes = findBlockingReservation(day);
       if (blockingRes) {
-         if (blockingRes.status === 'BLOCKED') {
+         if (blockingRes.status === 'BLOQUEADO') {
             setBlockedReason(`Data Bloqueada: ${blockingRes.reason || 'Manutenção/Outro'}`);
          } else {
             setBlockedReason(`Esta data já possui uma reserva confirmada.`);
@@ -171,7 +171,7 @@ export const ResidentReservations: React.FC = () => {
          const isSelected = selectedDate === i;
          const blockingRes = findBlockingReservation(i);
          const isBlocked = !!blockingRes;
-         const isAdminBlock = blockingRes?.status === 'BLOCKED';
+         const isAdminBlock = blockingRes?.status === 'BLOQUEADO';
 
          const isMyReservation = myReservations.some(r => {
             const d = new Date(r.start_time);
@@ -396,7 +396,7 @@ export const ResidentReservations: React.FC = () => {
                                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${statusColors[res.status as keyof typeof statusColors]}`}>
                                     {statusLabels[res.status as keyof typeof statusLabels] || res.status}
                                  </span>
-                                 {(res.status === 'PENDING' || res.status === 'CONFIRMED') && (
+                                 {(res.status === 'PENDENTE' || res.status === 'CONFIRMADO') && (
                                     <button
                                        onClick={() => handleInitCancel(res.id)}
                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"

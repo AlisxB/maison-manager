@@ -2,11 +2,11 @@
 import { Resident, RegistrationRequest, Transaction, Issue, FinancialRecord, Reservation, Announcement, BlockedDate, Infraction, InventoryItem, SystemLog } from '../types';
 
 export const MOCK_RESIDENTS: Resident[] = [
-  { id: '1', name: 'Alice Freeman', unit: '101-A', email: 'alice@example.com', phone: '(555) 123-4567', status: 'Ativo', type: 'Proprietário', startDate: '10/01/2022', balance: 0 },
-  { id: '2', name: 'Bob Smith', unit: '102-B', email: 'bob@example.com', phone: '(555) 234-5678', status: 'Ativo', type: 'Inquilino', startDate: '05/03/2023', balance: 150 },
-  { id: '3', name: 'Charlie Davis', unit: '201-A', email: 'charlie@example.com', phone: '(555) 345-6789', status: 'Pendente', type: 'Proprietário', startDate: '20/12/2024', balance: 0 },
-  { id: '4', name: 'Diana Prince', unit: 'Cobertura', email: 'diana@example.com', phone: '(555) 999-9999', status: 'Ativo', type: 'Proprietário', startDate: '01/06/2021', balance: -50 },
-  { id: '5', name: 'Evan Wright', unit: '304-B', email: 'evan@example.com', phone: '(555) 111-2222', status: 'Inativo', type: 'Inquilino', startDate: '15/08/2022', balance: 0 },
+  { id: '1', name: 'Alice Freeman', unit: '101-A', email: 'alice@example.com', phone: '(555) 123-4567', status: 'ATIVO', type: 'PROPRIETARIO', startDate: '10/01/2022', balance: 0 },
+  { id: '2', name: 'Bob Smith', unit: '102-B', email: 'bob@example.com', phone: '(555) 234-5678', status: 'ATIVO', type: 'INQUILINO', startDate: '05/03/2023', balance: 150 },
+  { id: '3', name: 'Charlie Davis', unit: '201-A', email: 'charlie@example.com', phone: '(555) 345-6789', status: 'PENDENTE', type: 'PROPRIETARIO', startDate: '20/12/2024', balance: 0 },
+  { id: '4', name: 'Diana Prince', unit: 'Cobertura', email: 'diana@example.com', phone: '(555) 999-9999', status: 'ATIVO', type: 'PROPRIETARIO', startDate: '01/06/2021', balance: -50 },
+  { id: '5', name: 'Evan Wright', unit: '304-B', email: 'evan@example.com', phone: '(555) 111-2222', status: 'INATIVO', type: 'INQUILINO', startDate: '15/08/2022', balance: 0 },
 ];
 
 export const MOCK_REQUESTS: RegistrationRequest[] = [
@@ -16,8 +16,8 @@ export const MOCK_REQUESTS: RegistrationRequest[] = [
     email: 'lucas.m@email.com',
     unit: '405-C',
     date: 'Há 2 horas',
-    status: 'Pendente',
-    type: 'Inquilino',
+    status: 'PENDENTE',
+    type: 'INQUILINO',
     phone: '(11) 98765-4321',
     cpf: '123.456.789-00',
     moveInDate: '2025-12-28',
@@ -29,8 +29,8 @@ export const MOCK_REQUESTS: RegistrationRequest[] = [
     email: 'fer.lima@email.com',
     unit: '102-A',
     date: 'Há 5 horas',
-    status: 'Pendente',
-    type: 'Proprietário',
+    status: 'PENDENTE',
+    type: 'PROPRIETARIO',
     phone: '(21) 99999-8888',
     cpf: '987.654.321-11',
     moveInDate: '2026-01-05',
@@ -42,8 +42,8 @@ export const MOCK_REQUESTS: RegistrationRequest[] = [
     email: 'rc.king@email.com',
     unit: 'Cobertura B',
     date: 'Ontem',
-    status: 'Pendente',
-    type: 'Proprietário',
+    status: 'PENDENTE',
+    type: 'PROPRIETARIO',
     phone: '(11) 97777-6666',
     cpf: '555.444.333-22',
     moveInDate: '2025-12-20',
@@ -52,20 +52,20 @@ export const MOCK_REQUESTS: RegistrationRequest[] = [
 ];
 
 export const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: 't1', description: 'Taxa Condominial - Unidade 101', type: 'income', category: 'Condomínio', date: '2025-12-05', amount: 1250.00, status: 'paid', observation: 'Pagamento via PIX' },
-  { id: 't2', description: 'Taxa Condominial - Unidade 102', type: 'income', category: 'Condomínio', date: '2025-12-05', amount: 1250.00, status: 'paid' },
-  { id: 't3', description: 'Manutenção Elevador', type: 'expense', category: 'Manutenção', date: '2025-12-10', amount: 450.00, status: 'paid', observation: 'NF 4502' },
-  { id: 't4', description: 'Jardinagem Mensal', type: 'expense', category: 'Serviços', date: '2025-12-12', amount: 800.00, status: 'pending' },
-  { id: 't5', description: 'Aluguel Salão de Festas', type: 'income', category: 'Reservas', date: '2025-12-15', amount: 300.00, status: 'paid' },
-  { id: 't6', description: 'Conta de Energia (Área Comum)', type: 'expense', category: 'Utilidades', date: '2025-12-20', amount: 1120.50, status: 'pending' },
+  { id: 't1', description: 'Taxa Condominial - Unidade 101', type: 'RECEITA', category: 'Condomínio', date: '2025-12-05', amount: 1250.00, status: 'PAGO', observation: 'Pagamento via PIX' },
+  { id: 't2', description: 'Taxa Condominial - Unidade 102', type: 'RECEITA', category: 'Condomínio', date: '2025-12-05', amount: 1250.00, status: 'PAGO' },
+  { id: 't3', description: 'Manutenção Elevador', type: 'DESPESA', category: 'Manutenção', date: '2025-12-10', amount: 450.00, status: 'PAGO', observation: 'NF 4502' },
+  { id: 't4', description: 'Jardinagem Mensal', type: 'DESPESA', category: 'Serviços', date: '2025-12-12', amount: 800.00, status: 'PENDENTE' },
+  { id: 't5', description: 'Aluguel Salão de Festas', type: 'RECEITA', category: 'Reservas', date: '2025-12-15', amount: 300.00, status: 'PAGO' },
+  { id: 't6', description: 'Conta de Energia (Área Comum)', type: 'DESPESA', category: 'Utilidades', date: '2025-12-20', amount: 1120.50, status: 'PENDENTE' },
 ];
 
 export const MOCK_ISSUES: Issue[] = [
   {
     id: '101',
     title: 'Vazamento na Garagem G1',
-    category: 'Maintenance',
-    status: 'OPEN',
+    category: 'Manutenção',
+    status: 'ABERTO',
     date: '2023-10-25',
     reportedBy: 'Alice Freeman',
     unit: '101-A',
@@ -74,8 +74,8 @@ export const MOCK_ISSUES: Issue[] = [
   {
     id: '102',
     title: 'Ar condicionado da Academia',
-    category: 'Maintenance',
-    status: 'IN_PROGRESS',
+    category: 'Manutenção',
+    status: 'EM ANDAMENTO',
     date: '2023-10-24',
     reportedBy: 'Bob Smith',
     unit: '102-B',
@@ -85,8 +85,8 @@ export const MOCK_ISSUES: Issue[] = [
   {
     id: '103',
     title: 'Barulho excessivo Unidade 505',
-    category: 'Noise',
-    status: 'RESOLVED',
+    category: 'Barulho',
+    status: 'RESOLVIDO',
     date: '2023-10-20',
     reportedBy: 'Diana Prince',
     unit: 'Penthouse',
@@ -96,8 +96,8 @@ export const MOCK_ISSUES: Issue[] = [
   {
     id: '104',
     title: 'Portão da garagem travando',
-    category: 'Security',
-    status: 'OPEN',
+    category: 'Segurança',
+    status: 'ABERTO',
     date: '2023-10-26',
     reportedBy: 'Portaria',
     unit: 'N/A',
@@ -115,9 +115,9 @@ export const MOCK_FINANCIALS: FinancialRecord[] = [
 ];
 
 export const MOCK_RESERVATIONS: Reservation[] = [
-  { id: 'r1', area: 'Deck com Churrasqueira', date: '2025-12-20', time: '18:00 - 22:00', status: 'CONFIRMED', residentName: 'Alice Freeman', unit: '101-A' },
-  { id: 'r2', area: 'Salão de Festas', date: '2025-12-28', time: '12:00 - 18:00', status: 'PENDING', residentName: 'Bob Smith', unit: '102-B' },
-  { id: 'r3', area: 'Quadra de Tênis', date: '2025-12-10', time: '08:00 - 10:00', status: 'REJECTED', residentName: 'Charlie Davis', unit: '201-A' },
+  { id: 'r1', area: 'Deck com Churrasqueira', date: '2025-12-20', time: '18:00 - 22:00', status: 'CONFIRMADO', residentName: 'Alice Freeman', unit: '101-A' },
+  { id: 'r2', area: 'Salão de Festas', date: '2025-12-28', time: '12:00 - 18:00', status: 'PENDENTE', residentName: 'Bob Smith', unit: '102-B' },
+  { id: 'r3', area: 'Quadra de Tênis', date: '2025-12-10', time: '08:00 - 10:00', status: 'REJEITADO', residentName: 'Charlie Davis', unit: '201-A' },
 ];
 
 export const MOCK_ANNOUNCEMENTS: Announcement[] = [
@@ -150,23 +150,23 @@ export const MOCK_INFRACTIONS: Infraction[] = [
     id: 'inf1',
     residentId: '1',
     residentName: 'Alice Freeman',
-    type: 'WARNING',
+    type: 'ADVERTENCIA',
     date: '2025-11-10',
     time: '22:30',
     reason: 'Barulho excessivo relatado por vizinhos após o horário de silêncio.',
-    status: 'OPEN',
+    status: 'ABERTO',
     article: 'Art. 12 - Barulho excessivo após as 22h'
   },
   {
     id: 'inf2',
     residentId: '1',
     residentName: 'Alice Freeman',
-    type: 'FINE',
+    type: 'MULTA',
     date: '2025-12-02',
     time: '09:15',
     reason: 'Estacionamento em vaga de visitante por mais de 24 horas sem autorização.',
     value: 150.00,
-    status: 'OPEN',
+    status: 'ABERTO',
     article: 'Art. 15 - Uso indevido da vaga de garagem'
   }
 ];

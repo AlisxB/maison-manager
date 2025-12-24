@@ -133,20 +133,20 @@ export const ResidentFinancial: React.FC = () => {
                                 <div key={v.id} className="p-4 hover:bg-slate-50 transition-colors">
                                     <div className="flex justify-between items-start mb-2">
                                         <div className="flex items-center gap-2">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${v.type === 'FINE' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {v.type === 'FINE' ? 'Multa' : 'Advertência'}
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${v.type === 'MULTA' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {v.type === 'MULTA' ? 'Multa' : 'Advertência'}
                                             </span>
                                             <span className="text-xs text-slate-400">{new Date(v.created_at).toLocaleDateString()}</span>
                                         </div>
-                                        <span className={`text-xs font-bold uppercase ${v.status === 'OPEN' ? 'text-red-500' : 'text-green-500'}`}>
-                                            {v.status === 'OPEN' && 'Em Aberto'}
-                                            {v.status === 'PAID' && 'Pago'}
-                                            {v.status === 'RESOLVED' && 'Resolvido'}
-                                            {!['OPEN', 'PAID', 'RESOLVED'].includes(v.status) && v.status}
+                                        <span className={`text-xs font-bold uppercase ${v.status === 'ABERTO' ? 'text-red-500' : 'text-green-500'}`}>
+                                            {v.status === 'ABERTO' && 'Em Aberto'}
+                                            {v.status === 'PAGO' && 'Pago'}
+                                            {v.status === 'RESOLVIDO' && 'Resolvido'}
+                                            {!['ABERTO', 'PAGO', 'RESOLVIDO'].includes(v.status) && v.status}
                                         </span>
                                     </div>
                                     <p className="text-sm text-slate-700 mb-2">{v.description}</p>
-                                    {v.type === 'FINE' && v.amount && (
+                                    {v.type === 'MULTA' && v.amount && (
                                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
                                             <span className="text-sm text-slate-500">Valor da Multa</span>
                                             <span className="font-bold text-red-700">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v.amount)}</span>
@@ -184,11 +184,11 @@ export const ResidentFinancial: React.FC = () => {
                                         <p className="font-bold text-slate-900">Included</p>
                                         {/* Ideally we fetch price from CommonArea or Reservation if it has 'total_price' */}
                                         <p className="text-xs text-slate-400">
-                                            {r.status === 'CONFIRMED' && 'Confirmado'}
-                                            {r.status === 'PENDING' && 'Pendente'}
-                                            {r.status === 'REJECTED' && 'Rejeitado'}
-                                            {r.status === 'CANCELLED' && 'Cancelado'}
-                                            {!['CONFIRMED', 'PENDING', 'REJECTED', 'CANCELLED'].includes(r.status) && r.status}
+                                            {r.status === 'CONFIRMADO' && 'Confirmado'}
+                                            {r.status === 'PENDENTE' && 'Pendente'}
+                                            {r.status === 'REJEITADO' && 'Rejeitado'}
+                                            {r.status === 'CANCELADO' && 'Cancelado'}
+                                            {!['CONFIRMADO', 'PENDENTE', 'REJEITADO', 'CANCELADO'].includes(r.status) && r.status}
                                         </p>
                                     </div>
                                 </div>

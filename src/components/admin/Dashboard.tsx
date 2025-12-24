@@ -60,9 +60,9 @@ export const AdminDashboard: React.FC = () => {
 
   const getResidentStatusBadge = (status: string) => {
     const s = status.toUpperCase();
-    if (s === 'ACTIVE' || s === 'ATIVO') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-50 text-emerald-600">Ativo</span>;
-    if (s === 'PENDING' || s === 'PENDENTE') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-amber-50 text-amber-600">Pendente</span>;
-    if (s === 'INACTIVE' || s === 'INATIVO') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-slate-100 text-slate-500">Inativo</span>;
+    if (s === 'ATIVO') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-50 text-emerald-600">Ativo</span>;
+    if (s === 'PENDENTE') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-amber-50 text-amber-600">Pendente</span>;
+    if (s === 'INATIVO') return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-slate-100 text-slate-500">Inativo</span>;
     return <span className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-slate-50 text-slate-600">{status}</span>;
   };
 
