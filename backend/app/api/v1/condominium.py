@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, func
 
 from app.core import deps
-from app.models.all import Condominium
+from app.units.models import Condominium
 from app.schemas.settings import CondominiumRead, CondominiumUpdate
 
 router = APIRouter()

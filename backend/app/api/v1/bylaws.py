@@ -5,8 +5,8 @@ from typing import List
 from uuid import UUID
 
 from app.core import deps
-from app.models.all import Bylaw as BylawModel
-from app.schemas.bylaw import Bylaw, BylawCreate, BylawUpdate
+from app.violations.models import Bylaw as BylawModel
+from app.violations.schemas import Bylaw, BylawCreate, BylawUpdate
 
 router = APIRouter()
 

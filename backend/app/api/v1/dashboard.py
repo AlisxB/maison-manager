@@ -6,7 +6,10 @@ import datetime
 # from dateutil.relativedelta import relativedelta # Removed to avoid dependency issue
 
 from app.core import deps
-from app.models.all import Transaction, Unit, User, ReadingWater, ReadingGas, ReadingElectricity
+from app.financial.models import Transaction
+from app.units.models import Unit
+from app.users.models import User
+from app.readings.models import ReadingWater, ReadingGas, ReadingElectricity
 from app.schemas.dashboard import (
     DashboardStats, DashboardFinancialStats, DashboardOccupancyStats, 
     DashboardReadingStats, DashboardChartData, DashboardRecentResident

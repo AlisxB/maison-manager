@@ -4,7 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.core import deps
-from app.models.all import User, Vehicle, Pet
+from app.users.models import User
+from app.vehicles.models import Vehicle
+from app.pets.models import Pet
 from pydantic import BaseModel, UUID4
 from uuid import UUID
 

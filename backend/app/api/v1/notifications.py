@@ -3,7 +3,9 @@ from typing import List, Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from app.core import deps
-from app.models.all import Announcement, Violation, User
+from app.announcements.models import Announcement
+from app.violations.models import Violation
+from app.users.models import User
 from app.schemas.notification import NotificationItem
 from datetime import datetime, timezone
 

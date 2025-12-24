@@ -38,8 +38,8 @@ async def get_db(current_user: Annotated[TokenData, Depends(get_current_user)]) 
              # Using parameters in set_config can be tricky with some drivers, but text() handles binding.
              # Note: current_setting values are strings.
              await session.execute(
-                 text("SELECT set_config('app.current_user_id', :uid, false), set_config('app.current_condo_id', :cid, false), set_config('app.current_role', :role, false)"),
-                 {"uid": current_user.user_id, "cid": current_user.condo_id, "role": current_user.role}
+                 text("SELECT set_config('app.current_user_id', :uid, false), set_config('app.current_condo_id', :cid, false), set_config('app.current_role', :role, false), set_config('app.current_user_key', :key, false)"),
+                 {"uid": current_user.user_id, "cid": current_user.condo_id, "role": current_user.role, "key": config.settings.APP_ENCRYPTION_KEY}
              )
         except Exception as e:
             # If we can't set context, we must not yield a session.

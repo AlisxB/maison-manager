@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
-from app.models.all import User, Condominium, Unit
+from app.users.models import User
+from app.units.models import Condominium, Unit
 import logging
 
 logger = logging.getLogger(__name__)
