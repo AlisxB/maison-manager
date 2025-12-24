@@ -44,10 +44,10 @@ async def login_access_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
             
-        if user.status == 'PENDING':
+        if user.status == 'PENDENTE':
              raise HTTPException(status_code=403, detail="Seu cadastro está em análise. Aguarde a aprovação da administração.")
         
-        if user.status != 'ACTIVE':
+        if user.status != 'ATIVO':
             raise HTTPException(status_code=400, detail="Usuário inativo")
 
         # 4. Gerar Token com Payload rico
@@ -139,7 +139,7 @@ async def register_user(
     db: Annotated[AsyncSession, Depends(deps.get_db_no_context)]
 ):
     """
-    Cadastro público de moradores. Status inicial = PENDING.
+    Cadastro público de moradores. Status inicial = PENDENTE.
     """
     try:
         # 1. Check if email exists
@@ -166,9 +166,9 @@ async def register_user(
             email_hash=email_hash,
             phone_encrypted=f"ENC({user_in.phone})",
             password_hash=security.get_password_hash(user_in.password),
-            role='RESIDENT',
-            profile_type='TENANT', # Default
-            status='PENDING'
+            role='RESIDENTE',
+            profile_type='INQUILINO', # Default
+            status='PENDENTE'
         )
         
         db.add(db_user)

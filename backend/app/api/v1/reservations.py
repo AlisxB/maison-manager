@@ -48,7 +48,7 @@ async def create_reservation(
     # Logic: (StartA < EndB) and (EndA > StartB)
     existing_q = select(Reservation).where(
         Reservation.common_area_id == res_in.common_area_id,
-        Reservation.status.in_(['PENDING', 'CONFIRMED']),
+        Reservation.status.in_(['PENDENTE', 'CONFIRMADO']),
         Reservation.start_time < res_in.end_time,
         Reservation.end_time > res_in.start_time
     )
@@ -58,7 +58,7 @@ async def create_reservation(
 
 
     # Status Logic (only Admin can set status != PENDING)
-    initial_status = "PENDING"
+    initial_status = "PENDENTE"
     if current_user.role == 'ADMIN' and res_in.status:
         initial_status = res_in.status
 

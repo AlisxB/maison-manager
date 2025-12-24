@@ -54,7 +54,7 @@ async def init_db(db: AsyncSession) -> None:
                 encode(digest('admin@maison.com', 'sha256'), 'hex'),
                 '$2b$12$/Zx8NmnkAUYoy46tlLzK2ec8lzZ2ifMbuFiiRzXEUjngnfUgotfW2',
                 'ADMIN',
-                'ACTIVE',
+                'ATIVO',
                 'Gestão', '08:00 - 18:00'
             ) ON CONFLICT DO NOTHING;
         """))

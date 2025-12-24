@@ -28,7 +28,7 @@ class ReservationBase(BaseModel):
 
 class ReservationCreate(ReservationBase):
     user_id: Optional[UUID] = None
-    status: Optional[str] = "PENDING"
+    status: Optional[str] = "PENDENTE"
 
 class ReservationUpdate(BaseModel):
     status: str

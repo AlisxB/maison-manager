@@ -98,7 +98,7 @@ async def create_user(
             :cid, :name, 
             pgp_sym_encrypt(:email, current_setting('app.current_user_key')), 
             :email_hash, 
-            :pwd_hash, :role, :ptype, 'ACTIVE'
+            :pwd_hash, :role, :ptype, 'ATIVO'
         ) RETURNING id, created_at
     """)
     
@@ -123,7 +123,7 @@ async def create_user(
         profile_type=user_in.profile_type,
         unit_id=user_in.unit_id,
         phone_encrypted=f"ENC({user_in.phone})" if user_in.phone else None,
-        status="ACTIVE"
+        status="ATIVO"
     )
     
     db.add(db_user)

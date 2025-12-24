@@ -74,7 +74,7 @@ async def get_dashboard_stats(
     total_units_res = await db.execute(select(func.count(Unit.id)).where(Unit.condominium_id == current_user.condo_id))
     total_units = total_units_res.scalar() or 0
     
-    residents_res = await db.execute(select(func.count(User.id)).where(User.condominium_id == current_user.condo_id, User.role == 'RESIDENT', User.status == 'ACTIVE'))
+    residents_res = await db.execute(select(func.count(User.id)).where(User.condominium_id == current_user.condo_id, User.role == 'RESIDENTE', User.status == 'ATIVO'))
     residents_count = residents_res.scalar() or 0
     
     # Occupied units can be inferred if we have a status on Unit or count distinct units in Users
@@ -181,7 +181,7 @@ async def get_dashboard_stats(
     recent_stmt = select(User).where(
         User.condominium_id == current_user.condo_id,
         User.role == 'RESIDENT',
-        User.status == 'ACTIVE'
+        User.status == 'ATIVO'
     ).order_by(User.created_at.desc()).limit(5)
     
     recent_res = (await db.execute(recent_stmt)).scalars().all()
