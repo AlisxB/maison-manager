@@ -15,6 +15,7 @@ from app.violations import router as violations_router
 from app.announcements import router as announcements_router
 from app.assets import router as inventory_router
 from app.reservations import router as reservations_router
+from app.documents import router as documents_router
 
 from app.core.database import AsyncSessionLocal
 from app.db.init_db import init_db
@@ -67,6 +68,7 @@ app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit", tags=["a
 app.include_router(bylaws.router, prefix=f"{settings.API_V1_STR}/bylaws", tags=["bylaws"])
 app.include_router(profile.router, prefix=f"{settings.API_V1_STR}/profile", tags=["profile"])
 app.include_router(notifications.router, prefix=f"{settings.API_V1_STR}/notifications", tags=["notifications"])
+app.include_router(documents_router.router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"])
 
 @app.get("/")
 def root():

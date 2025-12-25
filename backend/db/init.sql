@@ -645,3 +645,43 @@ VALUES
 (uuid_generate_v4(), '11111111-1111-1111-1111-111111111111', 'Espaço Gourmet', 15, 80.00, 3, 5, TRUE);
 
 
+-- 13. Documents (Módulo de Documentos)
+CREATE TABLE IF NOT EXISTS documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(50) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    file_size INTEGER NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_by UUID REFERENCES users(id) -- Audit
+);
+
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+
+-- RLS
+-- Admin: CRUD
+CREATE POLICY documents_admin_policy ON documents
+    USING (
+        condominium_id = current_condo_id()
+        AND current_app_role() = 'ADMIN'
+    )
+    WITH CHECK (
+        condominium_id = current_condo_id()
+        AND current_app_role() = 'ADMIN'
+    );
+
+-- Residents: Read Only & Active Only
+CREATE POLICY documents_resident_policy ON documents FOR SELECT
+    USING (
+        condominium_id = current_condo_id()
+        AND is_active = TRUE
+    );
+
+-- Audit
+CREATE TRIGGER audit_documents_trigger AFTER INSERT OR UPDATE OR DELETE ON documents
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
