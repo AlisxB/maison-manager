@@ -68,13 +68,13 @@ class ReservationService:
              raise HTTPException(status_code=404, detail="Not found")
 
         # Permission Check
-        is_owner = (res.user_id == user_id)
+        is_owner = (str(res.user_id) == str(user_id))
         is_admin = (role == 'ADMIN')
         
         # Admin can do anything. Resident can ONLY cancel their own.
         if not is_admin:
             if not is_owner:
-                raise HTTPException(status_code=403, detail="Not authorized")
+                raise HTTPException(status_code=403, detail=f"Not authorized. Owner: {res.user_id}, Requester: {user_id}")
             if data.status != 'CANCELADO':
                 raise HTTPException(status_code=403, detail="Residents can only cancel reservations")
              

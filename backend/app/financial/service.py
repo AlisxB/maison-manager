@@ -12,11 +12,16 @@ class FinancialService:
         self.repo = FinancialRepository(db)
 
     def _check_auth(self, role: str):
-        if role not in ['ADMIN', 'FINANCIAL']:
-            raise HTTPException(status_code=403, detail="Not authorized")
+        # Base auth check - endpoints will refine
+        if role not in ['ADMIN', 'FINANCEIRO', 'RESIDENTE', 'PORTEIRO']:
+             raise HTTPException(status_code=403, detail="Not authorized")
+
+    def _check_admin(self, role: str):
+         if role not in ['ADMIN', 'FINANCEIRO']:
+             raise HTTPException(status_code=403, detail="Not authorized")
 
     async def create_transaction(self, tx_in: TransactionCreate, role: str, condo_id: UUID) -> Transaction:
-        self._check_auth(role)
+        self._check_admin(role)
         
         # Map Frontend types (lowercase) to DB types (uppercase)
         db_type = tx_in.type
@@ -49,7 +54,7 @@ class FinancialService:
         return await self.repo.get_all(condo_id, **filters)
 
     async def update_transaction(self, id: UUID, tx_in: TransactionUpdate, role: str, condo_id: UUID) -> Transaction:
-        self._check_auth(role)
+        self._check_admin(role)
         
         db_tx = await self.repo.get_by_id(id, condo_id)
         if not db_tx:
@@ -81,7 +86,7 @@ class FinancialService:
         return db_tx
 
     async def delete_transaction(self, id: UUID, role: str, condo_id: UUID) -> None:
-        self._check_auth(role)
+        self._check_admin(role)
         
         db_tx = await self.repo.get_by_id(id, condo_id)
         if not db_tx:

@@ -33,10 +33,10 @@ export const ResidentReportIssue: React.FC = () => {
   };
 
   const categories = [
-    { id: 'Maintenance', label: 'Manutenção', icon: Wrench, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { id: 'Noise', label: 'Barulho', icon: Volume2, color: 'text-orange-600', bg: 'bg-orange-50' },
-    { id: 'Security', label: 'Segurança', icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50' },
-    { id: 'Other', label: 'Outros', icon: HelpCircle, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { id: 'Manutenção', label: 'Manutenção', icon: Wrench, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { id: 'Barulho', label: 'Barulho', icon: Volume2, color: 'text-orange-600', bg: 'bg-orange-50' },
+    { id: 'Segurança', label: 'Segurança', icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50' },
+    { id: 'Outro', label: 'Outros', icon: HelpCircle, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   if (submitted) {

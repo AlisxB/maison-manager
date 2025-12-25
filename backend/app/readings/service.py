@@ -19,20 +19,24 @@ class ReadingService:
         self.db = db
         self.repo = ReadingRepository(db)
 
+    def _check_auth(self, role: str):
+        if role not in ['ADMIN', 'RESIDENTE', 'PORTEIRO']:
+             raise HTTPException(status_code=403, detail="Not authorized")
+
     def _check_admin(self, role: str):
         if role != 'ADMIN':
             raise HTTPException(status_code=403, detail="Not authorized")
 
     async def list_water(self, role: str, condo_id: UUID) -> List[ReadingWater]:
-        self._check_admin(role)
+        self._check_auth(role)
         return await self.repo.get_water(condo_id)
 
     async def list_gas(self, role: str, condo_id: UUID) -> List[ReadingGas]:
-        self._check_admin(role)
+        self._check_auth(role)
         return await self.repo.get_gas(condo_id)
 
     async def list_electricity(self, role: str, condo_id: UUID) -> List[ReadingElectricity]:
-        self._check_admin(role)
+        self._check_auth(role)
         return await self.repo.get_electricity(condo_id)
 
     async def create_water(self, data: WaterReadingCreate, role: str, condo_id: UUID) -> ReadingWater:

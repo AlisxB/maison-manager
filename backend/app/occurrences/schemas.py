@@ -22,6 +22,9 @@ class UserSummary(BaseModel):
     name: str
     unit_id: Optional[UUID] = None
 
+    class Config:
+        from_attributes = True
+
 class OccurrenceRead(OccurrenceBase):
     id: UUID
     condominium_id: UUID

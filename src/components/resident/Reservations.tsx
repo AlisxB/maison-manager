@@ -156,9 +156,11 @@ export const ResidentReservations: React.FC = () => {
          fetchInitialData();
          setIsCancelModalOpen(false);
          setReservationToCancel(null);
-      } catch (error) {
+      } catch (error: any) {
          console.error("Error cancelling reservation:", error);
-         setErrorMsg("Erro ao cancelar reserva.");
+         const msg = error.response?.data?.detail || "Erro ao cancelar reserva.";
+         setErrorMsg(msg);
+         alert(msg); // Ensure user sees it
       }
    };
 
@@ -522,6 +524,12 @@ export const ResidentReservations: React.FC = () => {
                   <p className="text-sm text-slate-500 mb-6">
                      Tem certeza que deseja cancelar esta reserva? Essa ação não pode ser desfeita.
                   </p>
+
+                  {errorMsg && (
+                     <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center justify-center gap-2">
+                        <AlertCircle size={16} /> {errorMsg}
+                     </div>
+                  )}
 
                   <div className="flex gap-3">
                      <button

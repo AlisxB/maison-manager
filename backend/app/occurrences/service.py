@@ -37,8 +37,8 @@ class OccurrenceService:
         )
         await self.repo.create(occurrence)
         await self.db.commit()
-        await self.db.refresh(occurrence)
-        return occurrence
+        # Return re-fetched object with relationships loaded to avoid MissingGreenlet error in Pydantic
+        return await self.repo.get_by_id(occurrence.id, condo_id)
 
     async def update_occurrence(self, id: UUID, data: OccurrenceUpdate, role: str, condo_id: UUID) -> Occurrence:
         if role != 'ADMIN':
