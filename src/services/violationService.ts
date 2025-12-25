@@ -11,6 +11,10 @@ export interface Violation {
     amount?: number;
     occurred_at?: string;
     created_at: string;
+    bylaw?: {
+        title: string;
+        description?: string;
+    };
 }
 
 export interface ViolationCreate {

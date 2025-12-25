@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Ban, AlertTriangle, Calendar, ChevronRight, CheckCircle, X, Gavel, AlertCircle } from 'lucide-react';
+import { Ban, AlertTriangle, Calendar, ChevronRight, CheckCircle, X, Gavel, AlertCircle, FileText } from 'lucide-react';
+
 import { ViolationService, Violation } from '../../services/violationService';
 import { useAuth } from '../../context/AuthContext';
 
@@ -51,16 +52,16 @@ export const ResidentNotifications: React.FC = () => {
                      className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-5"
                   >
                      {/* Icon */}
-                     <div className={`p-4 rounded-xl flex-shrink-0 ${violation.type === 'FINE' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                     <div className={`p-4 rounded-xl flex-shrink-0 ${violation.type === 'MULTA' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                         }`}>
-                        {violation.type === 'FINE' ? <Ban size={24} /> : <AlertTriangle size={24} />}
+                        {violation.type === 'MULTA' ? <Ban size={24} /> : <FileText size={24} />}
                      </div>
 
                      {/* Content */}
                      <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                            <h3 className="text-lg font-bold text-slate-800">
-                              {violation.type === 'FINE' ? 'Multa Condominial' : 'Notificação / Advertência'}
+                              {violation.type === 'MULTA' ? 'Multa Condominial' : 'Notificação / Advertência'}
                            </h3>
                            <span className="text-xs text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
                               <Calendar size={12} /> {FormatDate(violation.occurred_at || violation.created_at)}
@@ -69,13 +70,13 @@ export const ResidentNotifications: React.FC = () => {
                         <p className="text-sm text-slate-600 line-clamp-1 mb-1">{violation.description}</p>
                         <p className="text-xs text-slate-400 truncate">
                            {/* Ideally fetch Bylaw info via ID, or just generic text */}
-                           {violation.bylaw_id ? 'Regimento Interno (Artigo vinculado)' : 'Artigo não especificado'}
+                           {violation.bylaw?.title || (violation.bylaw_id ? 'Regimento Interno' : 'Artigo não especificado')}
                         </p>
                      </div>
 
                      {/* Actions/Status */}
                      <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 justify-between sm:justify-center">
-                        {violation.amount && violation.amount > 0 && (
+                        {violation.type === 'MULTA' && violation.amount && violation.amount > 0 && (
                            <span className="font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded text-sm">
                               {FormatCurrency(violation.amount)}
                            </span>
@@ -118,19 +119,19 @@ export const ResidentNotifications: React.FC = () => {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                   {/* Header */}
-                  <div className={`p-6 border-b flex justify-between items-start ${selectedViolation.type === 'FINE' ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'
+                  <div className={`p-6 border-b flex justify-between items-start ${selectedViolation.type === 'MULTA' ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-100'
                      }`}>
                      <div className="flex gap-4">
-                        <div className={`p-3 rounded-xl h-fit ${selectedViolation.type === 'FINE' ? 'bg-white text-red-600 shadow-sm' : 'bg-white text-amber-600 shadow-sm'
+                        <div className={`p-3 rounded-xl h-fit ${selectedViolation.type === 'MULTA' ? 'bg-white text-red-600 shadow-sm' : 'bg-white text-blue-600 shadow-sm'
                            }`}>
-                           {selectedViolation.type === 'FINE' ? <Ban size={24} /> : <AlertTriangle size={24} />}
+                           {selectedViolation.type === 'MULTA' ? <Ban size={24} /> : <FileText size={24} />}
                         </div>
                         <div>
-                           <h3 className={`text-xl font-bold ${selectedViolation.type === 'FINE' ? 'text-red-900' : 'text-amber-900'
+                           <h3 className={`text-xl font-bold ${selectedViolation.type === 'MULTA' ? 'text-red-900' : 'text-blue-900'
                               }`}>
-                              {selectedViolation.type === 'FINE' ? 'Multa por Infração' : 'Advertência Disciplinar'}
+                              {selectedViolation.type === 'MULTA' ? 'Multa Condominial' : 'Advertência Disciplinar'}
                            </h3>
-                           <p className={`text-sm mt-1 ${selectedViolation.type === 'FINE' ? 'text-red-700' : 'text-amber-700'
+                           <p className={`text-sm mt-1 ${selectedViolation.type === 'MULTA' ? 'text-red-700' : 'text-blue-700'
                               }`}>
                               Ocorrido em: {FormatDate(selectedViolation.occurred_at || selectedViolation.created_at)}
                            </p>
@@ -150,17 +151,26 @@ export const ResidentNotifications: React.FC = () => {
                         </p>
                      </div>
 
-                     {selectedViolation.bylaw_id && (
+                     {(selectedViolation.bylaw || selectedViolation.bylaw_id) && (
                         <div>
                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fundamentação Legal</h4>
-                           <div className="flex items-start gap-3 text-slate-600 text-sm">
-                              <Gavel size={18} className="mt-0.5 text-slate-400" />
-                              <span>Identificador do Regimento: {selectedViolation.bylaw_id}</span>
+                           <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-start gap-3 text-slate-600 text-sm">
+                              <Gavel size={18} className="mt-0.5 text-slate-400 flex-shrink-0" />
+                              <div>
+                                 <p className="font-semibold text-slate-800">
+                                    {selectedViolation.bylaw?.title || `Regimento Interno (ID: ${selectedViolation.bylaw_id || 'N/A'})`}
+                                 </p>
+                                 {selectedViolation.bylaw?.description && (
+                                    <p className="text-slate-500 mt-1 leading-relaxed text-xs">
+                                       {selectedViolation.bylaw.description}
+                                    </p>
+                                 )}
+                              </div>
                            </div>
                         </div>
                      )}
 
-                     {selectedViolation.amount && selectedViolation.amount > 0 && (
+                     {selectedViolation.type === 'MULTA' && selectedViolation.amount && selectedViolation.amount > 0 && (
                         <div className="flex justify-between items-center py-4 border-t border-b border-slate-100">
                            <span className="font-medium text-slate-600">Valor da Multa</span>
                            <span className="text-xl font-bold text-slate-900">

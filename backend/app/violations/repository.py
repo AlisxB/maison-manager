@@ -14,7 +14,7 @@ class ViolationRepository:
         return violation
 
     async def get_all(self, condo_id: UUID, user_id: Optional[UUID] = None) -> List[Violation]:
-        query = select(Violation).where(Violation.condominium_id == condo_id)
+        query = select(Violation).options(joinedload(Violation.bylaw)).where(Violation.condominium_id == condo_id)
         if user_id:
             query = query.where(Violation.resident_id == user_id)
             
@@ -23,7 +23,7 @@ class ViolationRepository:
         return result.scalars().all()
 
     async def get_by_id(self, id: UUID, condo_id: UUID) -> Optional[Violation]:
-        query = select(Violation).where(Violation.id == id, Violation.condominium_id == condo_id)
+        query = select(Violation).options(joinedload(Violation.bylaw)).where(Violation.id == id, Violation.condominium_id == condo_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 

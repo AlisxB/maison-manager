@@ -20,12 +20,21 @@ class ViolationUpdate(BaseModel):
     amount: Optional[float] = None
     occurred_at: Optional[datetime] = None
 
+class BylawSummary(BaseModel):
+    title: str
+    description: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 class ViolationRead(ViolationBase):
     id: UUID
     condominium_id: UUID
     status: str
     created_at: datetime
     occurred_at: Optional[datetime] = None
+    
+    bylaw: Optional[BylawSummary] = None
 
     class Config:
         from_attributes = True
