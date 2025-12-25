@@ -33,6 +33,8 @@ import { ResidentIssues } from './components/resident/Issues';
 import { ResidentConsumption } from './components/resident/Consumption';
 import { ResidentProfile } from './components/resident/Profile';
 import { ResidentFinancial } from './components/resident/MyFinancials';
+import { ResidentDocuments } from './components/resident/Documents';
+import { AdminDocuments } from './components/admin/Documents';
 
 const AppContent: React.FC = () => {
   const { signed, user, signOut, loading } = useAuth();
@@ -66,10 +68,12 @@ const AppContent: React.FC = () => {
       case 'admin_reports': return <AdminReports />;
       case 'admin_settings': return <AdminSettings />;
       case 'admin_profile': return <AdminProfile />;
+      case 'admin_documents': return <AdminDocuments />;
 
       case 'resident_dashboard': return <ResidentDashboard onNavigate={setCurrentView} />;
       case 'resident_announcements': return <ResidentAnnouncements />;
       case 'resident_notifications': return <ResidentNotifications />;
+      case 'resident_documents': return <ResidentDocuments />;
       case 'resident_consumption': return <ResidentConsumption />;
       case 'resident_reservations': return <ResidentReservations />;
       case 'resident_report_issue': return <ResidentReportIssue />;

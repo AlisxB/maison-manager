@@ -15,7 +15,8 @@ import {
   Calendar,
   Bell,
   Building,
-  AlertTriangle
+  AlertTriangle,
+  FolderOpen
 } from 'lucide-react';
 import { NavItem } from '../types';
 
@@ -29,6 +30,7 @@ export const ADMIN_NAV: NavItem[] = [
   { id: 'incidents_violations', label: 'Multas e Infrações', icon: AlertTriangle, view: 'admin_violations' },
   { id: 'announcements', label: 'Avisos', icon: Megaphone, view: 'admin_announcements' },
   { id: 'reservations', label: 'Gerenciar Reservas', icon: CalendarDays, view: 'admin_reservations' },
+  { id: 'documents', label: 'Documentos', icon: FolderOpen, view: 'admin_documents' },
   { id: 'inventory', label: 'Estoque', icon: Package, view: 'admin_inventory' },
   { id: 'reports', label: 'Relatórios', icon: FileText, view: 'admin_reports' },
   { id: 'admins', label: 'Administradores', icon: ShieldCheck, view: 'admin_settings' },
@@ -37,6 +39,7 @@ export const ADMIN_NAV: NavItem[] = [
 export const RESIDENT_NAV: NavItem[] = [
   { id: 'dashboard', label: 'Meu Lar', icon: Home, view: 'resident_dashboard' },
   { id: 'announcements', label: 'Avisos', icon: Megaphone, view: 'resident_announcements' },
+  { id: 'documents', label: 'Documentos', icon: FolderOpen, view: 'resident_documents' },
   { id: 'notifications', label: 'Minhas Notificações', icon: Bell, view: 'resident_notifications' },
   { id: 'financial', label: 'Minhas Finanças', icon: Landmark, view: 'resident_financial' },
   { id: 'consumption', label: 'Consumo', icon: BarChart3, view: 'resident_consumption' },
