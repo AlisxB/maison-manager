@@ -243,7 +243,7 @@ const MainLayout: React.FC<LayoutProps> = ({
                     <div className="p-2 space-y-1">
                       <button
                         onClick={() => {
-                          if (role === 'RESIDENT') onNavigate('resident_profile');
+                          if (role === 'RESIDENT' || role === 'RESIDENTE') onNavigate('resident_profile');
                           else if (role === 'ADMIN') onNavigate('admin_profile');
                           setIsProfileMenuOpen(false);
                         }}

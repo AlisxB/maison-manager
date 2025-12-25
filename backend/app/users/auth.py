@@ -27,7 +27,8 @@ async def login_access_token(
     import hashlib
     email_hash = hashlib.sha256(form_data.username.lower().encode('utf-8')).hexdigest()
     
-    stmt = select(User).where(User.email_hash == email_hash).where(User.deleted_at == None)
+    from sqlalchemy.orm import selectinload
+    stmt = select(User).options(selectinload(User.unit)).where(User.email_hash == email_hash).where(User.deleted_at == None)
     result = await db.execute(stmt)
     user = result.scalars().first()
     
@@ -48,7 +49,9 @@ async def login_access_token(
         subject=str(user.id), 
         claims={
             "condo_id": str(user.condominium_id),
-            "role": user.role
+            "role": user.role,
+            "name": user.name,
+            "unit": f"{user.unit.block} - {user.unit.number}" if user.unit else None
         },
         expires_delta=access_token_expires
     )
