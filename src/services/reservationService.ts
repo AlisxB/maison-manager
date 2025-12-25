@@ -20,14 +20,15 @@ export interface Reservation {
     start_time: string;
     end_time: string;
     status: 'PENDENTE' | 'CONFIRMADO' | 'REJEITADO' | 'CANCELADO' | 'BLOQUEADO';
-    total_price: number;
+    total_price?: number;
     created_at: string;
     reason?: string;
 
-    // Virtual fields for UI (joined)
-    residentName?: string;
-    areaName?: string;
-    unit?: string;
+    // Nested object from API
+    common_area?: {
+        name: string;
+        price_per_hour: number;
+    };
 }
 
 export interface ReservationCreate {
