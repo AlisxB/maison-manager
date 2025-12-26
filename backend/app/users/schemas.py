@@ -13,7 +13,7 @@ class UserBase(BaseModel):
 
 # Schema para Criação (Recebe senha em plain text)
 class UserCreate(UserBase):
-    password: str
+    password: Optional[str] = None
     phone: Optional[str] = None
     cpf: Optional[str] = None
 

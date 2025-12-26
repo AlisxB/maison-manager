@@ -27,7 +27,7 @@ class UserService:
             name=user_in.name,
             email_encrypted=f"ENC({user_in.email})", 
             email_hash=email_hash,
-            password_hash=security.get_password_hash(user_in.password),
+            password_hash=security.get_password_hash(user_in.password if user_in.password else "Mudar@123"),
             role=user_in.role,
             profile_type=user_in.profile_type,
             unit_id=user_in.unit_id,
