@@ -17,7 +17,7 @@ interface AuthContextData {
     signed: boolean;
     user: User | null;
     loading: boolean;
-    signIn: (token: string) => void;
+    signIn: () => Promise<void>;
     signOut: () => void;
 }
 
@@ -28,55 +28,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storagedToken = localStorage.getItem('token');
-
-        if (storagedToken) {
-            try {
-                const decoded = jwtDecode<any>(storagedToken);
-                // Validar expiração
-                const currentTime = Date.now() / 1000;
-                if (decoded.exp < currentTime) {
-                    signOut();
-                } else {
-                    // Reconstituir user a partir do token
-                    setUser({
-                        id: decoded.sub,
-                        condo_id: decoded.condo_id,
-                        role: decoded.role as Role,
-                        sub: decoded.sub,
-                        email: decoded.email,
-                        name: decoded.name,
-                        unit: decoded.unit
-                    });
-                    api.defaults.headers.common['Authorization'] = `Bearer ${storagedToken}`;
-                }
-            } catch (error) {
-                signOut();
-            }
-        }
-        setLoading(false);
+        checkSession();
     }, []);
 
-    const signIn = (token: string) => {
-        localStorage.setItem('token', token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    const checkSession = async () => {
+        try {
+            const response = await api.get('/profile/me');
+            const data = response.data;
+            setUser({
+                id: data.id,
+                name: data.name,
+                email: data.email,
+                role: data.role as Role,
+                condo_id: 'derived', // Profile might not return condo_id directly yet, careful or use mock
+                sub: data.id,
+                unit: data.unit_block ? `${data.unit_block} - ${data.unit_number}` : undefined
+            });
+        } catch (error) {
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        const decoded = jwtDecode<any>(token);
-        setUser({
-            id: decoded.sub,
-            condo_id: decoded.condo_id,
-            role: decoded.role as Role,
-            sub: decoded.sub,
-            email: decoded.email,
-            name: decoded.name,
-            unit: decoded.unit
-        });
+    const signIn = async () => {
+        // Just reload session data
+        await checkSession();
     };
 
     const signOut = () => {
-        localStorage.removeItem('token');
+        // Ideally call API to clear cookie
+        // api.post('/auth/logout'); 
         setUser(null);
-        delete api.defaults.headers.common['Authorization'];
+        window.location.href = '/';
     };
 
     return (

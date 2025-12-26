@@ -539,7 +539,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                   });
 
-                  signIn(response.data.access_token);
+                  await signIn();
                 } catch (err) {
                   alert('Falha no login. Verifique suas credenciais.');
                   console.error(err);

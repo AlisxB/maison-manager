@@ -1,21 +1,10 @@
 from datetime import timedelta
 from typing import Annotated, Any
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 
-from app.core import security, deps, config
-from app.users.service import UserService
-from app.users.repository import UserRepository
-from app.users.models import User
-from app.schemas.token import Token
-from app.users.schemas import UserCreate, UserRead, UserRegister
-
-router = APIRouter()
-
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=None)
 async def login_access_token(
+    response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(deps.get_db_no_context)]
 ) -> Any:
@@ -56,7 +45,25 @@ async def login_access_token(
         expires_delta=access_token_expires
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    response.set_cookie(
+        key="access_token",
+        value=f"{access_token}",
+        httponly=True,
+        secure=False, # Set True in Production (HTTPS)
+        samesite="lax",
+        max_age=config.settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    
+    return {
+        "message": "Login successful",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "condo_id": user.condominium_id
+        }
+    }
 
 @router.post("/register", response_model=UserRead)
 async def register_public(

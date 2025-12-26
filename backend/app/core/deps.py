@@ -1,5 +1,5 @@
 from typing import AsyncGenerator, Annotated
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy import text
@@ -8,12 +8,18 @@ from app.schemas.token import TokenData
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{config.settings.API_V1_STR}/auth/login")
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> TokenData:
+async def get_current_user(request: Request, token: Annotated[str | None, Depends(oauth2_scheme)] = None) -> TokenData:
+    # If token is not in header (oauth2_scheme), check cookie
+    if not token:
+        token = request.cookies.get("access_token")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not token:
+        raise credentials_exception
+        
     try:
         payload = jwt.decode(token, config.settings.SECRET_KEY, algorithms=[config.settings.ALGORITHM])
         user_id: str = payload.get("sub")
