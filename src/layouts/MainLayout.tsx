@@ -272,14 +272,14 @@ const MainLayout: React.FC<LayoutProps> = ({
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50 pb-24">
           {children}
 
-          <footer className="mt-8 py-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400 gap-4">
+          <footer className="fixed bottom-0 left-0 right-0 ml-0 lg:ml-64 py-4 px-8 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400 gap-4 z-40">
             <p>&copy; 2025 Maison Manager. Todos os direitos reservados.</p>
             <div className="flex gap-6">
               <button onClick={() => onNavigate('privacy_policy')} className="hover:text-slate-600 transition-colors">Política de Privacidade</button>
-              <button className="hover:text-slate-600 transition-colors">Termos de Uso</button>
+              <button onClick={() => onNavigate('terms_of_use')} className="hover:text-slate-600 transition-colors">Termos de Uso</button>
               <span className="flex items-center gap-1"><ShieldCheck size={12} /> LGPD Compliant</span>
             </div>
           </footer>

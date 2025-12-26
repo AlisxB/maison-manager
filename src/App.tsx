@@ -36,6 +36,7 @@ import { ResidentFinancial } from './components/resident/MyFinancials';
 import { ResidentDocuments } from './components/resident/Documents';
 import { AdminDocuments } from './components/admin/Documents';
 import { PrivacyPolicy } from './components/common/PrivacyPolicy';
+import { TermsOfUse } from './components/common/TermsOfUse';
 
 const AppContent: React.FC = () => {
   const { signed, user, signOut, loading } = useAuth();
@@ -82,6 +83,7 @@ const AppContent: React.FC = () => {
       case 'resident_profile': return <ResidentProfile />;
       case 'resident_financial': return <ResidentFinancial />;
       case 'privacy_policy': return <PrivacyPolicy onBack={() => setCurrentView(user.role === 'ADMIN' ? 'admin_dashboard' : 'resident_dashboard')} />;
+      case 'terms_of_use': return <TermsOfUse onBack={() => setCurrentView(user.role === 'ADMIN' ? 'admin_dashboard' : 'resident_dashboard')} />;
 
       default: return <div className="p-4 text-red-500">View not found: {currentView}</div>;
     }
