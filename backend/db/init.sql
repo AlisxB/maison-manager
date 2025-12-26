@@ -148,6 +148,21 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
+-- Financial: Transactions
+CREATE TABLE IF NOT EXISTS transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('RECEITA', 'DESPESA')),
+    description VARCHAR(255) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    category VARCHAR(50),
+    date DATE NOT NULL,
+    status VARCHAR(20) DEFAULT 'PAGO' CHECK (status IN ('PAGO', 'PENDENTE')),
+    observation TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
 -- Readings: Water (Individual)
 CREATE TABLE IF NOT EXISTS readings_water (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -188,21 +203,6 @@ CREATE TABLE IF NOT EXISTS readings_electricity (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE readings_electricity ENABLE ROW LEVEL SECURITY;
-
--- Financial: Transactions
-CREATE TABLE IF NOT EXISTS transactions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    condominium_id UUID NOT NULL REFERENCES condominiums(id),
-    type VARCHAR(20) NOT NULL CHECK (type IN ('RECEITA', 'DESPESA')),
-    description VARCHAR(255) NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
-    category VARCHAR(50),
-    date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'PAGO' CHECK (status IN ('PAGO', 'PENDENTE')),
-    observation TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
 -- Access Logs (Login History)
 CREATE TABLE IF NOT EXISTS access_logs (
@@ -625,7 +625,7 @@ INSERT INTO users (
     'Super Admin',
     pgp_sym_encrypt('admin@maison.com', 'super_secure_key_for_pgcrypto'),
     encode(digest('admin@maison.com', 'sha256'), 'hex'),
-    '$2b$12$/Zx8NmnkAUYoy46tlLzK2ec8lzZ2ifMbuFiiRzXEUjngnfUgotfW2',
+    '$2b$12$QipTUu0ClbAFTxuHn8lrNei8NA0S1z0SToPjzM22zTpkUhVqI9nXK',
     'ADMIN',
     'ATIVO'
 );

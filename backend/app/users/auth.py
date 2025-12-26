@@ -117,6 +117,7 @@ async def login_access_token(
     
     except Exception as e:
         print(f"Access Log Error: {e}")
+        await db.rollback()
         # Continue login process even if logging fails
     # ----------------------------------
     
