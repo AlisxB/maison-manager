@@ -22,6 +22,11 @@ export interface CondominiumUpdate {
 }
 
 export const CondominiumService = {
+    getPublic: async () => {
+        const response = await api.get<Partial<Condominium>>('/condominium/public');
+        return response.data;
+    },
+
     getMe: async () => {
         const response = await api.get<Condominium>('/condominium/me');
         return response.data;

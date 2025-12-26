@@ -9,6 +9,23 @@ from app.schemas.settings import CondominiumRead, CondominiumUpdate
 
 router = APIRouter()
 
+@router.get("/public")
+async def get_public_condominium(
+    db: Annotated[AsyncSession, Depends(deps.get_db_no_context)]
+):
+    """
+    Get public condominium details for login screen (No Auth).
+    Fetches the first available condominium (Single Tenant assumption).
+    """
+    query = text("SELECT name, login_title, sidebar_title FROM condominiums LIMIT 1")
+    result = await db.execute(query)
+    row = result.mappings().first()
+    
+    if not row:
+        return {"name": "Maison Manager", "login_title": "Maison Manager", "sidebar_title": "Maison Manager"}
+        
+    return row
+
 @router.get("/me", response_model=CondominiumRead)
 async def get_my_condominium(
     db: Annotated[AsyncSession, Depends(deps.get_db)],
