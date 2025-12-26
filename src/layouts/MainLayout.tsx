@@ -14,6 +14,7 @@ import { ADMIN_NAV, RESIDENT_NAV } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import { useCondominium } from '../context/CondominiumContext';
 import { NotificationService, Notification } from '../services/notificationService';
+import { DashboardService, DashboardStats } from '../services/dashboardService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -103,11 +104,40 @@ const MainLayout: React.FC<LayoutProps> = ({
     setIsProfileMenuOpen(false);
   }
 
+  const [pendingCounts, setPendingCounts] = useState({ occurrences: 0, access_requests: 0, reservations: 0 });
+
+  useEffect(() => {
+    if (user && role === 'ADMIN') {
+      DashboardService.getStats().then(stats => {
+        if (stats.pending_counts) {
+          setPendingCounts(stats.pending_counts);
+        }
+      }).catch(err => console.error("Error fetching badges", err));
+    }
+  }, [user, role, currentView]); // Refresh when view changes to update counts? Might be too heavy. Maybe just on mount and periodic? keeping simple for now.
+
   const navItems = role === 'ADMIN' ? ADMIN_NAV : RESIDENT_NAV;
   const sidebarBg = role === 'ADMIN' ? 'bg-[#1e3a3a]' : 'bg-emerald-900';
   const sidebarText = 'text-slate-300';
   const activeItemBg = role === 'ADMIN' ? 'bg-[#264949] text-white border-l-4 border-yellow-500' : 'bg-emerald-800 text-white';
   const hoverItemBg = role === 'ADMIN' ? 'hover:bg-[#264949] hover:text-white' : 'hover:bg-emerald-800 hover:text-white';
+
+  const getBadge = (view: string) => {
+    if (role !== 'ADMIN') return null;
+    let count = 0;
+    if (view === 'admin_occurrences') count = pendingCounts.occurrences;
+    if (view === 'admin_residents') count = pendingCounts.access_requests;
+    if (view === 'admin_reservations') count = pendingCounts.reservations;
+
+    if (count > 0) {
+      return (
+        <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+          {count}
+        </span>
+      );
+    }
+    return null;
+  };
 
   const NavContent = () => (
     <div className="flex flex-col h-full">
@@ -137,7 +167,8 @@ const MainLayout: React.FC<LayoutProps> = ({
                   ${isActive ? `${activeItemBg}` : `${sidebarText} ${hoverItemBg}`}`}
               >
                 <item.icon size={18} className={isActive ? 'text-white' : 'text-slate-400'} />
-                {item.label}
+                <span className="flex-1 text-left">{item.label}</span>
+                {getBadge(item.view)}
               </button>
             );
           })}

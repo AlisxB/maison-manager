@@ -10,9 +10,12 @@ from app.financial.models import Transaction
 from app.units.models import Unit
 from app.users.models import User
 from app.readings.models import ReadingWater, ReadingGas, ReadingElectricity
+from app.occurrences.models import Occurrence
+from app.reservations.models import Reservation
 from app.schemas.dashboard import (
     DashboardStats, DashboardFinancialStats, DashboardOccupancyStats, 
-    DashboardReadingStats, DashboardChartData, DashboardRecentResident
+    DashboardReadingStats, DashboardChartData, DashboardRecentResident,
+    DashboardPendingCounts
 )
 
 router = APIRouter()
@@ -183,7 +186,7 @@ async def get_dashboard_stats(
     # --- Recent Residents ---
     recent_stmt = select(User).where(
         User.condominium_id == current_user.condo_id,
-        User.role == 'RESIDENT',
+        User.role == 'RESIDENTE',
         User.status == 'ATIVO'
     ).order_by(User.created_at.desc()).limit(5)
     
@@ -208,10 +211,40 @@ async def get_dashboard_stats(
             status=r.status
         ))
 
+    # --- Pending Counts ---
+    # Occurrences (ABERTO)
+    pending_occ_stmt = select(func.count(Occurrence.id)).where(
+        Occurrence.condominium_id == current_user.condo_id,
+        Occurrence.status == 'ABERTO'
+    )
+    pending_occ = (await db.execute(pending_occ_stmt)).scalar() or 0
+
+    # Access Requests (Users PENDENTE)
+    pending_users_stmt = select(func.count(User.id)).where(
+        User.condominium_id == current_user.condo_id,
+        User.status == 'PENDENTE',
+        User.role == 'RESIDENTE' 
+    )
+    pending_users = (await db.execute(pending_users_stmt)).scalar() or 0
+
+    # Reservations (PENDENTE)
+    pending_res_stmt = select(func.count(Reservation.id)).where(
+        Reservation.condominium_id == current_user.condo_id,
+        Reservation.status == 'PENDENTE'
+    )
+    pending_res = (await db.execute(pending_res_stmt)).scalar() or 0
+
+    pending_counts = DashboardPendingCounts(
+        occurrences=pending_occ,
+        access_requests=pending_users,
+        reservations=pending_res
+    )
+
     return DashboardStats(
         financial=financial_stats,
         occupancy=occupancy_stats,
         readings=readings_stats,
         charts=charts,
-        recent_residents=recent_residents_list
+        recent_residents=recent_residents_list,
+        pending_counts=pending_counts
     )

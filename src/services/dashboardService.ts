@@ -34,6 +34,11 @@ export interface DashboardStats {
         start_date: string;
         status: string;
     }>;
+    pending_counts?: {
+        occurrences: number;
+        access_requests: number;
+        reservations: number;
+    };
 }
 
 export const DashboardService = {

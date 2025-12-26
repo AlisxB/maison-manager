@@ -36,9 +36,15 @@ class DashboardRecentResident(BaseModel):
     start_date: str # Formatted date
     status: str
 
+class DashboardPendingCounts(BaseModel):
+    occurrences: int
+    access_requests: int
+    reservations: int
+
 class DashboardStats(BaseModel):
     financial: DashboardFinancialStats
     occupancy: DashboardOccupancyStats
     readings: DashboardReadingStats
     charts: List[DashboardChartData]
     recent_residents: List[DashboardRecentResident]
+    pending_counts: Optional[DashboardPendingCounts] = None
