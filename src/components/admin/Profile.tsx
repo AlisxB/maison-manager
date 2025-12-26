@@ -418,7 +418,7 @@ export const AdminProfile: React.FC = () => {
 
               <div className="space-y-4 text-left">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Senha Atual (Opcional)</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Senha Atual</label>
                   <input
                     type="password"
                     placeholder="••••••••"
