@@ -20,13 +20,8 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
 
   // Modal State
+  // Modal State
   const [selectedIssue, setSelectedIssue] = useState<Occurrence | null>(null);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportForm, setReportForm] = useState<OccurrenceCreate>({
-    title: '',
-    description: '',
-    category: 'Maintenance'
-  });
 
   const fetchDashboardData = async () => {
     try {
@@ -86,19 +81,7 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     fetchDashboardData();
   }, []);
 
-  const handleReportSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await OccurrenceService.create(reportForm);
-      alert("Ocorrência registrada com sucesso!");
-      setIsReportModalOpen(false);
-      setReportForm({ title: '', description: '', category: 'Maintenance' });
-      fetchDashboardData();
-    } catch (error) {
-      console.error("Error creating occurrence:", error);
-      alert("Erro ao registrar ocorrência.");
-    }
-  };
+
 
   const getStatusPT = (status: string) => {
     switch (status) {
@@ -121,9 +104,6 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const handleActionClick = (label: string) => {
     switch (label) {
-      case 'Reportar Problema':
-        setIsReportModalOpen(true);
-        break;
       case 'Reservar Área':
         onNavigate('resident_reservations');
         break;
@@ -196,7 +176,6 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Reportar Problema', icon: MessageSquare, color: 'bg-orange-100 text-orange-600' },
               { label: 'Reservar Área', icon: Clock, color: 'bg-blue-100 text-blue-600' },
               { label: 'Notificar Intercorrência', icon: ShieldAlert, color: 'bg-purple-100 text-purple-600' },
               { label: 'Avisos', icon: Megaphone, color: 'bg-green-100 text-green-600' },
@@ -279,64 +258,7 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Report Issue Modal */}
-      {isReportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-lg font-bold text-slate-800">Reportar Problema</h3>
-              <button onClick={() => setIsReportModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200 transition-colors">
-                <X size={20} />
-              </button>
-            </div>
 
-            <form onSubmit={handleReportSubmit} className="p-6 space-y-5">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Título</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Vazamento na garagem"
-                  value={reportForm.title}
-                  onChange={e => setReportForm({ ...reportForm, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoria</label>
-                <select
-                  value={reportForm.category}
-                  onChange={e => setReportForm({ ...reportForm, category: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
-                >
-                  <option value="Maintenance">Manutenção</option>
-                  <option value="Noise">Barulho / Silêncio</option>
-                  <option value="Security">Segurança</option>
-                  <option value="Other">Outro</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Descrição Detalhada</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Descreva o problema com detalhes..."
-                  value={reportForm.description}
-                  onChange={e => setReportForm({ ...reportForm, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button type="submit" className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200 flex justify-center items-center gap-2">
-                  <CheckCircle size={18} /> Registrar Ocorrência
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Details Modal */}
       {selectedIssue && (
