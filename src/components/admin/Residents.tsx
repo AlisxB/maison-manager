@@ -133,7 +133,7 @@ export const AdminResidents: React.FC = () => {
                 profile_type: 'INQUILINO', // Default
                 unit_id: targetUnit?.id,
                 // Only send password if editing and non-empty, or creating (default applied in backend if missing but safer here)
-                ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : { password: residentForm.password || 'Mudar@123' }),
+                ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : (residentForm.password ? { password: residentForm.password } : {})),
             };
 
 
