@@ -17,6 +17,8 @@ import {
   ChevronDown,
   ArrowLeft,
   Cat,
+  Eye,
+  EyeOff,
   PlusCircle,
   Trash2
 } from 'lucide-react';
@@ -31,6 +33,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
   const [view, setView] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Estados do Formulário de Cadastro
   const [regForm, setRegForm] = useState({
@@ -517,12 +520,19 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                     <Lock size={18} />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
+                    className="block w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#437476] transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
             </div>
