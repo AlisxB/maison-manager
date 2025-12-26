@@ -61,8 +61,8 @@ async def get_my_profile(
     # Fetch full user with relationships AND decrypted fields
     query = select(
         User,
-        text("pgp_sym_decrypt(email_encrypted::bytea, current_setting('app.current_user_key')) as decrypted_email"),
-        text("pgp_sym_decrypt(phone_encrypted::bytea, current_setting('app.current_user_key')) as decrypted_phone")
+        text("CASE WHEN email_encrypted LIKE 'ENC(%' THEN email_encrypted ELSE pgp_sym_decrypt(email_encrypted::bytea, current_setting('app.current_user_key')) END as decrypted_email"),
+        text("CASE WHEN phone_encrypted LIKE 'ENC(%' THEN phone_encrypted ELSE pgp_sym_decrypt(phone_encrypted::bytea, current_setting('app.current_user_key')) END as decrypted_phone")
     ).options(
         selectinload(User.unit),
         selectinload(User.vehicles),
