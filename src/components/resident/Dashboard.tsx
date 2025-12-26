@@ -130,20 +130,13 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+      <div className="bg-emerald-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-3xl font-bold mb-2">Bem-vinda de volta {(user as any)?.name ? `, ${(user as any).name.split(' ')[0]}` : ''}!</h2>
-          <p className="text-emerald-100 mb-6">
+          <h2 className="text-3xl font-bold mb-1">Bem-vinda de volta {(user as any)?.name ? `, ${(user as any).name.split(' ')[0]}` : ''}!</h2>
+          <p className="text-emerald-50 text-lg font-medium mb-6">
             Unidade {(user as any)?.unit?.number || (user as any)?.unit || '---'} • {condominium?.name || 'Maison Heights'}
           </p>
-          <div className="flex gap-3">
-            <button className="bg-white text-emerald-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
-              Pagar Condomínio
-            </button>
-            <button className="bg-emerald-700/50 text-white px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors backdrop-blur-sm">
-              Regimento Interno
-            </button>
-          </div>
+
         </div>
         <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-10 translate-y-10">
           <Home size={240} />
