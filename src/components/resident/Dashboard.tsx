@@ -48,6 +48,7 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         // Find next future reservation and enrich with area name
         const now = new Date();
         const futureReservations = reservations
+          .filter(r => r.user_id === user?.id)
           .filter(r => new Date(r.start_time) > now)
           .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
