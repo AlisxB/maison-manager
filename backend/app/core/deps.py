@@ -6,7 +6,7 @@ from sqlalchemy import text
 from app.core import config, security, database
 from app.schemas.token import TokenData
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{config.settings.API_V1_STR}/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{config.settings.API_V1_STR}/auth/login", auto_error=False)
 
 async def get_current_user(request: Request, token: Annotated[str | None, Depends(oauth2_scheme)] = None) -> TokenData:
     # If token is not in header (oauth2_scheme), check cookie
