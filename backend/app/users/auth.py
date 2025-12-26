@@ -1,10 +1,23 @@
 from datetime import timedelta
 from typing import Annotated, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import asyncio
+import urllib.request
+import json
+
+from app.core import security, deps, config
+from app.users.models import User, AccessLog
+from app.users.schemas import UserRead, UserRegister
+
+router = APIRouter()
 
 @router.post("/login", response_model=None)
 async def login_access_token(
     response: Response,
+    request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(deps.get_db_no_context)]
 ) -> Any:
@@ -53,17 +66,75 @@ async def login_access_token(
         samesite="lax",
         max_age=config.settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
+
+    # --- Access Log & GeoIP (Async) ---
+    try:
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent", "Unknown")
+
+        def get_location(ip):
+            if not ip:
+                return "Desconhecido"
+            
+            # Check for Localhost and Private IPs
+            # 10.x.x.x, 192.168.x.x, 172.16-31.x.x
+            is_private = (
+                ip in ["127.0.0.1", "::1", "localhost"] or
+                ip.startswith("10.") or
+                ip.startswith("192.168.") or
+                (ip.startswith("172.") and 16 <= int(ip.split('.')[1]) <= 31)
+            )
+            
+            if is_private:
+                return "Rede Local"
+
+            try:
+                # Using ip-api.com (Free, no-auth limit 45/min)
+                url = f"http://ip-api.com/json/{ip}"
+                # Run blocking I/O in thread
+                resp = urllib.request.urlopen(url, timeout=2)
+                data = json.loads(resp.read().decode())
+                if data.get("status") == "success":
+                    return f"{data.get('city', '')} - {data.get('region', '')}"
+                else:
+                    print(f"GeoIP Failed for {ip}: {data}")
+            except Exception as e:
+                print(f"GeoIP Error for {ip}: {e}")
+            return "Desconhecido"
+
+        # Execute GeoIP lookup in thread to not block event loop
+        location = await asyncio.to_thread(get_location, client_ip)
+
+        log_entry = AccessLog(
+            condominium_id=user.condominium_id,
+            user_id=user.id,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            location=location
+        )
+        db.add(log_entry)
+        await db.commit()
+    
+    except Exception as e:
+        print(f"Access Log Error: {e}")
+        # Continue login process even if logging fails
+    # ----------------------------------
     
     return {
         "message": "Login successful",
         "user": {
             "id": user.id,
             "name": user.name,
-            "email": user.email,
+            "email": form_data.username,
             "role": user.role,
             "condo_id": user.condominium_id
         }
     }
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(key="access_token", httponly=True, samesite="lax")
+    return {"message": "Logged out successfully"}
 
 @router.post("/register", response_model=UserRead)
 async def register_public(

@@ -32,20 +32,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const checkSession = async () => {
         try {
+            console.log('Checking session...');
             const response = await api.get('/profile/me');
+            console.log('Session valid:', response.data);
             const data = response.data;
             setUser({
                 id: data.id,
                 name: data.name,
                 email: data.email,
                 role: data.role as Role,
-                condo_id: 'derived', // Profile might not return condo_id directly yet, careful or use mock
+                condo_id: 'derived',
                 sub: data.id,
                 unit: data.unit_block ? `${data.unit_block} - ${data.unit_number}` : undefined
             });
         } catch (error) {
+            console.error('Session check failed:', error);
             setUser(null);
         } finally {
+            console.log('Finished loading');
             setLoading(false);
         }
     };
@@ -55,11 +59,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await checkSession();
     };
 
-    const signOut = () => {
-        // Ideally call API to clear cookie
-        // api.post('/auth/logout'); 
-        setUser(null);
-        window.location.href = '/';
+    const signOut = async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error('Logout failed on backend:', error);
+        } finally {
+            setUser(null);
+            window.location.href = '/';
+        }
     };
 
     return (

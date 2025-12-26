@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, ForeignKey, TIMESTAMP, Text, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import uuid
@@ -55,7 +55,7 @@ class AccessLog(Base):
     id = uuid_pk()
     condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    ip_address = Column(String(255), nullable=True) # Changed from INET to String for simplicity in model if INET issues arise
+    ip_address = Column(INET, nullable=True) 
     user_agent = Column(Text, nullable=True)
     location = Column(String(100), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
