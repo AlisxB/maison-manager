@@ -18,8 +18,7 @@ export const AdminResidents: React.FC = () => {
         entryDate: '2025-12-17',
         exitDate: '',
         registeredBy: user?.name || 'Admin',
-        hasPets: false,
-        petsList: [{ quantity: 1, type: '' }],
+
         password: '' // Add password to state
     });
 
@@ -40,7 +39,7 @@ export const AdminResidents: React.FC = () => {
                 UserService.getAll({ status: 'ATIVO' }),
                 UnitService.getAll()
             ]);
-            setResidents(usersData);
+            setResidents(usersData.filter(u => u.role === 'RESIDENTE'));
             setUnits(unitsData);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
@@ -55,18 +54,49 @@ export const AdminResidents: React.FC = () => {
         return unit ? `${unit.block ? 'Bloco ' + unit.block + ' - ' : ''}${unit.number}` : '-';
     };
 
+    const formatPhoneNumber = (value: string) => {
+        const numbers = value.replace(/\D/g, '');
+        if (numbers.length <= 2) return numbers;
+        if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+        return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+    };
+
+    const formatDate = (value: string) => {
+        const numbers = value.replace(/\D/g, '');
+        if (numbers.length <= 2) return numbers;
+        if (numbers.length <= 4) return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+        return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+    };
+
+    const formatDateToISO = (dateStr: string) => {
+        if (!dateStr) return '';
+        if (dateStr.includes('-')) return dateStr; // Already ISO
+        const [day, month, year] = dateStr.split('/');
+        return `${year}-${month}-${day}`;
+    };
+
+    const formatDateFromISO = (dateStr: string) => {
+        if (!dateStr) return '';
+        if (dateStr.includes('/')) return dateStr; // Already BR
+        const [year, month, day] = dateStr.split('T')[0].split('-');
+        return `${day}/${month}/${year}`;
+    };
+
     const resetForm = () => {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+
         setResidentForm({
             name: '',
             email: '',
             phone: '',
             block: '',
             unit: '',
-            entryDate: new Date().toISOString().split('T')[0],
+            entryDate: `${dd}/${mm}/${yyyy}`,
             exitDate: '',
             registeredBy: user?.name || 'Admin',
-            hasPets: false,
-            petsList: [{ quantity: 1, type: '' }],
             password: ''
         });
         setEditingId(null);
@@ -78,14 +108,12 @@ export const AdminResidents: React.FC = () => {
         setResidentForm({
             name: resident.name,
             email: resident.email,
-            phone: resident.phone || '',
+            phone: resident.phone ? formatPhoneNumber(resident.phone) : '',
             block: unit?.block || '',
             unit: unit?.number || '',
-            entryDate: '2025-01-01', // Mock or fetch actual
+            entryDate: '01/01/2025', // Mock or fetch actual
             exitDate: '',
             registeredBy: user?.name || 'Admin',
-            hasPets: resident.pets && resident.pets.length > 0,
-            petsList: resident.pets && resident.pets.length > 0 ? resident.pets.map(p => ({ quantity: 1, type: p.type })) : [{ quantity: 1, type: '' }],
             password: '' // Don't fill password on edit
         });
         setEditingId(resident.id);
@@ -99,18 +127,8 @@ export const AdminResidents: React.FC = () => {
     const handleSaveResident = async () => {
         try {
             // Encontrar ID da unidade baseada na seleção
-            // Nota: O backend espera unit_id. O front atualmente tem selects separados para Bloco e Unidade.
-            // Precisamos encontrar a unidade correta ou criar.
-            // Simplificação MVP: Se a unidade não existir no array 'units' carregado, não enviamos unit_id por enquanto
-            // ou assumimos que o usuário selecionou algo válido que mapeamos.
-
-            // Vamos achar a unit no array carregado que bate com block e number
-            // Normalizar inputs
             const blockInput = residentForm.block.trim();
             const numberInput = residentForm.unit.trim();
-
-            console.log("Searching for Unit:", { block: blockInput, number: numberInput });
-            console.log("Available Units:", units);
 
             const targetUnit = units.find(u =>
                 (u.block || "").trim() === blockInput &&
@@ -118,11 +136,8 @@ export const AdminResidents: React.FC = () => {
             );
 
             if (!targetUnit) {
-                alert(`DEBUG: Unidade não encontrada!\nInput: Bloco='${blockInput}', Num='${numberInput}'\nTotal Units Loaded: ${units.length}`);
-                console.error("Units:", units);
+                alert(`Unidade não encontrada!`);
                 return;
-            } else {
-                // alert(`DEBUG: Unidade Encontrada: ID=${targetUnit.id}`);
             }
 
             const payload = {
@@ -132,7 +147,8 @@ export const AdminResidents: React.FC = () => {
                 role: 'RESIDENTE',
                 profile_type: 'INQUILINO', // Default
                 unit_id: targetUnit?.id,
-                // Only send password if editing and non-empty, or creating (default applied in backend if missing but safer here)
+                entry_date: formatDateToISO(residentForm.entryDate), // Add entry date support if backend supports it (assuming yes or handled)
+                exit_date: residentForm.exitDate ? formatDateToISO(residentForm.exitDate) : null,
                 ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : (residentForm.password ? { password: residentForm.password } : {})),
             };
 
@@ -158,25 +174,7 @@ export const AdminResidents: React.FC = () => {
         }
     };
 
-    // Funções de Pet mantidas...
-    const handleAddPetRow = () => {
-        setResidentForm(prev => ({
-            ...prev,
-            petsList: [...prev.petsList, { quantity: 1, type: '' }]
-        }));
-    };
-
-    const handleRemovePetRow = (index: number) => {
-        if (residentForm.petsList.length === 1 && index === 0) return;
-        const newPets = residentForm.petsList.filter((_, i) => i !== index);
-        setResidentForm({ ...residentForm, petsList: newPets });
-    };
-
-    const handlePetChange = (index: number, field: 'quantity' | 'type', value: string | number) => {
-        const newPets = [...residentForm.petsList];
-        newPets[index] = { ...newPets[index], [field]: value };
-        setResidentForm({ ...residentForm, petsList: newPets });
-    };
+    // Pet helpers removed
 
     return (
         <div className="space-y-6">
@@ -353,9 +351,10 @@ export const AdminResidents: React.FC = () => {
                                             <input
                                                 type="tel"
                                                 placeholder="(99) 99999-9999"
+                                                maxLength={15}
                                                 className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
                                                 value={residentForm.phone}
-                                                onChange={e => setResidentForm({ ...residentForm, phone: e.target.value })}
+                                                onChange={e => setResidentForm({ ...residentForm, phone: formatPhoneNumber(e.target.value) })}
                                             />
                                         </div>
                                     </div>
@@ -433,8 +432,10 @@ export const AdminResidents: React.FC = () => {
                                         <div className="relative">
                                             <input
                                                 type="text"
+                                                placeholder="DD/MM/AAAA"
+                                                maxLength={10}
                                                 value={residentForm.entryDate}
-                                                onChange={e => setResidentForm({ ...residentForm, entryDate: e.target.value })}
+                                                onChange={e => setResidentForm({ ...residentForm, entryDate: formatDate(e.target.value) })}
                                                 className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700"
                                             />
                                             <Calendar size={18} className="absolute right-3 top-3.5 text-slate-400" />
@@ -445,9 +446,10 @@ export const AdminResidents: React.FC = () => {
                                         <div className="relative">
                                             <input
                                                 type="text"
-                                                placeholder="Escolha uma data"
+                                                placeholder="DD/MM/AAAA"
+                                                maxLength={10}
                                                 value={residentForm.exitDate}
-                                                onChange={e => setResidentForm({ ...residentForm, exitDate: e.target.value })}
+                                                onChange={e => setResidentForm({ ...residentForm, exitDate: formatDate(e.target.value) })}
                                                 className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 placeholder-slate-400"
                                             />
                                             <Calendar size={18} className="absolute right-3 top-3.5 text-slate-400" />
@@ -469,84 +471,7 @@ export const AdminResidents: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Seção de Pets */}
-                                <div className="border border-slate-200 rounded-lg p-5 bg-[#fcfbf9]">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Cat size={18} className="text-[#437476]" />
-                                        <h4 className="font-bold text-slate-600 text-sm">Animais de Estimação</h4>
-                                    </div>
-
-                                    <div className="flex items-center gap-6">
-                                        <span className="text-sm text-slate-600">Possui animal de estimação?</span>
-                                        <div className="flex gap-4">
-                                            <label className="flex items-center gap-2 cursor-pointer group">
-                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${residentForm.hasPets ? 'border-[#437476]' : 'border-slate-300 group-hover:border-[#437476]'}`}>
-                                                    {residentForm.hasPets && <div className="w-3 h-3 rounded-full bg-[#437476]"></div>}
-                                                </div>
-                                                <input type="radio" className="hidden" checked={residentForm.hasPets} onChange={() => setResidentForm({ ...residentForm, hasPets: true })} />
-                                                <span className="text-sm text-slate-600">Sim</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer group">
-                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${!residentForm.hasPets ? 'border-[#437476]' : 'border-slate-300 group-hover:border-[#437476]'}`}>
-                                                    {!residentForm.hasPets && <div className="w-3 h-3 rounded-full bg-[#437476]"></div>}
-                                                </div>
-                                                <input type="radio" className="hidden" checked={!residentForm.hasPets} onChange={() => setResidentForm({ ...residentForm, hasPets: false })} />
-                                                <span className="text-sm text-slate-600">Não</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    {residentForm.hasPets && (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 mt-4 pt-4 border-t border-slate-100">
-                                            {residentForm.petsList.map((pet, index) => (
-                                                <div key={index} className="grid grid-cols-12 gap-3 items-end">
-                                                    <div className="col-span-3">
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1.5">Quantidade</label>
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]"
-                                                            value={pet.quantity}
-                                                            onChange={(e) => handlePetChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                                                        />
-                                                    </div>
-                                                    <div className="col-span-8">
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1.5">Tipo</label>
-                                                        <select
-                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-600"
-                                                            value={pet.type}
-                                                            onChange={(e) => handlePetChange(index, 'type', e.target.value)}
-                                                        >
-                                                            <option value="">Selecione...</option>
-                                                            <option value="Cachorro">Cachorro</option>
-                                                            <option value="Gato">Gato</option>
-                                                            <option value="Pássaro">Pássaro</option>
-                                                            <option value="Outro">Outro</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="col-span-1 flex justify-center pb-2">
-                                                        <button
-                                                            onClick={() => handleRemovePetRow(index)}
-                                                            className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                                                            title="Remover animal"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-
-                                            <div className="flex justify-end pt-2">
-                                                <button
-                                                    onClick={handleAddPetRow}
-                                                    className="px-4 py-2 text-slate-500 text-sm font-medium hover:bg-slate-50 hover:text-[#437476] flex items-center gap-2 transition-colors rounded-lg"
-                                                >
-                                                    <PlusCircle size={16} /> Adicionar Animal
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                { /* Seção de Pets removida conforme solicitado */}
 
                                 <button className="w-full py-4 bg-[#437476] text-white font-medium rounded-lg hover:bg-[#365e5f] shadow-sm transition-colors text-base" onClick={handleSaveResident}>
                                     {editingId ? 'Atualizar Morador' : 'Salvar Morador'}
