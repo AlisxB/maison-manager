@@ -115,6 +115,9 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       case 'Avisos':
         onNavigate('resident_announcements');
         break;
+      case 'Documentos':
+        onNavigate('resident_documents');
+        break;
       case 'Consumo':
         onNavigate('resident_consumption');
         break;
