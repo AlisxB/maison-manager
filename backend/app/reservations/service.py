@@ -35,8 +35,17 @@ class ReservationService:
 
     # Reservations
     async def list_reservations(self, user_id: UUID, role: str, condo_id: UUID) -> List[Reservation]:
-        filter_user = user_id if role == 'RESIDENTE' else None
-        return await self.repo.get_reservations(condo_id, filter_user)
+        # Allow Residents to see all reservations (for calendar blocked dates)
+        reservations = await self.repo.get_reservations(condo_id, user_id=None)
+        
+        # Privacy Layer: Hide details of other users for Residents
+        if role == 'RESIDENTE':
+            for r in reservations:
+                if str(r.user_id) != str(user_id):
+                    # Mask user relationship to prevent PII leakage
+                    r.user = None
+                    
+        return reservations
 
     async def create_reservation(self, data: ReservationCreate, user_id: UUID, role: str, condo_id: UUID) -> Reservation:
         # 1. Validate Area restrictions (min/max time, capacity) -> Skipped for brevity, focusing on structure
