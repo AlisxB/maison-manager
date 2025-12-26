@@ -57,7 +57,8 @@ class ReadingService:
         self._check_admin(role)
         reading = ReadingGas(condominium_id=condo_id, **data.model_dump())
         # Add to session but don't commit yet
-        self.db.add(reading)
+        # Add to session but don't commit yet - Wait for transaction!
+        # self.db.add(reading)
         
         # Create Expense Transaction
         financial_service = FinancialService(self.db)
@@ -68,7 +69,8 @@ class ReadingService:
                 amount=Decimal(str(data.total_price)),
                 category='Gás',
                 date=data.purchase_date,
-                status='PENDENTE'
+                status='PENDENTE',
+                observation='Gerado automaticamente pelo módulo de Leituras (Gás)'
             ),
             role,
             condo_id
@@ -77,6 +79,7 @@ class ReadingService:
         # Link Transaction
         reading.transaction_id = tx.id
         
+        self.db.add(reading) # Add now that we have the transaction
         await self.db.commit()
         await self.db.refresh(reading)
         return reading
@@ -84,7 +87,7 @@ class ReadingService:
     async def create_electricity(self, data: ElectricityReadingCreate, role: str, condo_id: UUID) -> ReadingElectricity:
         self._check_admin(role)
         reading = ReadingElectricity(condominium_id=condo_id, **data.model_dump())
-        self.db.add(reading)
+        # self.db.add(reading)
 
         # Create Expense Transaction
         financial_service = FinancialService(self.db)
@@ -95,7 +98,8 @@ class ReadingService:
                 amount=Decimal(str(data.total_value)),
                 category='Energia Elétrica',
                 date=data.due_date,
-                status='PENDENTE'
+                status='PENDENTE',
+                observation='Gerado automaticamente pelo módulo de Leituras (Energia)'
             ),
             role,
             condo_id
@@ -103,7 +107,8 @@ class ReadingService:
         
         # Link Transaction
         reading.transaction_id = tx.id
-
+        
+        self.db.add(reading)
         await self.db.commit()
         await self.db.refresh(reading)
         return reading

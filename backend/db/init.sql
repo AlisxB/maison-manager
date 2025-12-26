@@ -171,6 +171,7 @@ CREATE TABLE IF NOT EXISTS readings_gas (
     cylinder_2_kg DECIMAL(10, 2) NOT NULL,
     cylinder_3_kg DECIMAL(10, 2) NOT NULL,
     cylinder_4_kg DECIMAL(10, 2) NOT NULL,
+    transaction_id UUID REFERENCES transactions(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE readings_gas ENABLE ROW LEVEL SECURITY;
@@ -183,6 +184,7 @@ CREATE TABLE IF NOT EXISTS readings_electricity (
     consumption_kwh DECIMAL(10, 2) NOT NULL,
     total_value DECIMAL(10, 2) NOT NULL,
     status VARCHAR(20) DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'PAGO', 'ATRASADO')),
+    transaction_id UUID REFERENCES transactions(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE readings_electricity ENABLE ROW LEVEL SECURITY;
