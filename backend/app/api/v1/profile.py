@@ -1,7 +1,7 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import selectinload
 from app.core import deps
 from app.users.models import User
@@ -19,7 +19,7 @@ class VehicleCreate(BaseModel):
     plate: str
 
 class VehicleRead(VehicleCreate):
-    id: UUID4
+    id: UUID
     class Config:
         from_attributes = True
 
@@ -29,12 +29,12 @@ class PetCreate(BaseModel):
     breed: str
 
 class PetRead(PetCreate):
-    id: UUID4
+    id: UUID
     class Config:
         from_attributes = True
 
 class ProfileRead(BaseModel):
-    id: UUID4
+    id: UUID
     name: str
     email: str
     phone: str | None = None
@@ -58,34 +58,43 @@ async def get_my_profile(
     db: Annotated[AsyncSession, Depends(deps.get_db)],
     current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
 ):
-    # Fetch full user with relationships
-    query = select(User).options(
+    # Fetch full user with relationships AND decrypted fields
+    query = select(
+        User,
+        text("pgp_sym_decrypt(email_encrypted::bytea, current_setting('app.current_user_key')) as decrypted_email"),
+        text("pgp_sym_decrypt(phone_encrypted::bytea, current_setting('app.current_user_key')) as decrypted_phone")
+    ).options(
         selectinload(User.unit),
         selectinload(User.vehicles),
         selectinload(User.pets)
     ).where(User.id == current_user.user_id)
     
     result = await db.execute(query)
-    user = result.scalars().first()
+    row = result.first()
     
-    if not user:
+    if not row:
         raise HTTPException(status_code=404, detail="User not found")
         
-    # Manual mapping to flatten Unit structure if needed, or stick to schema
-    # Helper to decrypt phone/email if needed (mocked for now as per users.py style)
-    phone_val = user.phone_encrypted
-    if phone_val and phone_val.startswith("ENC("):
-         phone_val = phone_val[4:-1]
+    user, decrypted_email, decrypted_phone = row
+    
+    # Handle optional Manual/Mock encryption (fallback)
+    # If the DB decryption failed (returns null) or wasn't needed? 
+    # Actually pgp_sym_decrypt throws error if key is wrong.
+    # If explicit null check needed:
+    
+    final_email = decrypted_email if decrypted_email else user.email_encrypted
+    if final_email and final_email.startswith("ENC("): # Fallback for mock data
+         final_email = final_email[4:-1]
          
-    email_val = user.email_encrypted
-    if email_val and email_val.startswith("ENC("):
-         email_val = email_val[4:-1]
-         
+    final_phone = decrypted_phone if decrypted_phone else user.phone_encrypted
+    if final_phone and final_phone.startswith("ENC("):
+         final_phone = final_phone[4:-1]
+
     return ProfileRead(
         id=user.id,
         name=user.name,
-        email=email_val,
-        phone=phone_val,
+        email=final_email if final_email else "",
+        phone=final_phone,
         unit_block=user.unit.block if user.unit else None,
         unit_number=user.unit.number if user.unit else None,
         role=user.role,
