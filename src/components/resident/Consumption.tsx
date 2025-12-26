@@ -54,79 +54,119 @@ export const ResidentConsumption: React.FC = () => {
    const handleExportPDF = () => {
       const doc = new jsPDF();
 
-      // Header Colors
-      const primaryColor = '#437476'; // Brand Green
+      // Brand Colors
+      const primaryColor = '#059669'; // Emerald 600
+      const secondaryColor = '#ecfdf5'; // Emerald 50
+      const accentColor = '#334155'; // Slate 700
 
-      // Title
-      doc.setFontSize(22);
-      doc.setTextColor(primaryColor);
+      // --- HEADER ---
+      // Green Banner
+      doc.setFillColor(primaryColor);
+      doc.rect(0, 0, 210, 40, 'F');
+
+      // Title (White on Green)
+      doc.setFontSize(24);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
       doc.text(condominium?.name || 'Maison Manager', 14, 20);
 
-      doc.setFontSize(16);
-      doc.setTextColor(40, 40, 40);
-      doc.text('Relatório de Consumo de Água', 14, 30);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text("Relatório Detalhado de Consumo de Água", 14, 30);
 
-      // Resident Info
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      const today = new Date().toLocaleDateString('pt-BR');
-      doc.text(`Gerado em: ${today}`, 14, 38);
+      // --- INFO CARDS ROW ---
+      const startY = 50;
 
-      doc.setDrawColor(200, 200, 200);
-      doc.line(14, 42, 196, 42);
+      // Resident Box
+      doc.setDrawColor(226, 232, 240);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(14, startY, 90, 25, 3, 3, 'FD');
 
-      // Resident Details Block
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184); // Slate 400
+      doc.text("MORADOR", 20, startY + 8);
+
       doc.setFontSize(11);
-      doc.setTextColor(60, 60, 60);
-      doc.text(`Morador: ${user?.name || 'N/A'}`, 14, 50);
-      doc.text(`Unidade: ${user?.unit?.number || (user as any)?.unit || 'N/A'}`, 14, 56);
+      doc.setTextColor(51, 65, 85); // Slate 700
+      doc.setFont("helvetica", "bold");
+      doc.text(user?.name || 'N/A', 20, startY + 16);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Unidade: ${user?.unit?.number || (user as any)?.unit || 'N/A'}`, 20, startY + 28); // Squeeze inside if name simple, or line break. Let's optimize:
+      // Actually let's put Unit next to Name
 
-      // Table
-      const tableColumn = ["Data da Leitura", "Consumo (m³)", "Média Diária (Est.)", "Status"];
+      // Summary Box (Current Consumption)
+      doc.roundedRect(110, startY, 86, 25, 3, 3, 'FD');
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184);
+      doc.text("CONSUMO ATUAL (Última Leitura)", 116, startY + 8);
+
+      doc.setFontSize(14);
+      doc.setTextColor(primaryColor);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${currentWater} m³`, 116, startY + 18);
+
+      // --- TABLE ---
+      const tableColumn = ["DATA DA LEITURA", "CONSUMO (m³)", "MÉDIA DIÁRIA (Est.)", "STATUS"];
       const tableRows = waterReadings.map(reading => {
-         // Simple daily avg estimation if we had previous reading, skipping for now to keep simple or assuming 30 days
          const dailyAvg = (reading.value_m3 / 30).toFixed(3);
          return [
             new Date(reading.reading_date).toLocaleDateString('pt-BR'),
-            `${reading.value_m3} m³`,
+            { content: `${reading.value_m3} m³`, styles: { fontStyle: 'bold', textColor: [5, 150, 105] } },
             `${dailyAvg} m³`,
             "Verificado"
          ];
       });
 
       autoTable(doc, {
-         startY: 65,
+         startY: 85,
          head: [tableColumn],
          body: tableRows,
+         theme: 'plain',
          headStyles: {
-            fillColor: primaryColor,
-            textColor: 255,
-            fontSize: 10,
+            fillColor: [241, 245, 249], // Slate 100
+            textColor: [71, 85, 105], // Slate 600
+            fontSize: 9,
             fontStyle: 'bold',
-            halign: 'center'
+            halign: 'left',
+            cellPadding: 4
          },
          bodyStyles: {
-            fontSize: 9,
-            textColor: 50,
-            halign: 'center'
+            fontSize: 10,
+            textColor: [51, 65, 85], // Slate 700
+            halign: 'left',
+            cellPadding: 4,
+            lineColor: [241, 245, 249],
+            lineWidth: { bottom: 0.5 } // light row border
          },
-         alternateRowStyles: {
-            fillColor: [245, 247, 250]
+         columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 40 },
+            2: { cellWidth: 50 },
+            3: { cellWidth: 40 }
          },
-         margin: { top: 65 },
+         margin: { left: 14, right: 14 },
       });
 
-      // Footer
+      // --- FOOTER ---
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
          doc.setPage(i);
+
+         // Small line
+         doc.setDrawColor(226, 232, 240);
+         doc.line(14, 280, 196, 280);
+
          doc.setFontSize(8);
-         doc.setTextColor(150, 150, 150);
-         doc.text(`Maison Manager - Gestão Inteligente`, 14, 285);
-         doc.text(`Página ${i} de ${pageCount}`, 190, 285, { align: 'right' });
+         doc.setTextColor(148, 163, 184); // Slate 400
+         const generatedText = `Relatório gerado em ${new Date().toLocaleString('pt-BR')} via Maison Manager`;
+         doc.text(generatedText, 14, 288);
+
+         doc.text(`Página ${i} de ${pageCount}`, 196, 288, { align: 'right' });
       }
 
-      doc.save(`relatorio_agua_${today.replace(/\//g, '-')}.pdf`);
+      const today = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      doc.save(`Relatorio_Agua_${today}.pdf`);
    };
 
    return (
