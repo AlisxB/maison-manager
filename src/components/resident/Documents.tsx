@@ -71,7 +71,7 @@ export const ResidentDocuments: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <FolderOpen className="text-indigo-600" />
+                        <FolderOpen className="text-emerald-600" />
                         Documentos
                     </h2>
                     <p className="text-sm text-slate-500 mt-1">
@@ -87,7 +87,7 @@ export const ResidentDocuments: React.FC = () => {
                     <input
                         type="text"
                         placeholder="Buscar por título ou descrição..."
-                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -95,7 +95,7 @@ export const ResidentDocuments: React.FC = () => {
                 <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
                     <button
                         onClick={() => setSelectedCategory('all')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === 'all' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
                         Todos
                     </button>
@@ -103,7 +103,7 @@ export const ResidentDocuments: React.FC = () => {
                         <button
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                         >
                             {cat}
                         </button>
@@ -114,7 +114,7 @@ export const ResidentDocuments: React.FC = () => {
             {/* Documents Grid */}
             {loading ? (
                 <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-4"></div>
                     <p className="text-slate-500">Carregando documentos...</p>
                 </div>
             ) : filteredDocs.length > 0 ? (
@@ -143,7 +143,7 @@ export const ResidentDocuments: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => handleDownload(doc)}
-                                    className="flex items-center gap-2 text-indigo-600 font-medium text-sm hover:underline"
+                                    className="flex items-center gap-2 text-emerald-600 font-medium text-sm hover:underline"
                                 >
                                     <Download size={16} />
                                     Baixar

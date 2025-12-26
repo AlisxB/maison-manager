@@ -105,7 +105,7 @@ export const AdminDocuments: React.FC = () => {
                 </div>
                 <button
                     onClick={() => setIsUploadModalOpen(true)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                    className="bg-[#437476] hover:bg-[#365e5f] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
                 >
                     <Upload size={20} />
                     Novo Documento
@@ -135,7 +135,7 @@ export const AdminDocuments: React.FC = () => {
                                 <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                            <div className="p-2 bg-[#437476]/10 text-[#437476] rounded-lg">
                                                 <FileText size={20} />
                                             </div>
                                             <div>
@@ -165,7 +165,7 @@ export const AdminDocuments: React.FC = () => {
                                             <button
                                                 title="Baixar"
                                                 onClick={() => DocumentService.download(doc.id, doc.title, doc.mime_type)}
-                                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                className="p-2 text-slate-400 hover:text-[#437476] hover:bg-[#437476]/10 rounded-lg transition-colors"
                                             >
                                                 <Download size={18} />
                                             </button>
@@ -201,7 +201,7 @@ export const AdminDocuments: React.FC = () => {
                                 <input
                                     type="text"
                                     required
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#437476] outline-none"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     placeholder="Ex: Ata da Assembleia Geral 2024"
@@ -212,7 +212,7 @@ export const AdminDocuments: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
                                     <select
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#437476] outline-none bg-white"
                                         value={category}
                                         onChange={e => setCategory(e.target.value)}
                                     >
@@ -228,7 +228,7 @@ export const AdminDocuments: React.FC = () => {
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Descrição (Opcional)</label>
                                 <textarea
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-20"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#437476] outline-none resize-none h-20"
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
                                     placeholder="Breve descrição do conteúdo..."
@@ -247,7 +247,7 @@ export const AdminDocuments: React.FC = () => {
                                     />
                                     <Upload size={32} className="mx-auto text-slate-400 mb-2" />
                                     {uploadFile ? (
-                                        <p className="text-sm font-medium text-emerald-600">{uploadFile.name}</p>
+                                        <p className="text-sm font-medium text-[#437476]">{uploadFile.name}</p>
                                     ) : (
                                         <p className="text-sm text-slate-500">Clique ou arraste o arquivo aqui</p>
                                     )}
@@ -265,7 +265,7 @@ export const AdminDocuments: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || !uploadFile}
-                                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-indigo-200 transition-all"
+                                    className="bg-[#437476] hover:bg-[#365e5f] disabled:bg-[#437476]/50 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-[#437476]/20 transition-all"
                                 >
                                     {isSubmitting ? 'Enviando...' : 'Publicar Documento'}
                                 </button>
