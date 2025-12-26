@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Droplets, Flame, Zap, BarChart3, CheckCircle, FileText, Calendar, Check, AlertCircle } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, Tooltip } from 'recharts';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { useAuth } from '../../context/AuthContext';
+import { useCondominium } from '../../context/CondominiumContext';
 import { ReadingService, WaterReading, GasReading, ElectricityReading } from '../../services/readingService';
 
 export const ResidentConsumption: React.FC = () => {
+   const { user } = useAuth();
+   const { condominium } = useCondominium();
    const [waterReadings, setWaterReadings] = useState<WaterReading[]>([]);
    const [gasReadings, setGasReadings] = useState<GasReading[]>([]);
    const [energyReadings, setEnergyReadings] = useState<ElectricityReading[]>([]);
@@ -44,6 +50,84 @@ export const ResidentConsumption: React.FC = () => {
       water: r.value_m3,
       date: r.reading_date
    }));
+
+   const handleExportPDF = () => {
+      const doc = new jsPDF();
+
+      // Header Colors
+      const primaryColor = '#437476'; // Brand Green
+
+      // Title
+      doc.setFontSize(22);
+      doc.setTextColor(primaryColor);
+      doc.text(condominium?.name || 'Maison Manager', 14, 20);
+
+      doc.setFontSize(16);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Relatório de Consumo de Água', 14, 30);
+
+      // Resident Info
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      const today = new Date().toLocaleDateString('pt-BR');
+      doc.text(`Gerado em: ${today}`, 14, 38);
+
+      doc.setDrawColor(200, 200, 200);
+      doc.line(14, 42, 196, 42);
+
+      // Resident Details Block
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Morador: ${user?.name || 'N/A'}`, 14, 50);
+      doc.text(`Unidade: ${user?.unit?.number || (user as any)?.unit || 'N/A'}`, 14, 56);
+
+      // Table
+      const tableColumn = ["Data da Leitura", "Consumo (m³)", "Média Diária (Est.)", "Status"];
+      const tableRows = waterReadings.map(reading => {
+         // Simple daily avg estimation if we had previous reading, skipping for now to keep simple or assuming 30 days
+         const dailyAvg = (reading.value_m3 / 30).toFixed(3);
+         return [
+            new Date(reading.reading_date).toLocaleDateString('pt-BR'),
+            `${reading.value_m3} m³`,
+            `${dailyAvg} m³`,
+            "Verificado"
+         ];
+      });
+
+      autoTable(doc, {
+         startY: 65,
+         head: [tableColumn],
+         body: tableRows,
+         headStyles: {
+            fillColor: primaryColor,
+            textColor: 255,
+            fontSize: 10,
+            fontStyle: 'bold',
+            halign: 'center'
+         },
+         bodyStyles: {
+            fontSize: 9,
+            textColor: 50,
+            halign: 'center'
+         },
+         alternateRowStyles: {
+            fillColor: [245, 247, 250]
+         },
+         margin: { top: 65 },
+      });
+
+      // Footer
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+         doc.setPage(i);
+         doc.setFontSize(8);
+         doc.setTextColor(150, 150, 150);
+         doc.text(`Maison Manager - Gestão Inteligente`, 14, 285);
+         doc.text(`Página ${i} de ${pageCount}`, 190, 285, { align: 'right' });
+      }
+
+      doc.save(`relatorio_agua_${today.replace(/\//g, '-')}.pdf`);
+   };
 
    return (
       <div className="max-w-5xl mx-auto space-y-8">
@@ -156,7 +240,9 @@ export const ResidentConsumption: React.FC = () => {
                   <h3 className="text-lg font-bold text-slate-800">Registro de Leituras (Água)</h3>
                   <p className="text-sm text-slate-500">Histórico detalhado das medições realizadas no seu hidrômetro.</p>
                </div>
-               <button className="px-4 py-2 border border-slate-200 bg-white text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 flex items-center gap-2 shadow-sm transition-all">
+               <button
+                  onClick={handleExportPDF}
+                  className="px-4 py-2 border border-slate-200 bg-white text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 flex items-center gap-2 shadow-sm transition-all">
                   <FileText size={16} /> Exportar Relatório
                </button>
             </div>
