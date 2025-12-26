@@ -43,10 +43,9 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
     block: '',
     unit: '',
     entryDate: '',
-    hasPets: 'Não',
-    petsList: [{ quantity: 1, type: '' }],
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    unit_id: ''
   });
 
   const [units, setUnits] = useState<any[]>([]);
@@ -60,6 +59,14 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
         .catch(console.error);
     }
   }, [view]);
+
+  // Mask helper
+  const formatPhoneNumber = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
 
   const uniqueBlocks = Array.from(new Set(units.map(u => u.block))).sort();
   const availableUnits = units.filter(u => u.block === regForm.block).sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }));
@@ -99,8 +106,6 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
       return;
     }
 
-
-
     if (!regForm.unit_id) {
       alert("Selecione uma unidade válida.");
       return;
@@ -113,9 +118,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
         email: regForm.email,
         phone: regForm.phone,
         password: regForm.password,
-        unit_id: regForm.unit_id,
-        has_pets: regForm.hasPets === 'Sim',
-        pets_description: regForm.petsList.map(p => `${p.quantity}x ${p.type}`).join(', ')
+        unit_id: regForm.unit_id
       });
       alert('Solicitação de acesso enviada com sucesso! Aguarde a aprovação da administração.');
       setView('login');
@@ -132,25 +135,6 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAddPetRow = () => {
-    setRegForm(prev => ({
-      ...prev,
-      petsList: [...prev.petsList, { quantity: 1, type: '' }]
-    }));
-  };
-
-  const handleRemovePetRow = (index: number) => {
-    if (regForm.petsList.length === 1 && index === 0) return;
-    const newPets = regForm.petsList.filter((_, i) => i !== index);
-    setRegForm({ ...regForm, petsList: newPets });
-  };
-
-  const handlePetChange = (index: number, field: 'quantity' | 'type', value: string | number) => {
-    const newPets = [...regForm.petsList];
-    newPets[index] = { ...newPets[index], [field]: value };
-    setRegForm({ ...regForm, petsList: newPets });
   };
 
   if (view === 'register') {
@@ -237,9 +221,10 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                         type="tel"
                         required
                         placeholder="(00) 00000-0000"
+                        maxLength={15}
                         className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
                         value={regForm.phone}
-                        onChange={e => setRegForm({ ...regForm, phone: e.target.value })}
+                        onChange={e => setRegForm({ ...regForm, phone: formatPhoneNumber(e.target.value) })}
                       />
                     </div>
                   </div>
@@ -313,98 +298,6 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                 </div>
               </div>
 
-              {/* Seção 3: Animais de Estimação */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-px bg-slate-100 flex-1"></div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3">Animais</span>
-                  <div className="h-px bg-slate-100 flex-1"></div>
-                </div>
-
-                <div className="bg-slate-50/50 border border-slate-100 rounded-[2.5rem] p-8">
-                  <div className="flex items-center gap-3 mb-6 text-[#437476]">
-                    <Cat size={20} />
-                    <span className="text-[11px] font-black uppercase tracking-[0.2em]">Animais de Estimação</span>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <p className="text-sm font-bold text-slate-600">Você possui algum animal de estimação residindo na unidade?</p>
-                    <div className="flex gap-10">
-                      {['Sim', 'Não'].map((opt) => (
-                        <label key={opt} className="flex items-center gap-3 cursor-pointer group">
-                          <div
-                            className={`w - 6 h - 6 rounded - full border - 2 flex items - center justify - center transition - all ${regForm.hasPets === opt ? 'border-[#437476] bg-white' : 'border-slate-300 group-hover:border-[#437476]'} `}
-                            onClick={() => setRegForm({ ...regForm, hasPets: opt })}
-                          >
-                            {regForm.hasPets === opt && <div className="w-3.5 h-3.5 rounded-full bg-[#437476] animate-in zoom-in-50 duration-300" />}
-                          </div>
-                          <span className={`text - sm font - black transition - colors ${regForm.hasPets === opt ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-600'} `}>{opt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Lista de Animais (Expande dinamicamente) */}
-                  {regForm.hasPets === 'Sim' && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 mt-8 pt-8 border-t border-slate-200/60">
-                      {regForm.petsList.map((pet, index) => (
-                        <div key={index} className="grid grid-cols-12 gap-4 items-end">
-                          <div className="col-span-4 space-y-1.5">
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Qtd</label>
-                            <input
-                              type="number"
-                              min="1"
-                              className="block w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium"
-                              value={pet.quantity}
-                              onChange={(e) => handlePetChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                            />
-                          </div>
-                          <div className="col-span-6 space-y-1.5">
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Espécie</label>
-                            <div className="relative">
-                              <select
-                                className="block w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all text-sm font-medium appearance-none"
-                                value={pet.type}
-                                onChange={(e) => handlePetChange(index, 'type', e.target.value)}
-                              >
-                                <option value="">Selecione...</option>
-                                <option value="Cachorro">Cachorro</option>
-                                <option value="Gato">Gato</option>
-                                <option value="Pássaro">Pássaro</option>
-                                <option value="Outro">Outro</option>
-                              </select>
-                              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
-                                <ChevronDown size={16} />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="col-span-2 pb-1 flex justify-center">
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePetRow(index)}
-                              className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                              title="Remover animal"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      <div className="flex justify-start pt-4">
-                        <button
-                          type="button"
-                          onClick={handleAddPetRow}
-                          className="flex items-center gap-2 px-5 py-2.5 text-[#437476] font-black text-[10px] uppercase tracking-widest hover:bg-[#437476]/5 rounded-xl transition-all"
-                        >
-                          <PlusCircle size={16} /> Adicionar Animal
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Seção 4: Segurança */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -463,8 +356,8 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
           <p className="mt-12 text-center text-[10px] text-slate-400 font-black uppercase tracking-[0.4em] opacity-40">
             &copy; 2025 Maison Manager. Excelência em Gestão.
           </p>
-        </div >
-      </div >
+        </div>
+      </div>
     );
   }
 
