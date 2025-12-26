@@ -112,12 +112,17 @@ export const ResidentReservations: React.FC = () => {
       if (!selectedDate || !selectedAreaId) return;
 
       try {
-         const year = currentYear;
-         const month = (currentMonth + 1).toString().padStart(2, '0');
-         const day = selectedDate.toString().padStart(2, '0');
-         const dateStr = `${year}-${month}-${day}`;
-         const startDateTime = `${dateStr}T${formData.startTime}:00Z`;
-         const endDateTime = `${dateStr}T${formData.endTime}:00Z`;
+         // Create Date objects in local time
+         const start = new Date(currentYear, currentMonth, selectedDate,
+            parseInt(formData.startTime.split(':')[0]),
+            parseInt(formData.startTime.split(':')[1]));
+
+         const end = new Date(currentYear, currentMonth, selectedDate,
+            parseInt(formData.endTime.split(':')[0]),
+            parseInt(formData.endTime.split(':')[1]));
+
+         const startDateTime = start.toISOString();
+         const endDateTime = end.toISOString();
 
          const payload: ReservationCreate = {
             common_area_id: selectedAreaId,
