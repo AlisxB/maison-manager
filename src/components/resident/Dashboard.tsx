@@ -20,6 +20,7 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
 
   // Modal State
+  const [selectedIssue, setSelectedIssue] = useState<Occurrence | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportForm, setReportForm] = useState<OccurrenceCreate>({
     title: '',
@@ -214,7 +215,9 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <h3 className="text-lg font-bold text-slate-900 pt-4">Minha Atividade Recente (Ocorrências)</h3>
           <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
             {occurrences.length > 0 ? occurrences.slice(0, 5).map(issue => (
-              <div key={issue.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+              <div key={issue.id}
+                onClick={() => setSelectedIssue(issue)}
+                className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer">
                 <div className="flex gap-4 items-center">
                   <div className={`p-2 rounded-lg ${getStatusColor(issue.status)}`}>
                     {issue.status === 'RESOLVED' ? <CheckCircle size={20} /> : <Clock size={20} />}
@@ -330,6 +333,76 @@ export const ResidentDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {selectedIssue && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${getStatusColor(selectedIssue.status)}`}>
+                  {selectedIssue.status === 'RESOLVED' ? <CheckCircle size={20} /> : <Clock size={20} />}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">Detalhes da Ocorrência</h3>
+                  <p className="text-xs text-slate-500">{new Date(selectedIssue.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedIssue(null)} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase mb-1">Título</h4>
+                <p className="font-semibold text-slate-800">{selectedIssue.title}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase mb-1">Categoria</h4>
+                  <p className="text-sm text-slate-600">{selectedIssue.category}</p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase mb-1">Status</h4>
+                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${getStatusColor(selectedIssue.status)}`}>
+                    {getStatusPT(selectedIssue.status)}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Descrição</h4>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-sm text-slate-600">
+                  {selectedIssue.description}
+                </div>
+              </div>
+
+              {/* Admin Response Section */}
+              {selectedIssue.admin_response && (
+                <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                  <h4 className="text-sm font-bold text-emerald-800 mb-2 flex items-center gap-2">
+                    <MessageSquare size={16} /> Resposta da Administração
+                  </h4>
+                  <p className="text-sm text-emerald-700 leading-relaxed">
+                    {selectedIssue.admin_response}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setSelectedIssue(null)}
+                className="px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors text-sm"
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}

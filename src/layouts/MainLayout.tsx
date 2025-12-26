@@ -303,7 +303,7 @@ const MainLayout: React.FC<LayoutProps> = ({
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50 pb-24">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50 pb-32">
           {children}
 
           <footer className="fixed bottom-0 left-0 right-0 ml-0 lg:ml-64 py-4 px-8 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400 gap-4 z-40">
