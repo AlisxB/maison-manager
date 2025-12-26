@@ -125,8 +125,8 @@ const MainLayout: React.FC<LayoutProps> = ({
   const getBadge = (view: string) => {
     if (role !== 'ADMIN') return null;
     let count = 0;
-    if (view === 'admin_occurrences') count = pendingCounts.occurrences;
-    if (view === 'admin_residents') count = pendingCounts.access_requests;
+    if (view === 'admin_issues') count = pendingCounts.occurrences;
+    if (view === 'admin_requests') count = pendingCounts.access_requests;
     if (view === 'admin_reservations') count = pendingCounts.reservations;
 
     if (count > 0) {
