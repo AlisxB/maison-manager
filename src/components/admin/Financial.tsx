@@ -14,8 +14,14 @@ import {
     Trash2
 } from 'lucide-react';
 import { FinancialService, Transaction, FinancialSummary } from '../../services/financialService';
+import { useAuth } from '../../context/AuthContext';
+import { useCondominium } from '../../context/CondominiumContext';
+import { generateFinancialPDF } from '../../utils/pdfGenerator';
 
 export const AdminFinancial: React.FC = () => {
+    const { user } = useAuth();
+    const { condominium } = useCondominium();
+
     const [isTxModalOpen, setIsTxModalOpen] = useState(false);
 
     const currentMonthIdx = new Date().getMonth() + 1; // 1-12
@@ -166,6 +172,39 @@ export const AdminFinancial: React.FC = () => {
         }
     };
 
+    const handleExportPDF = () => {
+        generateFinancialPDF(transactions, summary, {
+            user,
+            condominium,
+            month: filters.month,
+            year: filters.year
+        });
+    };
+
+    const handleShare = async () => {
+        const condoName = condominium?.name || 'Maison Manager';
+        const incomeFmt = summary.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const expenseFmt = summary.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const balanceFmt = summary.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        const text = `🏢 *${condoName}*\n\n📊 *Resumo Financeiro - ${currentMonthLabel}/${filters.year}*\n\n💰 Receitas: ${incomeFmt}\n💸 Despesas: ${expenseFmt}\n💵 *Saldo: ${balanceFmt}*\n\n📅 Gerado em: ${new Date().toLocaleDateString('pt-BR')}\n\n_Acesse o sistema para ver o extrato completo._`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `Relatório Financeiro - ${condoName}`,
+                    text: text
+                });
+            } catch (err) {
+                console.log('Error sharing:', err);
+            }
+        } else {
+            // Fallback to clipboard
+            navigator.clipboard.writeText(text);
+            alert('Resumo copiado para a área de transferência!');
+        }
+    };
+
     const currentMonthLabel = months.find(m => m.val === filters.month)?.label.substring(0, 3);
 
     return (
@@ -176,10 +215,10 @@ export const AdminFinancial: React.FC = () => {
                     <p className="text-sm text-slate-500 mt-1">Fluxo de caixa, contas a pagar e receber.</p>
                 </div>
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all shadow-sm">
+                    <button onClick={handleShare} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all shadow-sm">
                         <Share2 size={16} /> Compartilhar
                     </button>
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all shadow-sm">
+                    <button onClick={handleExportPDF} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all shadow-sm">
                         <FileText size={16} /> Exportar PDF
                     </button>
                     <button
