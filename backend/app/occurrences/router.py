@@ -25,7 +25,7 @@ async def create_occurrence(
     service = OccurrenceService(db)
     return await service.create_occurrence(data, current_user.user_id, current_user.condo_id)
 
-@router.put("/{id}", response_model=OccurrenceRead)
+@router.patch("/{id}", response_model=OccurrenceRead)
 async def update_occurrence(
     id: UUID,
     data: OccurrenceUpdate,
