@@ -429,7 +429,7 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
         try {
             const data = await UserService.getAll();
             // Filter out residents, show only admin staff
-            setUsers(data.filter(u => u.role !== 'RESIDENT'));
+            setUsers(data.filter(u => u.role !== 'RESIDENTE'));
         } catch (error) {
             console.error(error);
         } finally {
