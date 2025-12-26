@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { jwtDecode } from "jwt-decode";
 import api from '../services/api';
 import { Role } from '../types';
 
