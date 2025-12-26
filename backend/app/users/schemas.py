@@ -70,9 +70,6 @@ class UserRegister(BaseModel):
     password: str = Field(..., min_length=6)
     phone: str = Field(..., min_length=10)
     unit_id: UUID
-    # Campos opcionais para facilitar cadastro
-    has_pets: Optional[bool] = False
-    pets_description: Optional[str] = None
 
     @field_validator('password')
     def password_complexity(cls, v):

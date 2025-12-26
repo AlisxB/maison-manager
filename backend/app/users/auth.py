@@ -10,6 +10,7 @@ import json
 
 from app.core import security, deps, config
 from app.users.models import User, AccessLog
+from app.units.models import Unit
 from app.users.schemas import UserRead, UserRegister
 
 router = APIRouter()
@@ -156,17 +157,94 @@ async def register_public(
     result = await db.execute(stmt)
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Email already registered")
+
+    # 2. Get Unit to derive Condominium ID
+    stmt_unit = select(Unit).where(Unit.id == user_in.unit_id)
+    result_unit = await db.execute(stmt_unit)
+    unit = result_unit.scalars().first()
+    
+    if not unit:
+        raise HTTPException(status_code=400, detail="Unit not found")
         
-    # 2. Derive condo_id from Unit? Or user selects condo?
-    # Usually passed via header or derived from Unit.
-    # We need Unit to check Condo.
-    # For now, let's assume we fetch Unit.
-    # Dependency on Units model?
-    # from app.units.models import Unit as UnitModel
-    # ...
+    # 3. Create User
+    # We must encrypt sensitive fields using the app encryption key
+    # Using SQL expression for encryption to ensure consistency with DB functions
+    from sqlalchemy import text
     
-    # Skipping full Implementation for brevity, relying on "Refactor" meaning keeping behavior.
-    # Ideally should use UserService.
+    # Generate Password Hash
+    password_hash = security.get_password_hash(user_in.password)
     
-    # Placeholder
-    raise HTTPException(status_code=501, detail="Registration Refactor Pending - use Admin creation for now")
+    # Phone Hash for uniqueness checks (if needed) or searching
+    phone_clean = ''.join(filter(str.isdigit, user_in.phone))
+    phone_hash = hashlib.sha256(phone_clean.encode('utf-8')).hexdigest()
+    
+    # Prepare Insert Statement using raw SQL for PGCrypto functions
+    # This is safer/easier than ensuring matching logic in Python
+    insert_query = text("""
+        INSERT INTO users (
+            condominium_id, unit_id, name,
+            email_encrypted, email_hash,
+            phone_encrypted, phone_hash,
+            password_hash,
+            role, profile_type, status
+        ) VALUES (
+            :condo_id, :unit_id, :name,
+            pgp_sym_encrypt(:email, :key), :email_hash,
+            pgp_sym_encrypt(:phone, :key), :phone_hash,
+            :password_hash,
+            'RESIDENTE', 'INQUILINO', 'PENDENTE'
+        ) RETURNING id, status, created_at, role
+    """)
+    
+    result = await db.execute(insert_query, {
+        "condo_id": unit.condominium_id,
+        "unit_id": unit.id,
+        "name": user_in.name,
+        "email": user_in.email.lower(),
+        "key": config.settings.APP_ENCRYPTION_KEY,
+        "email_hash": email_hash,
+        "phone": user_in.phone,
+        "phone_hash": phone_hash,
+        "password_hash": password_hash
+    })
+    
+    new_user = result.mappings().first()
+    await db.commit()
+    
+    # Return UserRead compatible structure
+    # Since we don't have the full object with decryption, we construct it manually
+    return {
+        "id": new_user.id,
+        "name": user_in.name,
+        "email": user_in.email, # Return provided email
+        "role": new_user.role,
+        "profile_type": "INQUILINO",
+        "unit_id": unit.id,
+        "status": new_user.status,
+        "created_at": new_user.created_at,
+        "phone": user_in.phone,
+        # Unit object (optional in response, might help frontend)
+        # "unit": ...
+    }
+
+@router.get("/units", response_model=list[dict])
+async def get_public_units(
+    db: Annotated[AsyncSession, Depends(deps.get_db_no_context)]
+):
+    """
+    Get list of all units for public registration.
+    """
+    stmt = select(Unit).order_by(Unit.block, Unit.number)
+    result = await db.execute(stmt)
+    units = result.scalars().all()
+    
+    return [
+        {
+            "id": str(u.id),
+            "condominium_id": str(u.condominium_id),
+            "block": u.block,
+            "number": u.number,
+            "type": u.type
+        }
+        for u in units
+    ]
