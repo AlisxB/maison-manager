@@ -4,9 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCondominium } from '../../context/CondominiumContext';
 import {
   Home,
-  ArrowRight,
   User,
-  ShieldCheck,
   Mail,
   Lock,
   Key,
@@ -22,7 +20,6 @@ import {
   PlusCircle,
   Trash2
 } from 'lucide-react';
-import { Role } from '../../types';
 
 // onLogin is removed from props as we use context
 interface AuthScreenProps { }
@@ -71,15 +68,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
   const uniqueBlocks = Array.from(new Set(units.map(u => u.block))).sort();
   const availableUnits = units.filter(u => u.block === regForm.block).sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }));
 
-  const handleDemoLogin = (role: Role) => {
-    // Para simplificar a demo, vamos pré-preencher o form
-    if (role === 'ADMIN') {
-      setEmail('admin@maison.com');
-      setPassword('admin');
-    } else {
-      alert('Usuário demo de residente não criado no seed. Use Admin.');
-    }
-  };
+
 
   const handleForgotPassword = () => {
     alert('Funcionalidade de recuperação de senha enviada para o e-mail informado (Simulação).');
@@ -453,42 +442,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
               Acessar Painel
             </button>
 
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100" /></div>
-              <div className="relative flex justify-center text-[10px]"><span className="px-4 bg-white text-slate-400 font-black uppercase tracking-[0.2em]">Entrar como demo</span></div>
-            </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('ADMIN')}
-                className="w-full group flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-[1.5rem] hover:border-[#437476] hover:bg-[#437476]/5 transition-all duration-300 active:scale-[0.98] shadow-sm hover:shadow-md"
-              >
-                <div className="w-12 h-12 bg-[#437476] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#437476]/20 transition-transform group-hover:scale-110">
-                  <ShieldCheck size={24} />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-black text-slate-700 group-hover:text-[#437476]">Administrador</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Gestão Completa</p>
-                </div>
-                <ArrowRight size={18} className="ml-auto text-slate-300 group-hover:text-[#437476] transform group-hover:translate-x-1 transition-all" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('RESIDENTE')}
-                className="w-full group flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-[1.5rem] hover:border-emerald-600 hover:bg-emerald-50 transition-all duration-300 active:scale-[0.98] shadow-sm hover:shadow-md"
-              >
-                <div className="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20 transition-transform group-hover:scale-110">
-                  <User size={24} />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-black text-slate-700 group-hover:text-emerald-700">Morador</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Portal do Condômino</p>
-                </div>
-                <ArrowRight size={18} className="ml-auto text-slate-300 group-hover:text-emerald-700 transform group-hover:translate-x-1 transition-all" />
-              </button>
-            </div>
 
             <div className="pt-2 text-center">
               <button
