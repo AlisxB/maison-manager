@@ -1,9 +1,10 @@
 import axios from 'axios';
 
-// URL base da API (em produção, usar variável de ambiente)
-// Para dev local com Docker, o front roda na máquina host (localhost) 
-// e o back também expõe na localhost:8000
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+// URL base da API
+// Em dev (vite): usa o proxy definido no vite.config.ts
+// Em prod (nginx): usa o proxy definido no nginx.conf
+// Isso evita problemas de CORS e portas fechadas.
+const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 const api = axios.create({
     baseURL: API_URL,
