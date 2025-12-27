@@ -255,6 +255,12 @@ export const AdminReservations: React.FC = () => {
 
         const isBlocked = blockedDates.find(d => d.date === fullDateStr);
 
+        // Past Date Check
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        const isPast = dateToCheck < today;
+
         if (isBlocked) {
             return (
                 <div
@@ -264,6 +270,16 @@ export const AdminReservations: React.FC = () => {
                     <Lock size={16} className="group-hover:hidden" />
                     <Unlock size={18} className="hidden group-hover:block text-red-600 animate-in fade-in" />
                     <span className="text-[10px] font-bold mt-1 text-center px-1 truncate w-full uppercase">{isBlocked.reason}</span>
+                </div>
+            );
+        }
+
+        if (isPast) {
+            return (
+                <div className="h-full border border-slate-100 rounded-lg p-2 flex flex-col bg-slate-50/50 cursor-not-allowed opacity-60">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-slate-300 text-xs">{day}</span>
+                    </div>
                 </div>
             );
         }

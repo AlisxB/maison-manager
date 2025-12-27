@@ -180,6 +180,10 @@ export const ResidentReservations: React.FC = () => {
          const isBlocked = !!blockingRes;
          const isAdminBlock = blockingRes?.status === 'BLOQUEADO';
 
+         // Past Date Check
+         const today = new Date();
+         const isPast = i < today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+
          const isMyReservation = myReservations.some(r => {
             const d = new Date(r.start_time);
             return r.common_area_id === selectedAreaId && d.getDate() === i && d.getMonth() === currentMonth;
@@ -188,17 +192,20 @@ export const ResidentReservations: React.FC = () => {
          days.push(
             <button
                key={i}
-               onClick={() => handleDateClick(i)}
+               disabled={isPast || isBlocked || isAdminBlock}
+               onClick={() => !isPast && handleDateClick(i)}
                className={`h-10 w-10 mx-auto flex items-center justify-center rounded-lg text-sm font-medium transition-all relative
             ${isMyReservation
                      ? 'bg-blue-50 text-blue-600 border border-blue-200'
                      : isAdminBlock
-                        ? 'bg-red-50 text-red-400 border border-red-100 cursor-not-allowed'
+                        ? 'bg-red-50 text-red-400 border border-red-100 cursor-not-allowed opacity-60'
                         : isBlocked
                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                           : isSelected
-                              ? 'bg-[#437476] text-white shadow-md transform scale-105'
-                              : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                           : isPast
+                              ? 'text-slate-300 cursor-not-allowed opacity-50'
+                              : isSelected
+                                 ? 'bg-[#437476] text-white shadow-md transform scale-105'
+                                 : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
             >
                {i}
                {isAdminBlock && (
