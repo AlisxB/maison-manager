@@ -152,7 +152,7 @@ export const ResidentProfile: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-black text-[#437476] tracking-tight">Meu Perfil de Morador</h2>
+          <h2 className="text-2xl font-black text-emerald-900 tracking-tight">Meu Perfil de Morador</h2>
           <p className="text-sm text-slate-500 mt-1 font-medium uppercase tracking-widest text-[10px]">Gerencie seus dados e acessos</p>
         </div>
       </div>
@@ -162,7 +162,7 @@ export const ResidentProfile: React.FC = () => {
         {/* Left Column: Summary and Quick Actions */}
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm text-center relative overflow-hidden group">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-[#437476]"></div>
+            <div className="absolute top-0 left-0 right-0 h-2 bg-emerald-500"></div>
             <div className="relative inline-block mb-6">
               <div className="w-28 h-28 bg-emerald-100 text-emerald-600 rounded-[2rem] flex items-center justify-center text-4xl font-black shadow-2xl ring-8 ring-slate-50 transition-transform group-hover:scale-105 mx-auto">
                 {profile.name.charAt(0)}
@@ -176,7 +176,7 @@ export const ResidentProfile: React.FC = () => {
             <div className="mt-8 space-y-3">
               <button
                 onClick={() => setIsPasswordModalOpen(true)}
-                className="w-full py-3.5 bg-[#437476] text-white font-bold rounded-2xl hover:bg-[#365e5f] transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-[#437476]/20"
+                className="w-full py-3.5 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-200"
               >
                 <Key size={16} /> Alterar Minha Senha
               </button>
@@ -203,13 +203,13 @@ export const ResidentProfile: React.FC = () => {
                   <input
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
-                    className="flex-1 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-[#437476]/20 outline-none transition-all"
+                    className="flex-1 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                     placeholder="(00) 00000-0000"
                   />
                   <button
                     onClick={handleUpdateContact}
                     disabled={saving}
-                    className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
+                    className="bg-emerald-600 text-white p-3 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
                   >
                     <Save size={18} />
                   </button>
@@ -306,7 +306,7 @@ export const ResidentProfile: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-[#fcfbf9] rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative border border-slate-200">
             <div className="px-10 py-12 text-center">
-              <div className="w-20 h-20 bg-[#437476]/10 text-[#437476] rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-[#437476]/5 border border-[#437476]/10">
+              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-200 border border-emerald-100">
                 <Key size={32} />
               </div>
               <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Alterar Senha</h3>
@@ -318,7 +318,7 @@ export const ResidentProfile: React.FC = () => {
                   <input
                     type="password"
                     placeholder="••••••••"
-                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                     value={passwordForm.current}
                     onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
                   />
@@ -328,7 +328,7 @@ export const ResidentProfile: React.FC = () => {
                   <input
                     type="password"
                     placeholder="Mínimo 6 caracteres"
-                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                     value={passwordForm.new}
                     onChange={e => setPasswordForm({ ...passwordForm, new: e.target.value })}
                   />
@@ -338,7 +338,7 @@ export const ResidentProfile: React.FC = () => {
                   <input
                     type="password"
                     placeholder="Repita a nova senha"
-                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                     value={passwordForm.confirm}
                     onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
                   />
@@ -373,7 +373,7 @@ export const ResidentProfile: React.FC = () => {
                 <button
                   onClick={handlePasswordUpdate}
                   disabled={saving}
-                  className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl hover:bg-black transition-all shadow-xl shadow-slate-200 uppercase tracking-widest text-[11px] disabled:opacity-50"
+                  className="w-full py-5 bg-emerald-600 text-white font-black rounded-3xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 uppercase tracking-widest text-[11px] disabled:opacity-50"
                 >
                   {saving ? 'Atualizando...' : 'Confirmar Nova Senha'}
                 </button>
