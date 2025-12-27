@@ -1,0 +1,7 @@
+[gdrive]
+type = drive
+scope = drive
+service_account_file = /root/.config/rclone/service-account.json
+# OR if using OAuth token:
+# token = {"access_token":"...","token_type":"Bearer","refresh_token":"...","expiry":"..."}
+# team_drive = 
