@@ -284,10 +284,7 @@ const MainLayout: React.FC<LayoutProps> = ({
                         <User size={16} />
                         Meu Perfil
                       </button>
-                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors">
-                        <Settings size={16} />
-                        Configurações
-                      </button>
+
                     </div>
                     <div className="h-px bg-slate-100 my-1 mx-2"></div>
                     <div className="p-2">
