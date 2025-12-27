@@ -33,7 +33,7 @@ export const ProfileService = {
         return response.data;
     },
 
-    updateMe: async (data: { phone?: string }) => {
+    updateMe: async (data: { phone?: string; password?: string; current_password?: string }) => {
         const response = await api.patch<Profile>('/profile/me', data);
         return response.data;
     },

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 from sqlalchemy.orm import selectinload
-from app.core import deps
+from app.core import deps, security
 from app.users.models import User
 from app.vehicles.models import Vehicle
 from app.pets.models import Pet
@@ -50,6 +50,8 @@ class ProfileRead(BaseModel):
 
 class ProfileUpdate(BaseModel):
     phone: str | None = None
+    password: str | None = None
+    current_password: str | None = None
 
 # Endpoints
 
@@ -78,10 +80,6 @@ async def get_my_profile(
     user, decrypted_email, decrypted_phone = row
     
     # Handle optional Manual/Mock encryption (fallback)
-    # If the DB decryption failed (returns null) or wasn't needed? 
-    # Actually pgp_sym_decrypt throws error if key is wrong.
-    # If explicit null check needed:
-    
     final_email = decrypted_email if decrypted_email else user.email_encrypted
     if final_email and final_email.startswith("ENC("): # Fallback for mock data
          final_email = final_email[4:-1]
@@ -116,8 +114,19 @@ async def update_my_profile(
     # Updating Phone (simulating encryption)
     if profile_update.phone is not None:
         user.phone_encrypted = f"ENC({profile_update.phone})"
-        # user.phone_hash = hash... implicit
+    
+    # Updating Password
+    if profile_update.password:
+        if not profile_update.current_password:
+             raise HTTPException(status_code=400, detail="Senha atual obrigatória para alterar a senha.")
         
+        # Verify current password
+        # Need to import security logic. Assuming password_hash exists on User model.
+        if not security.verify_password(profile_update.current_password, user.password_hash):
+             raise HTTPException(status_code=401, detail="Senha atual incorreta.")
+             
+        user.password_hash = security.get_password_hash(profile_update.password)
+
     await db.commit()
     
     # Reload for response

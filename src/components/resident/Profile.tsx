@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Camera, Mail, Phone, Save, Plus, Trash2, Car, Cat, X } from 'lucide-react';
+import { Camera, Mail, Phone, Save, Plus, Trash2, Car, Cat, X, Key, Shield, User, Clock, AlertTriangle } from 'lucide-react';
 import { ProfileService, Profile, Vehicle, Pet } from '../../services/profileService';
 import { useAuth } from '../../context/AuthContext';
 
@@ -7,13 +7,20 @@ export const ResidentProfile: React.FC = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Edit Form State
   const [phone, setPhone] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Modal States
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  // Form States
   const [newVehicle, setNewVehicle] = useState({ model: '', color: '', plate: '' });
   const [newPet, setNewPet] = useState({ name: '', type: 'Cachorro', breed: '' });
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
 
   const fetchProfile = async () => {
     try {
@@ -32,12 +39,15 @@ export const ResidentProfile: React.FC = () => {
   }, []);
 
   const handleUpdateContact = async () => {
+    setSaving(true);
     try {
       await ProfileService.updateMe({ phone });
-      alert('Dados salvos com sucesso!');
+      alert('Contato atualizado com sucesso!');
     } catch (error) {
       console.error("Error updating profile", error);
       alert('Erro ao salvar dados.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -92,176 +102,198 @@ export const ResidentProfile: React.FC = () => {
     }
   };
 
+  const handlePasswordUpdate = async () => {
+    if (!passwordForm.current) {
+      alert("Por favor, informe sua senha atual.");
+      return;
+    }
+    if (passwordForm.new !== passwordForm.confirm) {
+      alert("A nova senha e a confirmação não coincidem.");
+      return;
+    }
+
+    // Validation
+    const hasUpperCase = /[A-Z]/.test(passwordForm.new);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.new);
+    const minLength = passwordForm.new.length >= 6;
+
+    if (!minLength || !hasUpperCase || !hasSpecialChar) {
+      alert("A senha deve ter:\n- Mínimo 6 caracteres\n- Letra Maiúscula\n- Caractere Especial");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await ProfileService.updateMe({
+        password: passwordForm.new,
+        current_password: passwordForm.current
+      });
+      alert("Senha alterada com sucesso!");
+      setIsPasswordModalOpen(false);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+    } catch (error: any) {
+      console.error(error);
+      if (error.response && error.response.status === 401) {
+        alert("Senha atual incorreta.");
+      } else {
+        alert("Erro ao alterar senha.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center text-slate-500">Carregando perfil...</div>;
   if (!profile) return <div className="p-8 text-center text-slate-500">Erro ao carregar perfil.</div>;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900">Meu Perfil</h2>
-        <p className="text-sm text-slate-500 mt-1">Gerencie suas informações pessoais, veículos e animais de estimação.</p>
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-[#437476] tracking-tight">Meu Perfil de Morador</h2>
+          <p className="text-sm text-slate-500 mt-1 font-medium uppercase tracking-widest text-[10px]">Gerencie seus dados e acessos</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Personal Info Column */}
+
+        {/* Left Column: Summary and Quick Actions */}
         <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm text-center">
-            <div className="relative inline-block mb-4">
-              <div className="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center text-slate-500 text-3xl font-bold border-4 border-white shadow-md mx-auto">
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm text-center relative overflow-hidden group">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-[#437476]"></div>
+            <div className="relative inline-block mb-6">
+              <div className="w-28 h-28 bg-emerald-100 text-emerald-600 rounded-[2rem] flex items-center justify-center text-4xl font-black shadow-2xl ring-8 ring-slate-50 transition-transform group-hover:scale-105 mx-auto">
                 {profile.name.charAt(0)}
               </div>
             </div>
-            <h3 className="text-xl font-bold text-slate-900">{profile.name}</h3>
-            <p className="text-slate-500 text-sm font-medium">
-              {profile.unit_block ? `Bloco ${profile.unit_block}, ` : ''}
-              Unidade {profile.unit_number || 'N/A'}
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight">{profile.name}</h3>
+            <p className="text-emerald-600 text-xs font-black uppercase tracking-[0.2em] mt-2 bg-emerald-50 py-1 px-4 rounded-full inline-block">
+              BLOCO {profile.unit_block || '-'} • APTO {profile.unit_number || '-'}
             </p>
-            <span className="inline-block bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full mt-3 font-bold uppercase">
-              {profile.profile_type || profile.role}
-            </span>
+
+            <div className="mt-8 space-y-3">
+              <button
+                onClick={() => setIsPasswordModalOpen(true)}
+                className="w-full py-3.5 bg-[#437476] text-white font-bold rounded-2xl hover:bg-[#365e5f] transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-[#437476]/20"
+              >
+                <Key size={16} /> Alterar Minha Senha
+              </button>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-slate-900">Dados de Contato</h3>
+          {/* Contact Section */}
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-slate-100 rounded-xl"><Phone size={20} className="text-slate-500" /></div>
+              <h4 className="font-bold text-slate-700">Contato</h4>
             </div>
+
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">E-mail</label>
-                <div className="flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
-                  <Mail size={16} className="text-slate-400" />
-                  <input
-                    type="email"
-                    value={profile.email}
-                    disabled
-                    className="bg-transparent outline-none text-sm text-slate-500 w-full cursor-not-allowed"
-                  />
-                </div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block ml-1">E-mail Cadastrado</label>
+                <p className="text-sm font-bold text-slate-600 bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 truncate">
+                  {profile.email}
+                </p>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Telefone</label>
-                <div className="flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
-                  <Phone size={16} className="text-slate-400" />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block ml-1">Telefone / WhatsApp</label>
+                <div className="flex gap-2">
                   <input
-                    type="tel"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
+                    className="flex-1 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-[#437476]/20 outline-none transition-all"
                     placeholder="(00) 00000-0000"
-                    className="bg-transparent outline-none text-sm text-slate-700 w-full"
                   />
+                  <button
+                    onClick={handleUpdateContact}
+                    disabled={saving}
+                    className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
+                  >
+                    <Save size={18} />
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={handleUpdateContact}
-                className="w-full mt-2 bg-slate-900 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors"
-              >
-                <Save size={16} /> Salvar Alterações
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Assets Column (Vehicles & Pets) */}
+        {/* Right Column: Assets */}
         <div className="lg:col-span-2 space-y-6">
 
           {/* Vehicles Section */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm">
             <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-50 text-blue-600 p-2 rounded-lg">
-                  <Car size={20} />
-                </div>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Car size={24} /></div>
                 <div>
-                  <h3 className="font-bold text-slate-900">Meus Veículos</h3>
-                  <p className="text-xs text-slate-500">Cadastre para acesso automático.</p>
+                  <h3 className="text-lg font-black text-slate-800">Meus Veículos</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Controle de acesso à garagem</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsVehicleModalOpen(true)}
-                className="text-sm font-medium text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-              >
-                <Plus size={16} /> Adicionar
+              <button onClick={() => setIsVehicleModalOpen(true)} className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl text-xs font-black uppercase tracking-widest transition-colors flex items-center gap-2">
+                <Plus size={14} /> Novo
               </button>
             </div>
 
             {profile.vehicles.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {profile.vehicles.map(vehicle => (
-                  <div key={vehicle.id} className="border border-slate-200 rounded-xl p-4 flex justify-between items-start hover:shadow-md transition-shadow group relative">
-                    <div>
-                      <h4 className="font-bold text-slate-800">{vehicle.model}</h4>
-                      <p className="text-sm text-slate-500">{vehicle.color}</p>
-                      <span className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded mt-2 inline-block border border-slate-200 text-slate-600">
-                        {vehicle.plate}
-                      </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {profile.vehicles.map(v => (
+                  <div key={v.id} className="border border-slate-200 rounded-3xl p-5 flex flex-col hover:shadow-md transition-all group bg-slate-50/50">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-black text-slate-700">{v.model}</h4>
+                      <button onClick={() => removeVehicle(v.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <button
-                        onClick={() => removeVehicle(vehicle.id)}
-                        className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                        title="Remover"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                    <div className="flex justify-between items-end mt-auto">
+                      <span className="text-xs font-bold text-slate-500">{v.color}</span>
+                      <span className="text-xs font-mono font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded-lg tracking-wider border border-slate-300/50">{v.plate}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <p className="text-sm text-slate-500">Nenhum veículo cadastrado.</p>
+              <div className="text-center py-8 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nenhum veículo cadastrado</p>
               </div>
             )}
           </div>
 
           {/* Pets Section */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm">
             <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-orange-50 text-orange-600 p-2 rounded-lg">
-                  <Cat size={20} />
-                </div>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl"><Cat size={24} /></div>
                 <div>
-                  <h3 className="font-bold text-slate-900">Meus Pets</h3>
-                  <p className="text-xs text-slate-500">Mantenha o cadastro atualizado.</p>
+                  <h3 className="text-lg font-black text-slate-800">Meus Pets</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Cadastro de animais</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsPetModalOpen(true)}
-                className="text-sm font-medium text-orange-600 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-              >
-                <Plus size={16} /> Adicionar
+              <button onClick={() => setIsPetModalOpen(true)} className="px-4 py-2 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-xl text-xs font-black uppercase tracking-widest transition-colors flex items-center gap-2">
+                <Plus size={14} /> Novo
               </button>
             </div>
 
             {profile.pets.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {profile.pets.map(pet => (
-                  <div key={pet.id} className="border border-slate-200 rounded-xl p-4 flex justify-between items-start hover:shadow-md transition-shadow group">
-                    <div>
-                      <h4 className="font-bold text-slate-800">{pet.name}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full font-medium">
-                          {pet.type}
-                        </span>
-                        <span className="text-xs text-slate-500">{pet.breed}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {profile.pets.map(p => (
+                  <div key={p.id} className="border border-slate-200 rounded-3xl p-5 flex flex-col hover:shadow-md transition-all group bg-slate-50/50">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-black text-slate-700">{p.name}</h4>
+                        <span className="text-[10px] font-black uppercase text-orange-500 tracking-wider ">{p.type}</span>
                       </div>
+                      <button onClick={() => removePet(p.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <button
-                        onClick={() => removePet(pet.id)}
-                        className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                        title="Remover"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                    <div className="mt-2">
+                      <span className="text-xs font-bold text-slate-500">{p.breed}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <p className="text-sm text-slate-500">Nenhum pet cadastrado.</p>
+              <div className="text-center py-8 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nenhum pet cadastrado</p>
               </div>
             )}
           </div>
@@ -269,41 +301,130 @@ export const ResidentProfile: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Vehicle Modal */}
+      {/* MODAL: CHANGE PASSWORD (COPIED FROM ADMIN) */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-[#fcfbf9] rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative border border-slate-200">
+            <div className="px-10 py-12 text-center">
+              <div className="w-20 h-20 bg-[#437476]/10 text-[#437476] rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-[#437476]/5 border border-[#437476]/10">
+                <Key size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Alterar Senha</h3>
+              <p className="text-sm text-slate-500 font-medium mb-10 leading-relaxed">Defina uma nova senha segura para sua conta.</p>
+
+              <div className="space-y-4 text-left">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Senha Atual</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    value={passwordForm.current}
+                    onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nova Senha</label>
+                  <input
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    value={passwordForm.new}
+                    onChange={e => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirmar Nova Senha</label>
+                  <input
+                    type="password"
+                    placeholder="Repita a nova senha"
+                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all"
+                    value={passwordForm.confirm}
+                    onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                  />
+                </div>
+
+                {/* Password Requirements */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-2">
+                  <p className="text-[10px] uppercase font-black text-slate-400 mb-2">Requisitos de Segurança:</p>
+                  <ul className="space-y-1">
+                    <li className={`text-xs font-bold flex items-center gap-2 ${passwordForm.new.length >= 6 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${passwordForm.new.length >= 6 ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      Mínimo de 6 caracteres
+                    </li>
+                    <li className={`text-xs font-bold flex items-center gap-2 ${/[A-Z]/.test(passwordForm.new) ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(passwordForm.new) ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      Letra Maiúscula
+                    </li>
+                    <li className={`text-xs font-bold flex items-center gap-2 ${/[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.new) ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${/[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.new) ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      Caractere Especial (!@#...)
+                    </li>
+                    <li className={`text-xs font-bold flex items-center gap-2 ${passwordForm.new && passwordForm.new === passwordForm.confirm ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${passwordForm.new && passwordForm.new === passwordForm.confirm ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      Senhas coincidem
+                    </li>
+                  </ul>
+                </div>
+
+              </div>
+
+              <div className="flex flex-col gap-3 mt-10">
+                <button
+                  onClick={handlePasswordUpdate}
+                  disabled={saving}
+                  className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl hover:bg-black transition-all shadow-xl shadow-slate-200 uppercase tracking-widest text-[11px] disabled:opacity-50"
+                >
+                  {saving ? 'Atualizando...' : 'Confirmar Nova Senha'}
+                </button>
+                <button
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  disabled={saving}
+                  className="w-full py-4 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-600"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Vehicle Modal (RETAINED FROM OLD, JUST STYLED) */}
       {isVehicleModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-lg font-bold text-slate-800">Novo Veículo</h3>
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="text-lg font-black text-slate-800 tracking-tight">Novo Veículo</h3>
               <button onClick={() => setIsVehicleModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleAddVehicle} className="p-6 space-y-4">
+            <form onSubmit={handleAddVehicle} className="p-8 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Modelo</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">Modelo</label>
                 <input
                   type="text"
                   required
                   placeholder="Ex: Honda Civic"
                   value={newVehicle.model}
                   onChange={e => setNewVehicle({ ...newVehicle, model: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Cor</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">Cor</label>
                 <input
                   type="text"
                   required
                   placeholder="Ex: Prata"
                   value={newVehicle.color}
                   onChange={e => setNewVehicle({ ...newVehicle, color: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Placa</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">Placa</label>
                 <input
                   type="text"
                   required
@@ -311,10 +432,10 @@ export const ResidentProfile: React.FC = () => {
                   value={newVehicle.plate}
                   onChange={handlePlateChange}
                   maxLength={8}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 uppercase transition-all"
                 />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors">
+              <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200/50 uppercase tracking-wider text-xs">
                 Adicionar Veículo
               </button>
             </form>
@@ -322,57 +443,60 @@ export const ResidentProfile: React.FC = () => {
         </div>
       )}
 
-      {/* Add Pet Modal */}
+      {/* Add Pet Modal (RETAINED FROM OLD, JUST STYLED) */}
       {isPetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-lg font-bold text-slate-800">Novo Pet</h3>
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="text-lg font-black text-slate-800 tracking-tight">Novo Pet</h3>
               <button onClick={() => setIsPetModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleAddPet} className="p-6 space-y-4">
+            <form onSubmit={handleAddPet} className="p-8 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nome</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">Nome</label>
                 <input
                   type="text"
                   required
                   placeholder="Ex: Rex"
                   value={newPet.name}
                   onChange={e => setNewPet({ ...newPet, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo</label>
-                <select
-                  value={newPet.type}
-                  onChange={e => setNewPet({ ...newPet, type: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="Cachorro">Cachorro</option>
-                  <option value="Gato">Gato</option>
-                  <option value="Outro">Outro</option>
-                </select>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">Tipo</label>
+                <div className="relative">
+                  <select
+                    value={newPet.type}
+                    onChange={e => setNewPet({ ...newPet, type: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all appearance-none"
+                  >
+                    <option value="Cachorro">Cachorro</option>
+                    <option value="Gato">Gato</option>
+                    <option value="Outro">Outro</option>
+                  </select>
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Raça</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">Raça</label>
                 <input
                   type="text"
                   placeholder="Ex: Vira-lata"
                   value={newPet.breed}
                   onChange={e => setNewPet({ ...newPet, breed: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                 />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors">
+              <button type="submit" className="w-full py-4 bg-orange-500 text-white font-black rounded-xl hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200/50 uppercase tracking-wider text-xs">
                 Adicionar Pet
               </button>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 };
