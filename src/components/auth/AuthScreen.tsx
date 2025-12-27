@@ -437,7 +437,7 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                   console.error(err);
                 }
               }}
-              className="w-full py-4.5 bg-slate-900 text-white font-black rounded-2xl hover:bg-black hover:-translate-y-0.5 transition-all shadow-xl shadow-slate-200 text-sm uppercase tracking-widest active:scale-[0.98] py-4"
+              className="w-full py-4.5 bg-[#437476] text-white font-black rounded-2xl hover:bg-[#365e5f] hover:-translate-y-0.5 transition-all shadow-xl shadow-[#437476]/30 text-sm uppercase tracking-widest active:scale-[0.98] py-4"
             >
               Acessar Painel
             </button>
