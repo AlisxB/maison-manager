@@ -20,7 +20,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: always
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./backend:/app
     ports:
@@ -53,6 +53,19 @@ services:
       - ./backups:/backups
       - ./deploy/backup/rclone.conf:/root/.config/rclone/rclone.conf:ro
       - ./deploy/backup/service-account.json:/root/.config/rclone/service-account.json:ro # Optional if using SA
+    networks:
+      - maison-network
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/frontend/Dockerfile
+    container_name: maison-web
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
     networks:
       - maison-network
 
