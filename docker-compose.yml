@@ -10,8 +10,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       # Initialize Schema on first run
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432" # In production, keep DB internal-only for security
     networks:
       - maison-network
 
@@ -23,8 +23,8 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./backend:/app
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8000:8000" # In production, API is accessed via Nginx (web service)
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       PROJECT_NAME: ${PROJECT_NAME}
