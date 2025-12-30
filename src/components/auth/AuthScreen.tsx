@@ -42,7 +42,8 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
     entryDate: '',
     password: '',
     confirmPassword: '',
-    unit_id: ''
+    unit_id: '',
+    profile_type: 'INQUILINO'
   });
 
   const [units, setUnits] = useState<any[]>([]);
@@ -107,7 +108,8 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
         email: regForm.email,
         phone: regForm.phone,
         password: regForm.password,
-        unit_id: regForm.unit_id
+        unit_id: regForm.unit_id,
+        profile_type: regForm.profile_type
       });
       alert('Solicitação de acesso enviada com sucesso! Aguarde a aprovação da administração.');
       setView('login');
@@ -283,6 +285,40 @@ const AuthScreen: React.FC<AuthScreenProps> = () => {
                       value={regForm.entryDate}
                       onChange={e => setRegForm({ ...regForm, entryDate: e.target.value })}
                     />
+                  </div>
+                </div>
+
+                {/* Seção 3: Tipo de Ocupação */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-px bg-slate-100 flex-1"></div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3">Tipo de Ocupação</span>
+                    <div className="h-px bg-slate-100 flex-1"></div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className={`cursor-pointer border rounded-2xl p-4 flex items-center justify-center gap-3 transition-all ${regForm.profile_type === 'INQUILINO' ? 'border-[#437476] bg-[#437476]/5 text-[#437476]' : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'}`}>
+                      <input
+                        type="radio"
+                        name="profile_type"
+                        value="INQUILINO"
+                        checked={regForm.profile_type === 'INQUILINO'}
+                        onChange={e => setRegForm({ ...regForm, profile_type: 'INQUILINO' })}
+                        className="hidden"
+                      />
+                      <span className="text-xs font-bold uppercase tracking-wider">Inquilino</span>
+                    </label>
+                    <label className={`cursor-pointer border rounded-2xl p-4 flex items-center justify-center gap-3 transition-all ${regForm.profile_type === 'PROPRIETARIO' ? 'border-[#437476] bg-[#437476]/5 text-[#437476]' : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'}`}>
+                      <input
+                        type="radio"
+                        name="profile_type"
+                        value="PROPRIETARIO"
+                        checked={regForm.profile_type === 'PROPRIETARIO'}
+                        onChange={e => setRegForm({ ...regForm, profile_type: 'PROPRIETARIO' })}
+                        className="hidden"
+                      />
+                      <span className="text-xs font-bold uppercase tracking-wider">Proprietário</span>
+                    </label>
                   </div>
                 </div>
               </div>

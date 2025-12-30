@@ -192,7 +192,7 @@ async def register_public(
             pgp_sym_encrypt(:email, :key), :email_hash,
             pgp_sym_encrypt(:phone, :key), :phone_hash,
             :password_hash,
-            'RESIDENTE', 'INQUILINO', 'PENDENTE'
+            'RESIDENTE', :profile_type, 'PENDENTE'
         ) RETURNING id, status, created_at, role
     """)
     
@@ -205,7 +205,8 @@ async def register_public(
         "email_hash": email_hash,
         "phone": user_in.phone,
         "phone_hash": phone_hash,
-        "password_hash": password_hash
+        "password_hash": password_hash,
+        "profile_type": user_in.profile_type or 'INQUILINO'
     })
     
     new_user = result.mappings().first()
@@ -218,7 +219,7 @@ async def register_public(
         "name": user_in.name,
         "email": user_in.email, # Return provided email
         "role": new_user.role,
-        "profile_type": "INQUILINO",
+        "profile_type": user_in.profile_type or 'INQUILINO',
         "unit_id": unit.id,
         "status": new_user.status,
         "created_at": new_user.created_at,

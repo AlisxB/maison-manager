@@ -70,6 +70,7 @@ class UserRegister(BaseModel):
     password: str = Field(..., min_length=6)
     phone: str = Field(..., min_length=10)
     unit_id: UUID
+    profile_type: Optional[str] = Field("INQUILINO", pattern="^(PROPRIETARIO|INQUILINO)$")
 
     @field_validator('password')
     def password_complexity(cls, v):
