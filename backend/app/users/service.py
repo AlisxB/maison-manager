@@ -4,9 +4,11 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.users.repository import UserRepository
 from app.users.schemas import UserCreate, UserUpdate
-from app.users.models import User, AccessLog
+from app.users.models import User, AccessLog, OccupationHistory
+from datetime import datetime
 from app.core import security
 import hashlib
+import uuid
 
 class UserService:
     def __init__(self, db: AsyncSession):
@@ -22,7 +24,11 @@ class UserService:
 
         email_hash = hashlib.sha256(user_in.email.lower().encode('utf-8')).hexdigest()
         
+        # Explicitly generate ID to ensure availability for relations
+        new_user_id = uuid.uuid4()
+        
         db_user = User(
+            id=new_user_id,
             condominium_id=current_condo_id,
             name=user_in.name,
             email_encrypted=f"ENC({user_in.email})", 
@@ -36,6 +42,18 @@ class UserService:
         )
         
         await self.repo.create(db_user)
+        await self.db.flush() # Force insert of User before OccupationHistory
+        
+        # Create initial Occupation History
+        history_entry = OccupationHistory(
+            condominium_id=current_condo_id,
+            user_id=new_user_id,
+            unit_id=user_in.unit_id,
+            profile_type=user_in.profile_type or 'INQUILINO', # Default fallback
+            start_date=datetime.now()
+        )
+        self.db.add(history_entry)
+        
         try:
             await self.db.commit()
             # Fetch to load relationship
@@ -57,6 +75,12 @@ class UserService:
             raise HTTPException(status_code=404, detail="User not found")
 
         # Update Logic
+        # Check for Occupation Change
+        occupation_changed = False
+        if (user_in.unit_id is not None and user_in.unit_id != db_user.unit_id) or \
+           (user_in.profile_type and user_in.profile_type != db_user.profile_type):
+            occupation_changed = True
+
         if user_in.name: db_user.name = user_in.name
         if user_in.role: db_user.role = user_in.role
         if user_in.profile_type: db_user.profile_type = user_in.profile_type
@@ -64,6 +88,31 @@ class UserService:
         if user_in.department: db_user.department = user_in.department
         if user_in.work_hours: db_user.work_hours = user_in.work_hours
         if user_in.status: db_user.status = user_in.status
+        
+        if occupation_changed:
+            # 1. Close current open history
+            from sqlalchemy import select, and_
+            stmt = select(OccupationHistory).where(
+                and_(
+                    OccupationHistory.user_id == db_user.id,
+                    OccupationHistory.end_date.is_(None)
+                )
+            )
+            result = await self.db.execute(stmt)
+            current_history = result.scalars().first()
+            
+            if current_history:
+                current_history.end_date = datetime.now()
+            
+            # 2. Create new history
+            new_history = OccupationHistory(
+                condominium_id=db_user.condominium_id,
+                user_id=db_user.id,
+                unit_id=user_in.unit_id if user_in.unit_id is not None else db_user.unit_id,
+                profile_type=user_in.profile_type or db_user.profile_type,
+                start_date=datetime.now()
+            )
+            self.db.add(new_history)
 
         if user_in.phone:
             db_user.phone_encrypted = f"ENC({user_in.phone})"
