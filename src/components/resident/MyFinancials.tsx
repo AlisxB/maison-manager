@@ -27,7 +27,7 @@ export const ResidentFinancial: React.FC = () => {
             // For now, listing all Fines (WARNINGS don't have amount usually, but we check type)
             // and all Reservations for history.
             setViolations(fetchedViolations);
-            setReservations(fetchedReservations);
+            setReservations(fetchedReservations.filter(r => r.user_id === user.id));
         } catch (error) {
             console.error("Error fetching financial data:", error);
         } finally {
