@@ -452,6 +452,43 @@ CREATE TRIGGER audit_bylaws_trigger AFTER INSERT OR UPDATE OR DELETE ON bylaws
 
 
 
+
+-- Occupation History (Histórico de Moradores)
+CREATE TABLE IF NOT EXISTS occupation_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    unit_id UUID REFERENCES units(id),
+    profile_type VARCHAR(50) NOT NULL,
+    start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    end_date TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE occupation_history ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY occupation_admin_policy ON occupation_history
+    USING (
+        condominium_id = current_condo_id()
+        AND current_app_role() = 'ADMIN'
+    )
+    WITH CHECK (
+        condominium_id = current_condo_id()
+        AND current_app_role() = 'ADMIN'
+    );
+
+CREATE POLICY occupation_user_policy ON occupation_history FOR SELECT
+    USING (
+        condominium_id = current_condo_id()
+        AND user_id = current_user_id()
+    );
+
+-- Audit Trigger
+CREATE TRIGGER audit_occupation_trigger AFTER INSERT OR UPDATE OR DELETE ON occupation_history
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+
 -- 10. Violations (Multas/Notificações)
 CREATE TABLE IF NOT EXISTS violations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

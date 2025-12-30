@@ -32,6 +32,7 @@ class User(Base):
     unit = relationship("Unit") 
     vehicles = relationship("Vehicle", back_populates="user", cascade="all, delete-orphan")
     pets = relationship("Pet", back_populates="user", cascade="all, delete-orphan")
+    occupation_history = relationship("OccupationHistory", back_populates="user", cascade="all, delete-orphan")
     
     phone_encrypted = Column(Text, nullable=True)
     phone_hash = Column(String(64), nullable=True)
@@ -58,4 +59,21 @@ class AccessLog(Base):
     ip_address = Column(INET, nullable=True) 
     user_agent = Column(Text, nullable=True)
     location = Column(String(100), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+
+class OccupationHistory(Base):
+    __tablename__ = "occupation_history"
+    
+    id = uuid_pk()
+    condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    unit_id = Column(UUID(as_uuid=True), ForeignKey("units.id"), nullable=True)
+    
+    profile_type = Column(String(50), nullable=False) # PROPRIETARIO, INQUILINO
+    
+    start_date = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+    end_date = Column(TIMESTAMP(timezone=True), nullable=True)
+    
+    user = relationship("User", back_populates="occupation_history")
+    
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
