@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Building, Search, PlusCircle, X } from 'lucide-react';
-import { UnitService, Unit } from '../../services/userService';
+import { Building, Search, PlusCircle, X, Eye, History, User } from 'lucide-react';
+import { UnitService, Unit, UnitDetails } from '../../services/userService';
 
 export const AdminUnits: React.FC = () => {
     const [units, setUnits] = useState<Unit[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [viewingUnit, setViewingUnit] = useState<UnitDetails | null>(null);
 
     // Form
     const [form, setForm] = useState({
@@ -101,6 +102,16 @@ export const AdminUnits: React.FC = () => {
         }
     };
 
+    const handleViewDetails = async (unitId: string) => {
+        try {
+            const details = await UnitService.getDetails(unitId);
+            setViewingUnit(details);
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao carregar detalhes da unidade.");
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex justify-between items-center">
@@ -149,7 +160,13 @@ export const AdminUnits: React.FC = () => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right text-slate-400">
-                                        ...
+                                        <button
+                                            onClick={() => handleViewDetails(u.id)}
+                                            className="hover:text-[#437476] transition-colors p-1"
+                                            title="Ver Detalhes e Histórico"
+                                        >
+                                            <Eye size={18} />
+                                        </button>
                                     </td>
                                 </tr>
                             ))
@@ -261,6 +278,98 @@ export const AdminUnits: React.FC = () => {
                                 {form.isBatch ? 'Gerar Unidades' : 'Criar Unidade'}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Details Modal */}
+            {viewingUnit && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <div>
+                                <h3 className="font-bold text-slate-700 text-lg">Detalhes da Unidade</h3>
+                                <p className="text-sm text-slate-500">Bloco {viewingUnit.block || '-'} - Unidade {viewingUnit.number}</p>
+                            </div>
+                            <button onClick={() => setViewingUnit(null)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            {/* Current Residents */}
+                            <div>
+                                <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                    <User size={18} className="text-[#437476]" />
+                                    Ocupação Atual
+                                </h4>
+                                {viewingUnit.current_residents.length > 0 ? (
+                                    <div className="bg-slate-50 rounded-lg border border-slate-100 divide-y divide-slate-100">
+                                        {viewingUnit.current_residents.map(res => (
+                                            <div key={res.id} className="p-3 flex justify-between items-center">
+                                                <div>
+                                                    <p className="font-medium text-slate-700">{res.name}</p>
+                                                    <p className="text-xs text-slate-400">{res.email}</p>
+                                                </div>
+                                                <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase ${res.profile_type === 'PROPRIETARIO' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                    {res.profile_type || 'INQUILINO'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-lg text-center text-slate-400 text-sm">
+                                        Nenhum morador atual.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* History */}
+                            <div>
+                                <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                    <History size={18} className="text-[#437476]" />
+                                    Histórico de Ocupação
+                                </h4>
+                                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-4 py-3">Morador</th>
+                                                <th className="px-4 py-3">Tipo</th>
+                                                <th className="px-4 py-3">Entrada</th>
+                                                <th className="px-4 py-3">Saída</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {viewingUnit.occupation_history.length > 0 ? (
+                                                viewingUnit.occupation_history.map(hist => (
+                                                    <tr key={hist.id} className="hover:bg-slate-50">
+                                                        <td className="px-4 py-3 font-medium text-slate-700">
+                                                            {hist.user_name || 'Usuário Desconhecido'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs uppercase text-slate-500">
+                                                            {hist.profile_type}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-600">
+                                                            {new Date(hist.start_date).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-600">
+                                                            {hist.end_date ? new Date(hist.end_date).toLocaleDateString() : <span className="text-green-600 font-bold text-xs">Atual</span>}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={4} className="p-4 text-center text-slate-400">
+                                                        Sem histórico registrado.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

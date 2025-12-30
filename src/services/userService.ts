@@ -22,6 +22,7 @@ export interface Unit {
     block?: string;
     number: string;
     condominium_id: string;
+    type?: string;
 }
 
 export const UserService = {
@@ -64,14 +65,32 @@ export interface AccessLog {
     created_at: string;
 }
 
+export interface OccupationHistory {
+    id: string;
+    user_id: string;
+    profile_type: string;
+    start_date: string;
+    end_date?: string;
+    created_at: string;
+    user_name?: string;
+}
+
+export interface UnitDetails extends Unit {
+    current_residents: User[];
+    occupation_history: OccupationHistory[];
+}
+
 export const UnitService = {
-    getAll: async () => {
-        const response = await api.get<Unit[]>('/units/');
+    getAll: async (): Promise<Unit[]> => {
+        const response = await api.get('/units');
         return response.data;
     },
-
-    create: async (data: { block: string; number: string; type: string }) => {
-        const response = await api.post<Unit>('/units/', data);
+    create: async (payload: Partial<Unit>): Promise<Unit> => {
+        const response = await api.post('/units', payload);
+        return response.data;
+    },
+    getDetails: async (id: string): Promise<UnitDetails> => {
+        const response = await api.get(`/units/${id}/details`);
         return response.data;
     }
 };
