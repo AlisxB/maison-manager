@@ -25,3 +25,13 @@ async def create_unit(
 ):
     service = UnitService(db)
     return await service.create_unit(unit_in, current_user.role, current_user.condo_id)
+
+from app.units.schemas import UnitDetails
+@router.get("/{unit_id}/details", response_model=UnitDetails)
+async def get_unit_details(
+    unit_id: str,
+    db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
+):
+    service = UnitService(db)
+    return await service.get_details(unit_id, current_user.role)

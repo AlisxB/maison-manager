@@ -17,3 +17,8 @@ class UnitRepository:
     async def create(self, unit: Unit) -> Unit:
         self.db.add(unit)
         return unit
+
+    async def get_by_id(self, unit_id: UUID) -> Optional[Unit]:
+        query = select(Unit).where(Unit.id == unit_id)
+        result = await self.db.execute(query)
+        return result.scalars().first()
