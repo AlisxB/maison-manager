@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # In strictly DB-encrypted setup, this might be passed to DB session.
     APP_ENCRYPTION_KEY: str = "super_secure_key_for_pgcrypto" 
 
-    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env")
+    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 
     def get_database_url(self) -> str:
         if self.DATABASE_URL:

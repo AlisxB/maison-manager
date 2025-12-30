@@ -10,8 +10,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       # Initialize Schema on first run
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    # ports:
-    #   - "5432:5432" # In production, keep DB internal-only for security
+    ports:
+      - "5432:5432" # In production, keep DB internal-only for security
     networks:
       - maison-network
 
