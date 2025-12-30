@@ -18,7 +18,7 @@ export const AdminResidents: React.FC = () => {
         entryDate: '2025-12-17',
         exitDate: '',
         registeredBy: user?.name || 'Admin',
-
+        profile_type: 'INQUILINO', // Default to Tenant
         password: '' // Add password to state
     });
 
@@ -97,6 +97,7 @@ export const AdminResidents: React.FC = () => {
             entryDate: `${dd}/${mm}/${yyyy}`,
             exitDate: '',
             registeredBy: user?.name || 'Admin',
+            profile_type: 'INQUILINO',
             password: ''
         });
         setEditingId(null);
@@ -114,6 +115,7 @@ export const AdminResidents: React.FC = () => {
             entryDate: '01/01/2025', // Mock or fetch actual
             exitDate: '',
             registeredBy: user?.name || 'Admin',
+            profile_type: resident.profile_type || 'INQUILINO',
             password: '' // Don't fill password on edit
         });
         setEditingId(resident.id);
@@ -145,7 +147,7 @@ export const AdminResidents: React.FC = () => {
                 email: residentForm.email,
                 phone: residentForm.phone,
                 role: 'RESIDENTE',
-                profile_type: 'INQUILINO', // Default
+                profile_type: residentForm.profile_type,
                 unit_id: targetUnit?.id,
                 entry_date: formatDateToISO(residentForm.entryDate), // Add entry date support if backend supports it (assuming yes or handled)
                 exit_date: residentForm.exitDate ? formatDateToISO(residentForm.exitDate) : null,
@@ -339,6 +341,35 @@ export const AdminResidents: React.FC = () => {
                                                 onChange={e => setResidentForm({ ...residentForm, password: e.target.value })}
                                             />
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Linha: Tipo de Perfil */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-600 mb-2">Tipo de Perfil</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="profileType"
+                                                value="INQUILINO"
+                                                checked={residentForm.profile_type === 'INQUILINO'}
+                                                onChange={e => setResidentForm({ ...residentForm, profile_type: e.target.value })}
+                                                className="w-4 h-4 text-[#437476] focus:ring-[#437476]"
+                                            />
+                                            <span className="text-sm text-slate-700">Inquilino</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="profileType"
+                                                value="PROPRIETARIO"
+                                                checked={residentForm.profile_type === 'PROPRIETARIO'}
+                                                onChange={e => setResidentForm({ ...residentForm, profile_type: e.target.value })}
+                                                className="w-4 h-4 text-[#437476] focus:ring-[#437476]"
+                                            />
+                                            <span className="text-sm text-slate-700">Proprietário</span>
+                                        </label>
                                     </div>
                                 </div>
 
