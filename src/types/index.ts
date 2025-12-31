@@ -1,13 +1,14 @@
 
 import { LucideIcon } from 'lucide-react';
 
-export type Role = 'ADMIN' | 'RESIDENTE';
+export type Role = 'ADMIN' | 'RESIDENTE' | 'SINDICO' | 'SUBSINDICO' | 'CONSELHO' | 'PORTEIRO' | 'FINANCEIRO';
 
 export interface NavItem {
   id: string;
   label: string;
   icon: LucideIcon;
   view: string;
+  allowedRoles?: Role[];
 }
 
 export interface Resident {

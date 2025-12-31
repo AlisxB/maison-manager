@@ -45,7 +45,8 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (user) {
       // Redirecionar para dashboard correto baseado no ROL do token
-      setCurrentView(user.role === 'ADMIN' ? 'admin_dashboard' : 'resident_dashboard');
+      const adminRoles = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'CONSELHO', 'PORTEIRO', 'FINANCEIRO'];
+      setCurrentView(adminRoles.includes(user.role) ? 'admin_dashboard' : 'resident_dashboard');
     }
   }, [user]);
 
