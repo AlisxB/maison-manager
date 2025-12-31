@@ -31,3 +31,16 @@ __pycache__/
 venv/
 tmp_venv/
 .pytest_cache/
+
+# Backups and Secrets
+backups/
+deploy/backup/rclone.conf
+deploy/backup/service-account.json
+*.sql.gz
+
+# User Uploads
+backend/backend/storage/uploads/
+
+# Generated Scripts and Docs
+verify_rbac.sh
+docs/
