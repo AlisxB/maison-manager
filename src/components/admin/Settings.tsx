@@ -103,19 +103,30 @@ export const AdminSettings: React.FC = () => {
 
 /* --- SUB-COMPONENTS --- */
 
+import { useAuth } from '../../context/AuthContext';
+
 function SettingsMenu({ onNavigate }: { onNavigate: (view: SettingsView) => void }) {
+    const { user } = useAuth();
+    const userRole = user?.role || 'RESIDENTE';
+
+    const menuItems = [
+        { id: 'condo_data', title: 'Dados do Condomínio', desc: 'Nome, endereço e CNPJ.', icon: Building, allowedRoles: ['ADMIN'] },
+        { id: 'units', title: 'Gestão de Unidades', desc: 'Gerenciar blocos, unidades e criar lotes.', icon: Building, allowedRoles: ['ADMIN'] },
+        { id: 'inventory', title: 'Gestão de Estoque', desc: 'Controle de suprimentos e materiais.', icon: Package, allowedRoles: ['ADMIN', 'SINDICO'] },
+        { id: 'users', title: 'Gestão de Usuários Administrativos', desc: 'Adicionar ou remover administradores e porteiros.', icon: Users, allowedRoles: ['ADMIN'] },
+        { id: 'booking_rules', title: 'Regras de Reservas', desc: 'Definir horários, limites e valores.', icon: Calendar, allowedRoles: ['ADMIN', 'SINDICO', 'SUBSINDICO'] },
+        { id: 'bylaws', title: 'Regimentos Internos', desc: 'Normas, convenções e multas.', icon: Book, allowedRoles: ['ADMIN', 'SINDICO', 'CONSELHO'] },
+        { id: 'notifications', title: 'Notificações Automáticas', desc: 'Configurar e-mails e alertas do sistema.', icon: Bell, allowedRoles: ['ADMIN', 'SINDICO'] },
+        { id: 'logs', title: 'Logs do Sistema (Auditoria)', desc: 'Rastrear todas as alterações realizadas.', icon: History, allowedRoles: ['ADMIN', 'SINDICO'] },
+    ];
+
+    const allowedItems = menuItems.filter(item => item.allowedRoles.includes(userRole));
+
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
-            {[
-                { id: 'condo_data', title: 'Dados do Condomínio', desc: 'Nome, endereço e CNPJ.', icon: Building },
-                { id: 'units', title: 'Gestão de Unidades', desc: 'Gerenciar blocos, unidades e criar lotes.', icon: Building },
-                { id: 'inventory', title: 'Gestão de Estoque', desc: 'Controle de suprimentos e materiais.', icon: Package },
-                { id: 'users', title: 'Gestão de Usuários Administrativos', desc: 'Adicionar ou remover administradores e porteiros.', icon: Users },
-                { id: 'booking_rules', title: 'Regras de Reservas', desc: 'Definir horários, limites e valores.', icon: Calendar },
-                { id: 'bylaws', title: 'Regimentos Internos', desc: 'Normas, convenções e multas.', icon: Book },
-                { id: 'notifications', title: 'Notificações Automáticas', desc: 'Configurar e-mails e alertas do sistema.', icon: Bell },
-                { id: 'logs', title: 'Logs do Sistema (Auditoria)', desc: 'Rastrear todas as alterações realizadas.', icon: History },
-            ].map((item) => (
+            {allowedItems.length === 0 ? (
+                <div className="p-8 text-center text-slate-400">Você não tem permissão para acessar nenhuma configuração.</div>
+            ) : allowedItems.map((item) => (
                 <button
                     key={item.id}
                     onClick={() => onNavigate(item.id as SettingsView)}
@@ -411,12 +422,15 @@ function CondoDataView({ onBack, onSave, isSaving }: { onBack: () => void, onSav
 }
 
 function UserManagementView({ onBack }: { onBack: () => void }) {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMIN';
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'PORTER', profile_type: 'STAFF' });
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'PORTEIRO', profile_type: 'STAFF' });
 
     // Master Admin ID (hardcoded for protection in Frontend too)
     const MASTER_ADMIN_ID = "22222222-2222-2222-2222-222222222222";
@@ -438,7 +452,7 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
     };
 
     const handleOpenCreate = () => {
-        setFormData({ name: '', email: '', password: '', role: 'PORTER', profile_type: 'STAFF' });
+        setFormData({ name: '', email: '', password: '', role: 'PORTEIRO', profile_type: 'STAFF' });
         setIsEditing(false);
         setSelectedUser(null);
         setIsModalOpen(true);
@@ -467,6 +481,10 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
                 });
                 alert('Usuário atualizado!');
             } else {
+                if (!isAdmin) {
+                    alert('Apenas administradores podem criar novos usuários.');
+                    return;
+                }
                 await UserService.create({
                     ...formData,
                     status: 'ATIVO'
@@ -482,6 +500,8 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
     };
 
     const handleDelete = async (user: User) => {
+        if (!isAdmin) return;
+
         if (user.id === MASTER_ADMIN_ID) {
             alert("O Administrador Master não pode ser excluído.");
             return;
@@ -500,8 +520,11 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
     const getRoleBadge = (role: string) => {
         switch (role) {
             case 'ADMIN': return 'bg-yellow-100 text-yellow-700';
-            case 'PORTER': return 'bg-blue-100 text-blue-700';
-            case 'FINANCIAL': return 'bg-emerald-100 text-emerald-700';
+            case 'PORTEIRO': return 'bg-blue-100 text-blue-700';
+            case 'FINANCEIRO': return 'bg-emerald-100 text-emerald-700';
+            case 'SINDICO': return 'bg-purple-100 text-purple-700';
+            case 'SUBSINDICO': return 'bg-purple-50 text-purple-600';
+            case 'CONSELHO': return 'bg-orange-100 text-orange-700';
             default: return 'bg-slate-100 text-slate-600';
         }
     };
@@ -509,8 +532,11 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
     const getRoleLabel = (role: string) => {
         switch (role) {
             case 'ADMIN': return 'Administrador';
-            case 'PORTER': return 'Porteiro';
-            case 'FINANCIAL': return 'Financeiro';
+            case 'PORTEIRO': return 'Porteiro';
+            case 'FINANCEIRO': return 'Financeiro';
+            case 'SINDICO': return 'Síndico';
+            case 'SUBSINDICO': return 'Subsíndico';
+            case 'CONSELHO': return 'Conselho Fiscal';
             default: return role;
         }
     };
@@ -520,12 +546,14 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                     <h3 className="font-bold text-slate-700">Equipe Administrativa</h3>
-                    <button
-                        onClick={handleOpenCreate}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-bold hover:bg-[#365e5f] transition-all"
-                    >
-                        <UserPlus size={18} /> Novo Colaborador
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={handleOpenCreate}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-bold hover:bg-[#365e5f] transition-all"
+                        >
+                            <UserPlus size={18} /> Novo Colaborador
+                        </button>
+                    )}
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
@@ -572,7 +600,7 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button onClick={() => handleOpenEdit(user)} className="p-1.5 text-slate-400 hover:text-[#437476] rounded-md hover:bg-white transition-all"><Edit2 size={16} /></button>
-                                                {user.id !== MASTER_ADMIN_ID && (
+                                                {user.id !== MASTER_ADMIN_ID && isAdmin && (
                                                     <button onClick={() => handleDelete(user)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-white transition-all"><Trash2 size={16} /></button>
                                                 )}
                                             </div>
@@ -612,9 +640,11 @@ function UserManagementView({ onBack }: { onBack: () => void }) {
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase">Cargo / Função</label>
                                 <select className="w-full p-2 border border-slate-200 rounded-lg mt-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#437476]/20" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-                                    <option value="PORTER">Porteiro / Segurança</option>
-                                    <option value="FINANCIAL">Gerente Financeiro</option>
-                                    <option value="ADMIN">Administrador (Síndico)</option>
+                                    <option value="PORTEIRO">Porteiro / Segurança</option>
+                                    <option value="FINANCEIRO">Financeiro</option>
+                                    <option value="SINDICO">Síndico</option>
+                                    <option value="SUBSINDICO">Subsíndico</option>
+                                    <option value="CONSELHO">Conselho Fiscal</option>
                                 </select>
                             </div>
 
