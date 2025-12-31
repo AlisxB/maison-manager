@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Megaphone, Users, CheckCircle, PlusCircle, X, ChevronDown, Send, Trash2 } from 'lucide-react';
 import { AnnouncementService, Announcement } from '../../services/announcementService';
+import { useAuth } from '../../context/AuthContext';
 
 export const AdminAnnouncements: React.FC = () => {
+    const { user } = useAuth();
+    const canManage = ['ADMIN', 'SINDICO', 'SUBSINDICO'].includes(user?.role || '');
+
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,12 +89,14 @@ export const AdminAnnouncements: React.FC = () => {
                     <h2 className="text-2xl font-bold text-[#437476]">Gestão de Avisos</h2>
                     <p className="text-sm text-slate-500 mt-1">Crie, edite e remova os avisos para os moradores.</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f]"
-                >
-                    <PlusCircle size={16} /> Novo Aviso
-                </button>
+                {canManage && (
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f]"
+                    >
+                        <PlusCircle size={16} /> Novo Aviso
+                    </button>
+                )}
             </div>
 
             {loading ? (
@@ -101,13 +107,15 @@ export const AdminAnnouncements: React.FC = () => {
                         <div key={ann.id} className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative group">
 
                             {/* Delete Button (visible on hover) */}
-                            <button
-                                onClick={() => handleDelete(ann.id)}
-                                className="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                                title="Remover aviso"
-                            >
-                                <Trash2 size={16} />
-                            </button>
+                            {canManage && (
+                                <button
+                                    onClick={() => handleDelete(ann.id)}
+                                    className="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Remover aviso"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            )}
 
                             <div className="flex justify-between items-start mb-2 pr-10">
                                 <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${getTypeColor(ann.type)}`}>{ann.type}</span>

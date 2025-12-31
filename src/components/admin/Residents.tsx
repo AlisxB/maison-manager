@@ -19,6 +19,7 @@ export const AdminResidents: React.FC = () => {
         exitDate: '',
         registeredBy: user?.name || 'Admin',
         profile_type: 'INQUILINO', // Default to Tenant
+        role: 'RESIDENTE',
         password: '' // Add password to state
     });
 
@@ -36,10 +37,13 @@ export const AdminResidents: React.FC = () => {
         try {
             setLoading(true);
             const [usersData, unitsData] = await Promise.all([
-                UserService.getAll({ status: 'ATIVO' }),
+                UserService.getAll(), // FETCH ALL, don't filter.
                 UnitService.getAll()
             ]);
-            setResidents(usersData.filter(u => u.role === 'RESIDENTE'));
+            // Show all relevant users. SINDICO should manage all except ADMIN?
+            // For now show all non-admin or all?
+            // Let's list everyone to allow editing roles.
+            setResidents(usersData); // Show all users
             setUnits(unitsData);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
@@ -98,6 +102,7 @@ export const AdminResidents: React.FC = () => {
             exitDate: '',
             registeredBy: user?.name || 'Admin',
             profile_type: 'INQUILINO',
+            role: 'RESIDENTE',
             password: ''
         });
         setEditingId(null);
@@ -116,6 +121,7 @@ export const AdminResidents: React.FC = () => {
             exitDate: '',
             registeredBy: user?.name || 'Admin',
             profile_type: resident.profile_type || 'INQUILINO',
+            role: resident.role || 'RESIDENTE',
             password: '' // Don't fill password on edit
         });
         setEditingId(resident.id);
@@ -146,10 +152,10 @@ export const AdminResidents: React.FC = () => {
                 name: residentForm.name,
                 email: residentForm.email,
                 phone: residentForm.phone,
-                role: 'RESIDENTE',
+                role: residentForm.role || 'RESIDENTE',
                 profile_type: residentForm.profile_type,
                 unit_id: targetUnit?.id,
-                entry_date: formatDateToISO(residentForm.entryDate), // Add entry date support if backend supports it (assuming yes or handled)
+                entry_date: formatDateToISO(residentForm.entryDate),
                 exit_date: residentForm.exitDate ? formatDateToISO(residentForm.exitDate) : null,
                 ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : (residentForm.password ? { password: residentForm.password } : {})),
             };
@@ -178,6 +184,8 @@ export const AdminResidents: React.FC = () => {
 
     // Pet helpers removed
 
+    const canEdit = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO'].includes(user?.role || '');
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -185,12 +193,14 @@ export const AdminResidents: React.FC = () => {
                     <h2 className="text-2xl font-bold text-[#437476]">Moradores</h2>
                     <p className="text-sm text-slate-500 mt-1">Gerencie os moradores e unidades.</p>
                 </div>
-                <button
-                    onClick={() => { resetForm(); setIsAddResidentModalOpen(true); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f]"
-                >
-                    <UserPlus size={16} /> Novo Morador
-                </button>
+                {canEdit && (
+                    <button
+                        onClick={() => { resetForm(); setIsAddResidentModalOpen(true); }}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f]"
+                    >
+                        <UserPlus size={16} /> Novo Morador
+                    </button>
+                )}
             </div>
 
             <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
@@ -243,6 +253,9 @@ export const AdminResidents: React.FC = () => {
                                             'PORTEIRO': 'Porteiro',
                                             'FINANCIAL': 'Financeiro',
                                             'FINANCEIRO': 'Financeiro',
+                                            'SINDICO': 'Síndico',
+                                            'SUBSINDICO': 'Subsíndico',
+                                            'CONSELHO': 'Conselho Fiscal',
                                             'OWNER': 'Proprietário',
                                             'PROPRIETARIO': 'Proprietário',
                                             'TENANT': 'Inquilino',
@@ -265,13 +278,15 @@ export const AdminResidents: React.FC = () => {
                                     >
                                         <Eye size={16} />
                                     </button>
-                                    <button
-                                        onClick={() => handleEdit(res)}
-                                        className="text-slate-400 hover:text-[#437476] mx-1"
-                                        title="Editar"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
+                                    {canEdit && (
+                                        <button
+                                            onClick={() => handleEdit(res)}
+                                            className="text-slate-400 hover:text-[#437476] mx-1"
+                                            title="Editar"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -347,7 +362,7 @@ export const AdminResidents: React.FC = () => {
                                 {/* Linha: Tipo de Perfil */}
                                 <div>
                                     <label className="block text-sm font-bold text-slate-600 mb-2">Tipo de Perfil</label>
-                                    <div className="flex gap-4">
+                                    <div className="flex gap-4 mb-4">
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="radio"
@@ -371,6 +386,21 @@ export const AdminResidents: React.FC = () => {
                                             <span className="text-sm text-slate-700">Proprietário</span>
                                         </label>
                                     </div>
+
+                                    {/* Role Selector (Only for Admin/Manager) */}
+                                    <label className="block text-sm font-bold text-slate-600 mb-2">Cargo no Sistema</label>
+                                    <select
+                                        className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
+                                        value={residentForm.role || 'RESIDENTE'}
+                                        onChange={e => setResidentForm({ ...residentForm, role: e.target.value })}
+                                    >
+                                        <option value="RESIDENTE">Morador (Padrão)</option>
+                                        <option value="SINDICO">Síndico</option>
+                                        <option value="SUBSINDICO">Subsíndico</option>
+                                        <option value="CONSELHO">Conselho Fiscal</option>
+                                        <option value="PORTEIRO">Porteiro</option>
+                                        <option value="FINANCEIRO">Financeiro</option>
+                                    </select>
                                 </div>
 
                                 {/* Linha: Telefone | Bloco | Unidade */}

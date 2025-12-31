@@ -6,7 +6,7 @@ export interface User {
     name: string;
     email: string;
     phone?: string;
-    role: string;
+    role: 'ADMIN' | 'RESIDENTE' | 'PORTEIRO' | 'FINANCEIRO' | 'SINDICO' | 'SUBSINDICO' | 'CONSELHO';
     profile_type: string;
     unit_id?: string;
     unit?: Unit;

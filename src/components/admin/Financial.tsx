@@ -22,6 +22,9 @@ export const AdminFinancial: React.FC = () => {
     const { user } = useAuth();
     const { condominium } = useCondominium();
 
+    // CONSELHO can view but not edit
+    const canManage = ['ADMIN', 'SINDICO', 'FINANCEIRO'].includes(user?.role || '');
+
     const [isTxModalOpen, setIsTxModalOpen] = useState(false);
 
     const currentMonthIdx = new Date().getMonth() + 1; // 1-12
@@ -163,6 +166,7 @@ export const AdminFinancial: React.FC = () => {
     };
 
     const handleStatusToggle = async (t: Transaction) => {
+        if (!canManage) return;
         try {
             const newStatus = t.status === 'paid' ? 'pending' : 'paid';
             await FinancialService.update(t.id, { status: newStatus });
@@ -221,12 +225,14 @@ export const AdminFinancial: React.FC = () => {
                     <button onClick={handleExportPDF} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all shadow-sm">
                         <FileText size={16} /> Exportar PDF
                     </button>
-                    <button
-                        onClick={openNewModal}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-bold hover:bg-[#365e5f] shadow-lg shadow-[#437476]/20 transition-all"
-                    >
-                        <Plus size={16} /> Nova Transação
-                    </button>
+                    {canManage && (
+                        <button
+                            onClick={openNewModal}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-bold hover:bg-[#365e5f] shadow-lg shadow-[#437476]/20 transition-all"
+                        >
+                            <Plus size={16} /> Nova Transação
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -351,22 +357,28 @@ export const AdminFinancial: React.FC = () => {
                                         <td className="px-8 py-5 text-center">
                                             <button
                                                 onClick={() => handleStatusToggle(t)}
-                                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all hover:scale-105 active:scale-95 ${t.status === 'paid'
-                                                    ? 'text-emerald-700 bg-emerald-50 border-emerald-100 hover:bg-emerald-100 cursor-pointer'
-                                                    : 'text-amber-700 bg-amber-50 border-amber-100 hover:bg-amber-100 cursor-pointer'
+                                                disabled={!canManage}
+                                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${canManage ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-not-allowed opacity-70'
+                                                    } ${t.status === 'paid'
+                                                        ? 'text-emerald-700 bg-emerald-50 border-emerald-100 hover:bg-emerald-100'
+                                                        : 'text-amber-700 bg-amber-50 border-amber-100 hover:bg-amber-100'
                                                     }`}
-                                                title="Clique para alterar status"
+                                                title={canManage ? "Clique para alterar status" : "Apenas leitura"}
                                             >
                                                 {t.status === 'paid' ? 'Pago' : 'Pendente'}
                                             </button>
                                         </td>
                                         <td className="px-8 py-5 text-right flex items-center justify-end gap-2">
-                                            <button onClick={() => openEditModal(t)} className="p-2 text-slate-300 hover:text-[#437476] hover:bg-slate-100 rounded-lg transition-all" title="Editar">
-                                                <FileText size={16} /> {/* Using FileText as Edit icon surrogate or get Edit icon */}
-                                            </button>
-                                            <button onClick={() => handleDelete(t.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Excluir">
-                                                <Trash2 size={16} />
-                                            </button>
+                                            {canManage && (
+                                                <>
+                                                    <button onClick={() => openEditModal(t)} className="p-2 text-slate-300 hover:text-[#437476] hover:bg-slate-100 rounded-lg transition-all" title="Editar">
+                                                        <FileText size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDelete(t.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Excluir">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

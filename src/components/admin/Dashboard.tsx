@@ -3,7 +3,13 @@ import { Users, Droplets, Flame, Zap } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, Tooltip } from 'recharts';
 import { DashboardService, DashboardStats } from '../../services/dashboardService';
 
+import { useAuth } from '../../context/AuthContext';
+
 export const AdminDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const role = user?.role || 'RESIDENTE';
+  const canViewFinancials = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'CONSELHO', 'FINANCEIRO'].includes(role);
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -117,15 +123,17 @@ export const AdminDashboard: React.FC = () => {
     <div className="space-y-6">
       <h2 className="text-2xl font-black text-[#437476] tracking-tight">Painel do Administrador</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard
-          title="Receita (Mês)"
-          value={stats.financial.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          subtext={`${stats.financial.revenue_growth > 0 ? '+' : ''}${stats.financial.revenue_growth.toFixed(1)}% vs anterior`}
-          icon={() => <span className="text-emerald-600 font-black text-sm">$</span>}
-          colorClass="text-emerald-700"
-          iconClassName="text-emerald-600"
-        />
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${canViewFinancials ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
+        {canViewFinancials && (
+          <StatCard
+            title="Receita (Mês)"
+            value={stats.financial.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            subtext={`${stats.financial.revenue_growth > 0 ? '+' : ''}${stats.financial.revenue_growth.toFixed(1)}% vs anterior`}
+            icon={() => <span className="text-emerald-600 font-black text-sm">$</span>}
+            colorClass="text-emerald-700"
+            iconClassName="text-emerald-600"
+          />
+        )}
         <StatCard
           title="Inquilinos"
           value={stats.occupancy.residents_count}
