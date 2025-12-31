@@ -35,7 +35,7 @@ class UnitService:
             raise HTTPException(status_code=400, detail=str(e))
 
     async def get_details(self, unit_id: UUID, current_user_role: str) -> dict:
-        if current_user_role != 'ADMIN':
+        if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO']:
              raise HTTPException(status_code=403, detail="Not authorized")
         
         # 1. Get Unit

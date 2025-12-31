@@ -13,11 +13,11 @@ class FinancialService:
 
     def _check_auth(self, role: str):
         # Base auth check - endpoints will refine
-        if role not in ['ADMIN', 'FINANCEIRO', 'RESIDENTE', 'PORTEIRO']:
+        if role not in ['ADMIN', 'FINANCEIRO', 'RESIDENTE', 'PORTEIRO', 'SINDICO', 'SUBSINDICO', 'CONSELHO']:
              raise HTTPException(status_code=403, detail="Not authorized")
 
     def _check_admin(self, role: str):
-         if role not in ['ADMIN', 'FINANCEIRO']:
+         if role not in ['ADMIN', 'FINANCEIRO', 'SINDICO']:
              raise HTTPException(status_code=403, detail="Not authorized")
 
     async def create_transaction(self, tx_in: TransactionCreate, role: str, condo_id: UUID) -> Transaction:

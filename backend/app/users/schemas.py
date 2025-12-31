@@ -7,7 +7,7 @@ from datetime import datetime
 class UserBase(BaseModel):
     name: str
     email: EmailStr
-    role: str = Field(..., pattern="^(ADMIN|RESIDENTE|PORTEIRO|FINANCEIRO)$")
+    role: str = Field(..., pattern="^(ADMIN|RESIDENTE|PORTEIRO|FINANCEIRO|SINDICO|SUBSINDICO|CONSELHO)$")
     profile_type: Optional[str] = Field(None, pattern="^(PROPRIETARIO|INQUILINO|STAFF)$")
     unit_id: Optional[UUID] = None
 

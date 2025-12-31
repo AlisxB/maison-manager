@@ -19,8 +19,11 @@ class UserService:
         return await self.repo.get_all(skip, limit, status)
 
     async def create_user(self, user_in: UserCreate, current_user_role: str, current_condo_id: UUID) -> User:
-        if current_user_role != 'ADMIN':
+        if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO']:
             raise HTTPException(status_code=403, detail="Apenas administradores podem criar usuários")
+        
+        if user_in.role == 'ADMIN':
+             raise HTTPException(status_code=403, detail="Não é permitido criar novos Administradores.")
 
         email_hash = hashlib.sha256(user_in.email.lower().encode('utf-8')).hexdigest()
         
@@ -67,12 +70,20 @@ class UserService:
             raise HTTPException(status_code=400, detail=f"Erro ao criar usuário: {str(e)}")
 
     async def update_user(self, user_id: str, user_in: UserUpdate, current_user_id: str, current_user_role: str) -> User:
-        if current_user_role != 'ADMIN':
+        if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO']:
              raise HTTPException(status_code=403, detail="Not authorized")
 
         db_user = await self.repo.get_by_id(user_id)
         if not db_user:
             raise HTTPException(status_code=404, detail="User not found")
+
+        # Security Check: Non-Admin can only update Residents
+        if current_user_role != 'ADMIN' and db_user.role != 'RESIDENTE' and str(db_user.id) != str(current_user_id):
+             raise HTTPException(status_code=403, detail="Você só pode gerenciar Moradores.")
+             
+        # Security Check: Cannot promote to ADMIN
+        if user_in.role == 'ADMIN' and current_user_role != 'ADMIN':
+              raise HTTPException(status_code=403, detail="Não é permitido promover para Administrador.")
 
         # Update Logic
         # Check for Occupation Change
@@ -154,7 +165,7 @@ class UserService:
         return updated_user
 
     async def delete_user(self, user_id: str, current_user_id: str, current_user_role: str) -> None:
-        if current_user_role != 'ADMIN':
+        if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO']:
             raise HTTPException(status_code=403, detail="Not authorized")
             
         MASTER_ADMIN_ID = "22222222-2222-2222-2222-222222222222"
@@ -167,6 +178,10 @@ class UserService:
         db_user = await self.repo.get_by_id(user_id)
         if not db_user:
             raise HTTPException(status_code=404, detail="User not found")
+            
+        # Security Check: Non-Admin can only delete Residents
+        if current_user_role != 'ADMIN' and db_user.role != 'RESIDENTE':
+             raise HTTPException(status_code=403, detail="Você só pode excluir Moradores.")
             
         await self.repo.delete(db_user)
         await self.db.commit()

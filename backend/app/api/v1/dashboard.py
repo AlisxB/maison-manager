@@ -21,13 +21,21 @@ from app.schemas.dashboard import (
 router = APIRouter()
 
 # Helper to subtract months
+import calendar
+
+# Helper to subtract months
 def subtract_months(dt, months):
     month = dt.month - months
     year = dt.year
     while month <= 0:
         month += 12
         year -= 1
-    return dt.replace(year=year, month=month)
+    
+    # Handle end of month edge cases (e.g. March 31 - 1 month = Feb 28/29)
+    _, days_in_month = calendar.monthrange(year, month)
+    day = min(dt.day, days_in_month)
+    
+    return dt.replace(year=year, month=month, day=day)
 
 @router.get("/stats", response_model=DashboardStats)
 async def get_dashboard_stats(
