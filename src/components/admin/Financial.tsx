@@ -207,11 +207,11 @@ export const AdminFinancial: React.FC = () => {
                         url: shareUrl
                     });
                 } catch (err) {
-                    navigator.clipboard.writeText(text);
+                    navigator.clipboard.writeText(shareUrl);
                     setShowShareSuccess(true);
                 }
             } else {
-                navigator.clipboard.writeText(text);
+                navigator.clipboard.writeText(shareUrl);
                 setShowShareSuccess(true);
             }
         } catch (error) {
