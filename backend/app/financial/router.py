@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import deps
-from app.financial.schemas import TransactionRead, TransactionCreate, TransactionUpdate
+from app.financial.schemas import TransactionRead, TransactionCreate, TransactionUpdate, ShareCreate, PublicReportResponse
 from app.financial.service import FinancialService
 
 router = APIRouter()
@@ -62,3 +62,29 @@ async def get_summary(
 ):
     service = FinancialService(db)
     return await service.get_summary(month, year, current_user.role, current_user.condo_id)
+
+@router.post("/share/create", response_model=dict)
+async def create_share_link(
+    data: ShareCreate,
+    db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
+):
+    service = FinancialService(db)
+    token = await service.create_share_link(data.month, data.year, current_user.user_id, current_user.role, current_user.condo_id)
+    # Construct full URL or just return token?
+    # Usually frontend constructs URL. Returning token and expiration info inside dict
+    from datetime import datetime, timedelta
+    return {
+        "token": token,
+        "link": f"/relatorio-financeiro/{token}", # Path for frontend
+        "expires_in": "7 dias"
+    }
+
+@router.get("/public/report/{token}", response_model=PublicReportResponse)
+async def get_public_report(
+    token: str,
+    db: Annotated[AsyncSession, Depends(deps.get_db)]
+):
+    # No user auth required here, it's public link
+    service = FinancialService(db)
+    return await service.get_public_report(token)

@@ -185,27 +185,38 @@ export const AdminFinancial: React.FC = () => {
         });
     };
 
+    const [showShareSuccess, setShowShareSuccess] = useState(false);
+
     const handleShare = async () => {
         const condoName = condominium?.name || 'Maison Manager';
-        const incomeFmt = summary.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const expenseFmt = summary.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const balanceFmt = summary.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        // const incomeFmt = summary.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        // const expenseFmt = summary.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        // const balanceFmt = summary.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        const text = `🏢 *${condoName}*\n\n📊 *Resumo Financeiro - ${currentMonthLabel}/${filters.year}*\n\n💰 Receitas: ${incomeFmt}\n💸 Despesas: ${expenseFmt}\n💵 *Saldo: ${balanceFmt}*\n\n📅 Gerado em: ${new Date().toLocaleDateString('pt-BR')}\n\n_Acesse o sistema para ver o extrato completo._`;
+        try {
+            const { token, expires_in } = await FinancialService.createShareLink(Number(filters.month), Number(filters.year));
+            const shareUrl = `${window.location.origin}/relatorio-financeiro/${token}`;
 
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: `Relatório Financeiro - ${condoName}`,
-                    text: text
-                });
-            } catch (err) {
-                console.log('Error sharing:', err);
+            const text = `🏢 *${condoName}*\n\n📊 *Resumo Financeiro Virtual - ${currentMonthLabel}/${filters.year}*\n\n🔗 *Acesse o relatório completo aqui:*\n${shareUrl}\n\n⏳ Link válido por ${expires_in}.\n\n_Não é necessário senha._`;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: `Relatório Financeiro - ${condoName}`,
+                        text: text,
+                        url: shareUrl
+                    });
+                } catch (err) {
+                    navigator.clipboard.writeText(text);
+                    setShowShareSuccess(true);
+                }
+            } else {
+                navigator.clipboard.writeText(text);
+                setShowShareSuccess(true);
             }
-        } else {
-            // Fallback to clipboard
-            navigator.clipboard.writeText(text);
-            alert('Resumo copiado para a área de transferência!');
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao gerar link de compartilhamento.");
         }
     };
 
@@ -529,6 +540,29 @@ export const AdminFinancial: React.FC = () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+            {showShareSuccess && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-8 text-center relative">
+                        <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Share2 size={32} />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-800 mb-2">Link Copiado!</h3>
+                        <p className="text-sm text-slate-500 font-medium mb-6">
+                            O link do relatório financeiro foi criado com sucesso e copiado para sua área de transferência.
+                        </p>
+                        <div className="bg-slate-50 p-3 rounded-xl mb-6 border border-slate-100">
+                            <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">Validade</p>
+                            <p className="text-sm font-bold text-slate-700">7 dias</p>
+                        </div>
+                        <button
+                            onClick={() => setShowShareSuccess(false)}
+                            className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all"
+                        >
+                            Entendi
+                        </button>
                     </div>
                 </div>
             )}

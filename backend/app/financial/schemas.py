@@ -71,3 +71,19 @@ class TransactionRead(TransactionBase):
         if v == 'RECEITA': return 'income'
         if v == 'DESPESA': return 'expense'
         return v
+
+class ShareCreate(BaseModel):
+    month: int
+    year: int
+
+class ShareLinkResponse(BaseModel):
+    link: str
+    expires_at: datetime.datetime
+
+class PublicReportResponse(BaseModel):
+    condominium_name: str
+    month: int
+    year: int
+    summary: dict # FinancialSummary
+    transactions: list[TransactionRead]
+    generated_at: datetime.datetime

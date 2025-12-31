@@ -73,5 +73,22 @@ export const FinancialService = {
     getSummary: async (month: number, year: number) => {
         const response = await api.get<FinancialSummary>('/financial/summary', { params: { month, year } });
         return response.data;
+    },
+
+    createShareLink: async (month: number, year: number) => {
+        const response = await api.post<{ link: string; token: string; expires_in: string }>('/financial/share/create', { month, year });
+        return response.data;
+    },
+
+    getPublicReport: async (token: string) => {
+        const response = await api.get<{
+            condominium_name: string;
+            month: number;
+            year: number;
+            summary: FinancialSummary;
+            transactions: Transaction[];
+            generated_at: string;
+        }>(`/financial/public/report/${token}`);
+        return response.data;
     }
 };

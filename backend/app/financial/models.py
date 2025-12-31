@@ -21,3 +21,14 @@ class Transaction(Base):
     observation = Column(Text)
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+
+class FinancialShare(Base):
+    __tablename__ = "financial_shares"
+    id = uuid_pk()
+    condominium_id = Column(UUID(as_uuid=True), ForeignKey("condominiums.id"), nullable=False)
+    token = Column(String(64), unique=True, nullable=False)
+    target_month = Column(DECIMAL(2,0), nullable=False) # or simple Integer
+    target_year = Column(DECIMAL(4,0), nullable=False)
+    expires_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))

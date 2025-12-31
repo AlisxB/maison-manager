@@ -724,3 +724,42 @@ CREATE POLICY documents_resident_policy ON documents FOR SELECT
 -- Audit
 CREATE TRIGGER audit_documents_trigger AFTER INSERT OR UPDATE OR DELETE ON documents
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+-- 14. Financial Shares (Links Temporários)
+CREATE TABLE IF NOT EXISTS financial_shares (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    condominium_id UUID NOT NULL REFERENCES condominiums(id),
+    token VARCHAR(64) UNIQUE NOT NULL, -- Random secure string
+    target_month INTEGER NOT NULL,
+    target_year INTEGER NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE financial_shares ENABLE ROW LEVEL SECURITY;
+
+-- RLS: Only Admin/Financeiro/Sindico can create/view (for their condo)
+CREATE POLICY financial_shares_policy ON financial_shares
+    USING (
+        condominium_id = current_condo_id()
+        AND current_app_role() IN ('ADMIN', 'FINANCEIRO', 'SINDICO')
+    )
+    WITH CHECK (
+        condominium_id = current_condo_id()
+        AND current_app_role() IN ('ADMIN', 'FINANCEIRO', 'SINDICO')
+    );
+
+-- Secure Public Access Function (Bypass RLS for invalid anonymous users)
+CREATE OR REPLACE FUNCTION get_valid_share_token(p_token VARCHAR) 
+RETURNS SETOF financial_shares AS $$
+BEGIN
+    RETURN QUERY SELECT * FROM financial_shares 
+    WHERE token = p_token 
+    AND expires_at > NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Audit
+CREATE TRIGGER audit_financial_shares_trigger AFTER INSERT OR UPDATE OR DELETE ON financial_shares
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();

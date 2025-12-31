@@ -37,10 +37,18 @@ import { ResidentDocuments } from './components/resident/Documents';
 import { AdminDocuments } from './components/admin/Documents';
 import { PrivacyPolicy } from './components/common/PrivacyPolicy';
 import { TermsOfUse } from './components/common/TermsOfUse';
+import { PublicReport } from './pages/PublicReport';
 
 const AppContent: React.FC = () => {
   const { signed, user, signOut, loading } = useAuth();
   const [currentView, setCurrentView] = React.useState<string>('admin_dashboard');
+
+  // Check for Public Report URL
+  const isPublicReport = window.location.pathname.includes('/relatorio-financeiro/');
+
+  if (isPublicReport) {
+    return <PublicReport />;
+  }
 
   useEffect(() => {
     if (user) {
