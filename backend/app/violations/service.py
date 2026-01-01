@@ -16,8 +16,8 @@ class ViolationService:
         return await self.repo.get_all(condo_id, filter_user)
 
     async def create_violation(self, data: ViolationCreate, role: str, condo_id: UUID) -> Violation:
-        if role != 'ADMIN':
-             raise HTTPException(status_code=403, detail="Not authorized")
+        if role not in ['ADMIN', 'SINDICO']:
+            raise HTTPException(status_code=403, detail="Not authorized")
              
         violation = Violation(
             condominium_id=condo_id,
@@ -33,11 +33,11 @@ class ViolationService:
         # if violation.type == 'MULTA' and violation.amount > 0: ...
         
         await self.db.commit()
-        await self.db.refresh(violation)
-        return violation
+        # Fetch the created violation again to ensure relationships (bylaw) are loaded
+        return await self.repo.get_by_id(violation.id, condo_id)
 
     async def update_violation(self, id: UUID, data: ViolationUpdate, role: str, condo_id: UUID) -> Violation:
-        if role != 'ADMIN':
+        if role not in ['ADMIN', 'SINDICO']:
             raise HTTPException(status_code=403, detail="Not authorized")
             
         v = await self.repo.get_by_id(id, condo_id)
@@ -48,11 +48,11 @@ class ViolationService:
             setattr(v, k, val)
             
         await self.db.commit()
-        await self.db.refresh(v)
-        return v
+        # Re-fetch to ensure relationships are up-to-date and loaded
+        return await self.repo.get_by_id(v.id, condo_id)
 
     async def delete_violation(self, id: UUID, role: str, condo_id: UUID) -> None:
-        if role != 'ADMIN':
+        if role not in ['ADMIN', 'SINDICO']:
             raise HTTPException(status_code=403, detail="Not authorized")
             
         v = await self.repo.get_by_id(id, condo_id)

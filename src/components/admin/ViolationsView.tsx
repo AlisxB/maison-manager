@@ -51,11 +51,16 @@ export const ViolationsView: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await ViolationService.create(formData as ViolationCreate);
+            const payload = {
+                ...formData,
+                bylaw_id: formData.bylaw_id || null // Send null if empty string
+            };
+            await ViolationService.create(payload as ViolationCreate);
             setShowModal(false);
             loadData();
-        } catch (error) {
-            alert('Erro ao criar infração');
+        } catch (error: any) {
+            console.error("Error creating violation:", error);
+            alert('Erro ao criar infração: ' + (error.response?.data?.detail || error.message));
         }
     };
 
@@ -250,7 +255,7 @@ export const ViolationsView: React.FC = () => {
 
                             <div className="flex gap-2 pt-4">
                                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 bg-slate-100 rounded-lg text-slate-600 font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
-                                <button type="submit" className="flex-1 py-2 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-700 transition-all">
+                                <button type="submit" className="flex-1 py-2 bg-[#437476] text-white rounded-lg font-bold hover:bg-[#365e5f] transition-all shadow-lg shadow-[#437476]/20">
                                     Gerar {formData.type === 'MULTA' ? 'Multa' : 'Notificação'}
                                 </button>
                             </div>
