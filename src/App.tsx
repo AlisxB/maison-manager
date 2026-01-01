@@ -4,6 +4,7 @@ import AuthScreen from './components/auth/AuthScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CondominiumProvider } from './context/CondominiumContext';
 import { Role } from './types/index';
+import { RoleSelectionScreen } from './components/common/RoleSelectionScreen';
 
 // Admin Components (Modularized)
 import { AdminDashboard } from './components/admin/Dashboard';
@@ -52,9 +53,15 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      // Redirecionar para dashboard correto baseado no ROL do token
-      const adminRoles = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'CONSELHO', 'PORTEIRO', 'FINANCEIRO'];
-      setCurrentView(adminRoles.includes(user.role) ? 'admin_dashboard' : 'resident_dashboard');
+      if (user.role === 'ADMIN') {
+        setCurrentView('admin_dashboard');
+      } else if (['SINDICO', 'SUBSINDICO', 'CONSELHO', 'FINANCEIRO', 'PORTEIRO'].includes(user.role)) {
+        // Dual role users get to choose
+        setCurrentView('role_selection');
+      } else {
+        // Residents go straight to resident dashboard
+        setCurrentView('resident_dashboard');
+      }
     }
   }, [user]);
 
@@ -64,6 +71,7 @@ const AppContent: React.FC = () => {
 
   const renderContent = () => {
     switch (currentView) {
+      case 'role_selection': return <RoleSelectionScreen onSelect={setCurrentView} />;
       case 'admin_dashboard': return <AdminDashboard />;
       case 'admin_units': return <AdminUnits />;
       case 'admin_readings': return <AdminReadings />;
@@ -102,6 +110,10 @@ const AppContent: React.FC = () => {
     // AuthScreen agora vai usar o hook useAuth internamente ou passar a função, 
     // mas idealmente AuthScreen chama o serviço de login e usa o contexto.
     return <AuthScreen />;
+  }
+
+  if (currentView === 'role_selection') {
+    return <RoleSelectionScreen onSelect={setCurrentView} />;
   }
 
   return (
