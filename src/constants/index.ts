@@ -22,6 +22,7 @@ import { NavItem } from '../types';
 
 export const ADMIN_NAV: NavItem[] = [
   { id: 'dashboard', label: 'Painel', icon: LayoutDashboard, view: 'admin_dashboard', allowedRoles: ['ADMIN', 'SINDICO', 'SUBSINDICO', 'CONSELHO', 'FINANCEIRO'] },
+  { id: 'units', label: 'Unidades', icon: Building, view: 'admin_units', allowedRoles: ['ADMIN', 'SINDICO'] },
   { id: 'readings', label: 'Leituras', icon: BarChart3, view: 'admin_readings', allowedRoles: ['ADMIN', 'SINDICO', 'SUBSINDICO'] },
   { id: 'residents', label: 'Moradores', icon: Users, view: 'admin_residents', allowedRoles: ['ADMIN', 'SINDICO', 'SUBSINDICO', 'PORTEIRO'] },
   { id: 'requests', label: 'Solicitações', icon: ClipboardList, view: 'admin_requests', allowedRoles: ['ADMIN', 'SINDICO'] },

@@ -111,7 +111,7 @@ function SettingsMenu({ onNavigate }: { onNavigate: (view: SettingsView) => void
 
     const menuItems = [
         { id: 'condo_data', title: 'Dados do Condomínio', desc: 'Nome, endereço e CNPJ.', icon: Building, allowedRoles: ['ADMIN'] },
-        { id: 'units', title: 'Gestão de Unidades', desc: 'Gerenciar blocos, unidades e criar lotes.', icon: Building, allowedRoles: ['ADMIN'] },
+        { id: 'units', title: 'Gestão de Unidades', desc: 'Gerenciar blocos, unidades e criar lotes.', icon: Building, allowedRoles: ['ADMIN', 'SINDICO'] },
         { id: 'inventory', title: 'Gestão de Estoque', desc: 'Controle de suprimentos e materiais.', icon: Package, allowedRoles: ['ADMIN', 'SINDICO'] },
         { id: 'users', title: 'Gestão de Usuários Administrativos', desc: 'Adicionar ou remover administradores e porteiros.', icon: Users, allowedRoles: ['ADMIN'] },
         { id: 'booking_rules', title: 'Regras de Reservas', desc: 'Definir horários, limites e valores.', icon: Calendar, allowedRoles: ['ADMIN', 'SINDICO', 'SUBSINDICO'] },
@@ -1008,7 +1008,6 @@ function BylawsView({ onBack }: { onBack: () => void }) {
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase">Categoria</label>
                                 <select className="w-full p-2 border rounded-lg mt-1 bg-white" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
-                                    <option value="Norma">Norma Geral</option>
                                     <option value="Multa">Infração / Multa</option>
                                     <option value="Aviso">Aviso / Comunicado</option>
                                 </select>
