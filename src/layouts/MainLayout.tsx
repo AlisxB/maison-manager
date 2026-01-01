@@ -118,16 +118,23 @@ const MainLayout: React.FC<LayoutProps> = ({
   }, [user, role, currentView]); // Refresh when view changes to update counts? Might be too heavy. Maybe just on mount and periodic? keeping simple for now.
 
   const adminRoles = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'CONSELHO', 'PORTEIRO', 'FINANCEIRO'];
-  const isAdmin = adminRoles.includes(role);
 
-  const navItems = isAdmin ? ADMIN_NAV : RESIDENT_NAV;
-  const sidebarBg = isAdmin ? 'bg-[#1e3a3a]' : 'bg-emerald-900';
+  // Determine if we should show Admin or Resident Sidebar
+  // If the user is on a Resident View, show Resident Sidebar regardless of their actual Role.
+  // Otherwise, fallback to their Role capabilities.
+  const isResidentView = currentView.startsWith('resident_');
+  const showAdminSidebar = adminRoles.includes(role) && !isResidentView;
+
+  const navItems = showAdminSidebar ? ADMIN_NAV : RESIDENT_NAV;
+  const sidebarBg = showAdminSidebar ? 'bg-[#1e3a3a]' : 'bg-emerald-900';
   const sidebarText = 'text-slate-300';
-  const activeItemBg = isAdmin ? 'bg-[#264949] text-white border-l-4 border-yellow-500' : 'bg-emerald-800 text-white';
-  const hoverItemBg = isAdmin ? 'hover:bg-[#264949] hover:text-white' : 'hover:bg-emerald-800 hover:text-white';
+  const activeItemBg = showAdminSidebar ? 'bg-[#264949] text-white border-l-4 border-yellow-500' : 'bg-emerald-800 text-white';
+  const hoverItemBg = showAdminSidebar ? 'hover:bg-[#264949] hover:text-white' : 'hover:bg-emerald-800 hover:text-white';
 
   const getBadge = (view: string) => {
-    if (role !== 'ADMIN') return null;
+    // Badges are for Admin items mostly
+    if (!showAdminSidebar) return null;
+
     let count = 0;
     if (view === 'admin_issues') count = pendingCounts.occurrences;
     if (view === 'admin_requests') count = pendingCounts.access_requests;
@@ -146,7 +153,7 @@ const MainLayout: React.FC<LayoutProps> = ({
   const NavContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 flex items-center gap-3 mb-2">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-slate-900 shadow-lg ${isAdmin ? 'bg-yellow-500' : 'bg-white'}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-slate-900 shadow-lg ${showAdminSidebar ? 'bg-yellow-500' : 'bg-white'}`}>
           <Home size={24} fill="currentColor" strokeWidth={1.5} />
         </div>
         <div>
@@ -179,7 +186,7 @@ const MainLayout: React.FC<LayoutProps> = ({
         </nav>
       </div>
 
-      <div className={`p-6 border-t ${isAdmin ? 'border-[#2a4a4a]' : 'border-emerald-800'}`}>
+      <div className={`p-6 border-t ${showAdminSidebar ? 'border-[#2a4a4a]' : 'border-emerald-800'}`}>
         <button onClick={onLogout} className="flex items-center gap-3 w-full group transition-colors">
           <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-white border border-slate-600 group-hover:border-yellow-500 transition-colors">
             <span className="font-medium">N</span>
@@ -262,14 +269,14 @@ const MainLayout: React.FC<LayoutProps> = ({
                   className="flex items-center gap-3 hover:bg-slate-50 p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-slate-200"
                 >
                   <div className="h-9 w-9 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-medium shadow-sm ring-2 ring-white">
-                    {user?.name?.charAt(0) || (isAdmin ? 'A' : 'M')}
+                    {user?.name?.charAt(0) || (showAdminSidebar ? 'A' : 'M')}
                   </div>
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-semibold text-slate-700 leading-none">
-                      {user?.name || (isAdmin ? 'Administrador' : 'Morador')}
+                      {user?.name || (showAdminSidebar ? 'Administrador' : 'Morador')}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {isAdmin ? 'Gestor' : (user?.unit ? `Unidade ${user.unit}` : 'Residente')}
+                      {showAdminSidebar ? 'Gestor' : (user?.unit ? `Unidade ${user.unit}` : 'Residente')}
                     </p>
                   </div>
                 </button>
@@ -279,8 +286,8 @@ const MainLayout: React.FC<LayoutProps> = ({
                     <div className="p-2 space-y-1">
                       <button
                         onClick={() => {
-                          if (role === 'RESIDENT' || role === 'RESIDENTE') onNavigate('resident_profile');
-                          else if (isAdmin) onNavigate('admin_profile');
+                          if (role === 'RESIDENT' || role === 'RESIDENTE' || !showAdminSidebar) onNavigate('resident_profile');
+                          else if (showAdminSidebar) onNavigate('admin_profile');
                           setIsProfileMenuOpen(false);
                         }}
                         className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
