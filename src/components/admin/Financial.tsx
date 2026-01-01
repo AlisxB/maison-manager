@@ -189,10 +189,6 @@ export const AdminFinancial: React.FC = () => {
 
     const handleShare = async () => {
         const condoName = condominium?.name || 'Maison Manager';
-        // const incomeFmt = summary.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        // const expenseFmt = summary.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        // const balanceFmt = summary.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
         try {
             const { token, expires_in } = await FinancialService.createShareLink(Number(filters.month), Number(filters.year));
             const shareUrl = `${window.location.origin}/relatorio-financeiro/${token}`;
@@ -223,13 +219,14 @@ export const AdminFinancial: React.FC = () => {
     const currentMonthLabel = months.find(m => m.val === filters.month)?.label.substring(0, 3);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Header Responsivo */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-[#437476]">Gestão Financeira</h2>
                     <p className="text-sm text-slate-500 mt-1">Fluxo de caixa, contas a pagar e receber.</p>
                 </div>
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <button onClick={handleShare} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all shadow-sm">
                         <Share2 size={16} /> Compartilhar
                     </button>
@@ -239,9 +236,9 @@ export const AdminFinancial: React.FC = () => {
                     {canManage && (
                         <button
                             onClick={openNewModal}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-bold hover:bg-[#365e5f] shadow-lg shadow-[#437476]/20 transition-all"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-bold hover:bg-[#365e5f] shadow-lg shadow-[#437476]/20 transition-all whitespace-nowrap"
                         >
-                            <Plus size={16} /> Nova Transação
+                            <Plus size={18} /> Nova Transação
                         </button>
                     )}
                 </div>
@@ -289,48 +286,107 @@ export const AdminFinancial: React.FC = () => {
                             <p className="text-sm text-slate-500 font-medium">Histórico detalhado de movimentações.</p>
                         </div>
 
-                        {/* Filters Bar */}
-                        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                            <div className="relative flex-1 sm:flex-none min-w-[140px]">
-                                <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black text-slate-400 uppercase tracking-tighter">Categoria</label>
+                        {/* Filters Bar Responsive */}
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                            <div className="relative flex-1 w-full sm:min-w-[160px]">
+                                <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black text-slate-400 uppercase tracking-tighter z-10">Categoria</label>
                                 <select
-                                    className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]/10 focus:border-[#437476] appearance-none"
+                                    className="w-full pl-3 pr-8 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]/10 focus:border-[#437476] appearance-none"
                                     value={filters.category}
                                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                                 >
                                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                 </select>
-                                <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                                <ChevronDown size={14} className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" />
                             </div>
 
-                            <div className="relative flex-1 sm:flex-none min-w-[120px]">
-                                <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black text-slate-400 uppercase tracking-tighter">Mês</label>
-                                <select
-                                    className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]/10 focus:border-[#437476] appearance-none"
-                                    value={filters.month}
-                                    onChange={(e) => setFilters({ ...filters, month: e.target.value })}
-                                >
-                                    {months.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
-                            </div>
+                            <div className="flex flex-row gap-3 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:min-w-[130px]">
+                                    <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black text-slate-400 uppercase tracking-tighter z-10">Mês</label>
+                                    <select
+                                        className="w-full pl-3 pr-8 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]/10 focus:border-[#437476] appearance-none"
+                                        value={filters.month}
+                                        onChange={(e) => setFilters({ ...filters, month: e.target.value })}
+                                    >
+                                        {months.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" />
+                                </div>
 
-                            <div className="relative flex-1 sm:flex-none min-w-[100px]">
-                                <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black text-slate-400 uppercase tracking-tighter">Ano</label>
-                                <select
-                                    className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]/10 focus:border-[#437476] appearance-none"
-                                    value={filters.year}
-                                    onChange={(e) => setFilters({ ...filters, year: e.target.value })}
-                                >
-                                    {years.map(y => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                                <div className="relative flex-1 sm:min-w-[110px]">
+                                    <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black text-slate-400 uppercase tracking-tighter z-10">Ano</label>
+                                    <select
+                                        className="w-full pl-3 pr-8 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-[#437476]/10 focus:border-[#437476] appearance-none"
+                                        value={filters.year}
+                                        onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                                    >
+                                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Mobile Card List */}
+                <div className="md:hidden">
+                    {loading ? (
+                        <div className="p-12 text-center text-slate-400 text-sm font-medium">Carregando transações...</div>
+                    ) : transactions.length === 0 ? (
+                        <div className="p-12 text-center text-slate-400 text-sm font-medium">Nenhuma transação encontrada.</div>
+                    ) : (
+                        <div className="p-4 space-y-4">
+                            {transactions.map(t => (
+                                <div key={t.id} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 active:scale-[0.99] transition-transform">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex-1">
+                                            <span className="font-bold text-slate-800 text-base leading-tight block mb-1">{t.description}</span>
+                                            <span className="text-xs text-slate-500 font-medium">{new Date(t.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                                        </div>
+                                        <span className={`text-base font-black ${t.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+                                            {t.type === 'income' ? '+' : '-'}{Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wide">
+                                            {t.category}
+                                        </span>
+                                        <button
+                                            onClick={() => handleStatusToggle(t)}
+                                            disabled={!canManage}
+                                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${canManage ? 'active:scale-95' : 'opacity-70'} ${t.status === 'paid' ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-amber-700 bg-amber-50 border-amber-100'
+                                                }`}
+                                        >
+                                            {t.status === 'paid' ? 'Pago' : 'Pendente'}
+                                        </button>
+                                    </div>
+
+                                    {canManage && (
+                                        <div className="flex gap-2 pt-3 border-t border-slate-50">
+                                            <button
+                                                onClick={() => openEditModal(t)}
+                                                className="flex-1 flex items-center justify-center gap-2 py-2 bg-[#437476]/5 text-[#437476] rounded-lg text-sm font-bold active:bg-[#437476]/10 transition-colors"
+                                            >
+                                                <FileText size={16} /> Editar
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(t.id)}
+                                                className="w-10 flex items-center justify-center bg-red-50 text-red-500 rounded-lg active:bg-red-100 transition-colors"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     {loading ? (
                         <div className="p-12 text-center text-slate-400 text-sm font-medium">Carregando transações...</div>
                     ) : transactions.length === 0 ? (
@@ -382,7 +438,7 @@ export const AdminFinancial: React.FC = () => {
                                         <td className="px-8 py-5 text-right flex items-center justify-end gap-2">
                                             {canManage && (
                                                 <>
-                                                    <button onClick={() => openEditModal(t)} className="p-2 text-slate-300 hover:text-[#437476] hover:bg-slate-100 rounded-lg transition-all" title="Editar">
+                                                    <button onClick={() => openEditModal(t)} className="p-2 text-slate-300 hover:text-[#437476] hover:bg-[#437476]/10 rounded-lg transition-all" title="Editar">
                                                         <FileText size={16} />
                                                     </button>
                                                     <button onClick={() => handleDelete(t.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Excluir">
@@ -401,7 +457,7 @@ export const AdminFinancial: React.FC = () => {
 
             {isTxModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-[#fcfbf9] rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative border border-slate-200/50">
+                    <div className="bg-[#fcfbf9] rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative border border-slate-200/50 max-h-[90vh] flex flex-col">
                         <button
                             onClick={() => setIsTxModalOpen(false)}
                             className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 bg-white p-2 rounded-full shadow-sm z-10 transition-colors"
@@ -409,7 +465,7 @@ export const AdminFinancial: React.FC = () => {
                             <X size={20} />
                         </button>
 
-                        <div className="px-8 py-10">
+                        <div className="px-8 py-8 overflow-y-auto custom-scrollbar flex-1">
                             <div className="mb-8">
                                 <h3 className="text-2xl font-black text-slate-800 tracking-tight">{editingId ? 'Editar Transação' : 'Adicionar Nova Transação'}</h3>
                                 <p className="text-sm text-slate-500 font-medium mt-1">{editingId ? 'Atualize os detalhes da transação.' : 'Preencha os detalhes para registrar uma nova movimentação financeira.'}</p>
@@ -439,7 +495,7 @@ export const AdminFinancial: React.FC = () => {
 
                                 {/* Descrição */}
                                 <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descriçãomanager/backend/db/init.sql</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descrição</label>
                                     <div className="relative group">
                                         <AlignLeft size={18} className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-[#437476] transition-colors" />
                                         <input
@@ -538,6 +594,7 @@ export const AdminFinancial: React.FC = () => {
                                 >
                                     {editingId ? 'Salvar Alterações' : 'Registrar Transação'}
                                 </button>
+                                <div className="h-4 md:hidden"></div>
                             </div>
                         </div>
                     </div>
