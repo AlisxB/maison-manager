@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CondominiumProvider } from './context/CondominiumContext';
 import { Role } from './types/index';
 import { RoleSelectionScreen } from './components/common/RoleSelectionScreen';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Admin Components (Modularized)
 import { AdminDashboard } from './components/admin/Dashboard';
@@ -51,17 +52,24 @@ const AppContent: React.FC = () => {
     return <PublicReport />;
   }
 
+  const hasRedirected = React.useRef(false);
+
   useEffect(() => {
     if (user) {
-      if (user.role === 'ADMIN') {
-        setCurrentView('admin_dashboard');
-      } else if (['SINDICO', 'SUBSINDICO', 'CONSELHO', 'FINANCEIRO', 'PORTEIRO'].includes(user.role)) {
-        // Dual role users get to choose
-        setCurrentView('role_selection');
-      } else {
-        // Residents go straight to resident dashboard
-        setCurrentView('resident_dashboard');
+      if (!hasRedirected.current) {
+        if (user.role === 'ADMIN') {
+          setCurrentView('admin_dashboard');
+        } else if (['SINDICO', 'SUBSINDICO', 'CONSELHO', 'FINANCEIRO', 'PORTEIRO'].includes(user.role)) {
+          // Dual role users get to choose
+          setCurrentView('role_selection');
+        } else {
+          // Residents go straight to resident dashboard
+          setCurrentView('resident_dashboard');
+        }
+        hasRedirected.current = true;
       }
+    } else {
+      hasRedirected.current = false;
     }
   }, [user]);
 
@@ -130,11 +138,13 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <CondominiumProvider>
-        <AppContent />
-      </CondominiumProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CondominiumProvider>
+          <AppContent />
+        </CondominiumProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 
