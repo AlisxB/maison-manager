@@ -130,19 +130,19 @@ export const AdminUnits: React.FC = () => {
     });
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
 
             {/* Header & Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
                 <div className="md:col-span-1">
                     <h2 className="text-2xl font-black text-[#437476] tracking-tight">Gestão de Unidades</h2>
                     <p className="text-sm text-slate-500 mt-1 font-medium">Controle de ocupação e cadastro.</p>
                 </div>
 
-                {/* Stats Cards */}
+                {/* Stats Cards - Responsive Grid */}
                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de Unidades</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Total de Unidades</p>
                         <p className="text-2xl font-black text-slate-700">{totalUnits}</p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
@@ -152,7 +152,7 @@ export const AdminUnits: React.FC = () => {
 
                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Taxa de Ocupação</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Taxa de Ocupação</p>
                         <p className="text-2xl font-black text-[#437476]">{occupancyRate}%</p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-[#437476]">
@@ -162,7 +162,7 @@ export const AdminUnits: React.FC = () => {
 
                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unidades Vagas</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Unidades Vagas</p>
                         <p className="text-2xl font-black text-slate-700">{vacantUnits}</p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
@@ -184,30 +184,100 @@ export const AdminUnits: React.FC = () => {
                     />
                 </div>
 
-                <div className="relative w-full sm:w-48">
-                    <select
-                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476]/20 transition-all font-medium text-slate-700 appearance-none"
-                        value={filterBlock}
-                        onChange={e => setFilterBlock(e.target.value)}
-                    >
-                        <option value="">Todos os Blocos</option>
-                        {uniqueBlocks.map(block => (
-                            <option key={block} value={block || ''}>{block}</option>
-                        ))}
-                    </select>
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-48">
+                        <select
+                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476]/20 transition-all font-medium text-slate-700 appearance-none"
+                            value={filterBlock}
+                            onChange={e => setFilterBlock(e.target.value)}
+                        >
+                            <option value="">Todos os Blocos</option>
+                            {uniqueBlocks.map(block => (
+                                <option key={block} value={block || ''}>{block}</option>
+                            ))}
+                        </select>
+                    </div>
+                    {user?.role === 'ADMIN' && (
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#437476] text-white rounded-xl text-sm font-bold hover:bg-[#365e5f] transition-all shadow-sm hover:shadow-md active:scale-95"
+                        >
+                            <PlusCircle size={18} /> <span className="sm:hidden">Nova</span> <span className="hidden sm:inline">Nova Unidade</span>
+                        </button>
+                    )}
                 </div>
-                {user?.role === 'ADMIN' && (
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#437476] text-white rounded-xl text-sm font-bold hover:bg-[#365e5f] transition-all shadow-sm hover:shadow-md"
-                    >
-                        <PlusCircle size={18} /> Nova Unidade
-                    </button>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {loading ? (
+                    <div className="p-8 text-center text-slate-400 font-medium">Carregando unidades...</div>
+                ) : filteredUnits.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 font-medium bg-white rounded-xl border border-slate-200">Nenhuma unidade encontrada.</div>
+                ) : (
+                    filteredUnits.map(u => {
+                        const status = getUnitStatus(u.id);
+                        const unitResidents = getUnitResidents(u.id);
+                        return (
+                            <div key={u.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm active:scale-[0.99] transition-transform">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-slate-800">{u.number}</h3>
+                                        {u.block && <p className="text-xs font-bold text-slate-400">Bloco {u.block}</p>}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <button
+                                            onClick={() => handleViewDetails(u.id)}
+                                            className="p-2 text-slate-400 hover:text-[#437476] bg-slate-50 rounded-lg transition-colors"
+                                        >
+                                            <Eye size={20} />
+                                        </button>
+                                        {status === 'OCUPADA' ? (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wide">
+                                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                                Ocupada
+                                            </span>
+                                        ) : (
+                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 uppercase tracking-wide border border-slate-200">
+                                                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                                                Vaga
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-3">
+                                    <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide">
+                                        {u.type || 'Apartamento'}
+                                    </span>
+
+                                    <div className="flex -space-x-2 pl-2">
+                                        {unitResidents.length > 0 ? (
+                                            <>
+                                                {unitResidents.slice(0, 3).map((res) => (
+                                                    <div key={res.id} className="w-8 h-8 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-black text-slate-600 uppercase bg-gradient-to-br from-slate-100 to-slate-200">
+                                                        {res.name.charAt(0)}
+                                                    </div>
+                                                ))}
+                                                {unitResidents.length > 3 && (
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
+                                                        +{unitResidents.length - 3}
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <span className="text-xs text-slate-400 italic">Vazio</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })
                 )}
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <table className="w-full text-left text-sm text-slate-600">
                     <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
                         <tr>
