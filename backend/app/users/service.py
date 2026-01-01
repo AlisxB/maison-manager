@@ -133,12 +133,9 @@ class UserService:
         target_unit = user_in.unit_id if user_in.unit_id is not None else db_user.unit_id
         target_profile = user_in.profile_type if user_in.profile_type else db_user.profile_type
         
-        # Only validate if something relevant for occupancy changed
-        if (user_in.unit_id is not None and user_in.unit_id != db_user.unit_id) or \
-           (user_in.profile_type and user_in.profile_type != db_user.profile_type) or \
-           (user_in.status == 'ATIVO' and db_user.status != 'ATIVO'):
-                if target_unit and target_profile:
-                     await self._validate_unit_occupancy(target_unit, target_profile, exclude_user_id=db_user.id)
+        # Always validate occupancy to ensure consistency, excluding self
+        if target_unit and target_profile:
+             await self._validate_unit_occupancy(target_unit, target_profile, exclude_user_id=db_user.id)
         
         if occupation_changed:
             # 1. Close current open history
@@ -222,8 +219,48 @@ class UserService:
         # Security Check: Non-Admin can only delete Residents
         if current_user_role != 'ADMIN' and db_user.role != 'RESIDENTE':
              raise HTTPException(status_code=403, detail="Você só pode excluir Moradores.")
+
+        # Business Rule: Cannot delete user with special role (must demote first)
+        if db_user.role not in ['RESIDENTE', 'INQUILINO', 'PROPRIETARIO']: # Just in case data is mixed, but mostly RESIDENTE.
+             # Actually, role is ENUM-like. SINDICO, SUBSINDICO, ETC.
+             # If they have ANY role other than RESIDENTE (or implicit resident roles), block.
+             if db_user.role != 'RESIDENTE':
+                  raise HTTPException(
+                      status_code=400, 
+                      detail=f"Este usuário possui o cargo de {db_user.role}. É necessário remover o cargo (tornar Morador) antes de inativá-lo."
+                  )
+
+        # Soft Delete Logic to preserve History
+        
+        # 1. Close any open Occupation History
+        from sqlalchemy import select, and_
+        stmt = select(OccupationHistory).where(
+            and_(
+                OccupationHistory.user_id == db_user.id,
+                OccupationHistory.end_date.is_(None)
+            )
+        )
+        result = await self.db.execute(stmt)
+        open_history = result.scalars().all()
+        for history in open_history:
+            history.end_date = datetime.now()
             
-        await self.repo.delete(db_user)
+        # 2. Update User Record
+        db_user.status = "INATIVO"
+        db_user.deleted_at = datetime.now()
+        db_user.unit_id = None # Free up unit
+        db_user.password_hash = "DELETED_USER_NO_LOGIN"
+        
+        # Free up email constraint to allow re-registration if needed
+        # Appending timestamp to email_hash (assuming uniqueness is on this column or tuple)
+        # Note: email_encrypted is for display/recovery, hash is for uniqueness.
+        timestamp_suffix = f"_DEL_{int(datetime.now().timestamp())}"
+        db_user.email_hash = f"{db_user.email_hash}{timestamp_suffix}"[:64] # Ensure fits in 64 chars? 
+        # Wait, SHA256 hex is 64 chars exactly. Appending makes it longer. Column is String(64).
+        # We must re-hash or truncate. 
+        # Better: Re-hash the string "old_hash + timestamp"
+        db_user.email_hash = hashlib.sha256(f"{db_user.email_hash}{timestamp_suffix}".encode()).hexdigest()
+
         await self.db.commit()
 
     async def get_my_history(self, user_id: str) -> List[AccessLog]:
