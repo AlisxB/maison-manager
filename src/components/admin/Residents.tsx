@@ -32,27 +32,21 @@ export const AdminResidents: React.FC = () => {
     // Filters
     const [filterType, setFilterType] = useState<string>(''); // '' = Todos
     const [filterBlock, setFilterBlock] = useState<string>(''); // '' = Todos
+    const [showInactive, setShowInactive] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState('');
 
     const uniqueBlocks = React.useMemo(() => {
         return Array.from(new Set(units.map(u => u.block).filter(Boolean))).sort();
     }, [units]);
 
-    React.useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = async () => {
         try {
             setLoading(true);
             const [usersData, unitsData] = await Promise.all([
-                UserService.getAll(), // FETCH ALL, don't filter.
+                UserService.getAll(),
                 UnitService.getAll()
             ]);
-            // Show all relevant users. SINDICO should manage all except ADMIN?
-            // For now show all non-admin or all?
-            // Let's list everyone to allow editing roles.
-            setResidents(usersData); // Show all users
+            setResidents(usersData);
             setUnits(unitsData);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
@@ -60,6 +54,10 @@ export const AdminResidents: React.FC = () => {
             setLoading(false);
         }
     };
+
+    React.useEffect(() => {
+        loadData();
+    }, []);
 
     const getUnitName = (unitId?: string) => {
         if (!unitId) return '-';
@@ -83,16 +81,9 @@ export const AdminResidents: React.FC = () => {
 
     const formatDateToISO = (dateStr: string) => {
         if (!dateStr) return '';
-        if (dateStr.includes('-')) return dateStr; // Already ISO
+        if (dateStr.includes('-')) return dateStr;
         const [day, month, year] = dateStr.split('/');
         return `${year}-${month}-${day}`;
-    };
-
-    const formatDateFromISO = (dateStr: string) => {
-        if (!dateStr) return '';
-        if (dateStr.includes('/')) return dateStr; // Already BR
-        const [year, month, day] = dateStr.split('T')[0].split('-');
-        return `${day}/${month}/${year}`;
     };
 
     const resetForm = () => {
@@ -126,12 +117,12 @@ export const AdminResidents: React.FC = () => {
             phone: resident.phone ? formatPhoneNumber(resident.phone) : '',
             block: unit?.block || '',
             unit: unit?.number || '',
-            entryDate: '01/01/2025', // Mock or fetch actual
+            entryDate: '01/01/2025',
             exitDate: '',
             registeredBy: user?.name || 'Admin',
             profile_type: resident.profile_type || 'INQUILINO',
             role: resident.role || 'RESIDENTE',
-            password: '' // Don't fill password on edit
+            password: ''
         });
         setEditingId(resident.id);
         setIsAddResidentModalOpen(true);
@@ -143,7 +134,6 @@ export const AdminResidents: React.FC = () => {
 
     const handleSaveResident = async () => {
         try {
-            // Encontrar ID da unidade baseada na seleção
             const blockInput = residentForm.block.trim();
             const numberInput = residentForm.unit.trim();
 
@@ -169,8 +159,6 @@ export const AdminResidents: React.FC = () => {
                 ...(editingId ? (residentForm.password ? { password: residentForm.password } : {}) : (residentForm.password ? { password: residentForm.password } : {})),
             };
 
-
-
             if (editingId) {
                 await UserService.update(editingId, payload);
                 alert('Morador atualizado com sucesso!');
@@ -180,8 +168,8 @@ export const AdminResidents: React.FC = () => {
             }
 
             setIsAddResidentModalOpen(false);
-            resetForm(); // Clear form
-            loadData(); // Recarregar
+            resetForm();
+            loadData();
         } catch (error: any) {
             const msg = error.response?.data?.detail
                 ? (typeof error.response.data.detail === 'object' ? JSON.stringify(error.response.data.detail) : error.response.data.detail)
@@ -190,8 +178,6 @@ export const AdminResidents: React.FC = () => {
             console.error(error);
         }
     };
-
-    // Pet helpers removed
 
     const canEdit = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO'].includes(user?.role || '');
 
@@ -213,7 +199,7 @@ export const AdminResidents: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-200 flex gap-4">
+                <div className="p-4 border-b border-slate-200 flex flex-wrap gap-4 items-center justify-between">
                     <div className="relative flex-1 max-w-sm">
                         <Search size={18} className="absolute left-3 top-2.5 text-slate-400" />
                         <input
@@ -225,25 +211,37 @@ export const AdminResidents: React.FC = () => {
                         />
                     </div>
 
-                    <div className="flex gap-2">
-                        <select
-                            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#437476] text-slate-600 cursor-pointer"
-                            value={filterBlock}
-                            onChange={(e) => setFilterBlock(e.target.value)}
-                        >
-                            <option value="">Todos os Blocos</option>
-                            {uniqueBlocks.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
+                    <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={showInactive}
+                                onChange={(e) => setShowInactive(e.target.checked)}
+                                className="w-4 h-4 text-[#437476] rounded border-slate-300 focus:ring-[#437476]"
+                            />
+                            Mostrar Inativos
+                        </label>
 
-                        <select
-                            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#437476] text-slate-600 cursor-pointer"
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                        >
-                            <option value="">Todos os Tipos</option>
-                            <option value="PROPRIETARIO">Proprietário</option>
-                            <option value="INQUILINO">Inquilino</option>
-                        </select>
+                        <div className="flex gap-2">
+                            <select
+                                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#437476] text-slate-600 cursor-pointer"
+                                value={filterBlock}
+                                onChange={(e) => setFilterBlock(e.target.value)}
+                            >
+                                <option value="">Todos os Blocos</option>
+                                {uniqueBlocks.map(b => <option key={b} value={b}>{b}</option>)}
+                            </select>
+
+                            <select
+                                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#437476] text-slate-600 cursor-pointer"
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                            >
+                                <option value="">Todos os Tipos</option>
+                                <option value="PROPRIETARIO">Proprietário</option>
+                                <option value="INQUILINO">Inquilino</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <table className="w-full text-left text-sm text-slate-600">
@@ -260,6 +258,11 @@ export const AdminResidents: React.FC = () => {
                     <tbody className="divide-y divide-slate-100">
                         {loading ? <tr><td colSpan={6} className="p-4 text-center">Carregando...</td></tr> : residents
                             .filter(res => {
+                                // Default Filter: Hide Inactive
+                                if (!showInactive && res.status === 'INATIVO') {
+                                    return false;
+                                }
+
                                 // Search Filter
                                 if (searchTerm) {
                                     const lowerTerm = searchTerm.toLowerCase();
@@ -299,13 +302,11 @@ export const AdminResidents: React.FC = () => {
                                     <td className="px-6 py-4">{getUnitName(res.unit_id)}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col text-xs">
-                                            {/* Backend agora decripta. Se falhar, mostra o valor cru ou placeholder do backend */}
                                             <span>{res.email}</span>
                                             <span className="text-slate-400">{res.phone || '-'}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        {/* Tradução de Role/Profile */}
                                         {(() => {
                                             const type = res.profile_type || res.role;
                                             const map: Record<string, string> = {
@@ -342,13 +343,32 @@ export const AdminResidents: React.FC = () => {
                                             <Eye size={16} />
                                         </button>
                                         {canEdit && (
-                                            <button
-                                                onClick={() => handleEdit(res)}
-                                                className="text-slate-400 hover:text-[#437476] mx-1"
-                                                title="Editar"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => handleEdit(res)}
+                                                    className="text-slate-400 hover:text-[#437476] mx-1"
+                                                    title="Editar"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm(`Tem certeza que deseja excluir o morador ${res.name}? O histórico de ocupação será preservado, mas o acesso será revogado.`)) {
+                                                            try {
+                                                                await UserService.delete(res.id);
+                                                                alert('Morador excluído (desativado) com sucesso!');
+                                                                loadData();
+                                                            } catch (error: any) {
+                                                                alert(error.response?.data?.detail || "Erro ao excluir morador.");
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="text-slate-400 hover:text-red-500 mx-1"
+                                                    title="Excluir (Manter Histórico)"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </>
                                         )}
                                     </td>
                                 </tr>
@@ -357,336 +377,316 @@ export const AdminResidents: React.FC = () => {
                 </table>
             </div>
 
-            {
-                isAddResidentModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                        <div className="bg-[#fcfbf9] rounded-lg shadow-xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
-                            <div className="px-8 py-6 border-b border-slate-100 bg-white flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-xl font-bold text-slate-700">{editingId ? 'Editar Morador' : 'Novo Morador'}</h3>
-                                    <p className="text-sm text-slate-500 mt-1">{editingId ? 'Atualize as informações do morador.' : 'Preencha os detalhes abaixo para registrar um novo morador.'}</p>
-                                </div>
-                                <button
-                                    onClick={() => setIsAddResidentModalOpen(false)}
-                                    className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
+            {isAddResidentModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-[#fcfbf9] rounded-lg shadow-xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-white flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-700">{editingId ? 'Editar Morador' : 'Novo Morador'}</h3>
+                                <p className="text-sm text-slate-500 mt-1">{editingId ? 'Atualize as informações do morador.' : 'Preencha os detalhes abaixo para registrar um novo morador.'}</p>
                             </div>
+                            <button
+                                onClick={() => setIsAddResidentModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                            <div className="px-8 py-6 max-h-[75vh] overflow-y-auto custom-scrollbar bg-[#fcfbf9]">
-                                <div className="space-y-5">
+                        <div className="px-8 py-6 max-h-[75vh] overflow-y-auto custom-scrollbar bg-[#fcfbf9]">
+                            <div className="space-y-5">
+                                {/* Nome Completo */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-600 mb-2">Nome Completo</label>
+                                    <div className="relative">
+                                        <UserIcon size={18} className="absolute left-3 top-3.5 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Nome do proprietário"
+                                            className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
+                                            value={residentForm.name}
+                                            onChange={e => setResidentForm({ ...residentForm, name: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
 
-                                    {/* Nome Completo */}
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-600 mb-2">Nome Completo</label>
+                                {/* Linha: Email | Senha Inicial */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div className="col-span-1">
+                                        <label className="block text-sm font-bold text-slate-600 mb-2">E-mail</label>
                                         <div className="relative">
-                                            <UserIcon size={18} className="absolute left-3 top-3.5 text-slate-400" />
+                                            <Mail size={18} className="absolute left-3 top-3.5 text-slate-400" />
                                             <input
-                                                type="text"
-                                                placeholder="Nome do proprietário"
+                                                type="email"
+                                                placeholder="email@exemplo.com"
                                                 className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
-                                                value={residentForm.name}
-                                                onChange={e => setResidentForm({ ...residentForm, name: e.target.value })}
+                                                value={residentForm.email}
+                                                onChange={e => setResidentForm({ ...residentForm, email: e.target.value })}
                                             />
                                         </div>
                                     </div>
-
-                                    {/* Linha: Email | Senha Inicial */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <div className="col-span-1">
-                                            <label className="block text-sm font-bold text-slate-600 mb-2">E-mail</label>
-                                            <div className="relative">
-                                                <Mail size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                                                <input
-                                                    type="email"
-                                                    placeholder="email@exemplo.com"
-                                                    className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
-                                                    value={residentForm.email}
-                                                    onChange={e => setResidentForm({ ...residentForm, email: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="col-span-1">
-                                            <label className="block text-sm font-bold text-slate-600 mb-2">
-                                                {editingId ? 'Redefinir Senha' : 'Senha Inicial'}
-                                            </label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder={editingId ? "Deixe em branco para manter" : "Padrão: Mudar@123"}
-                                                    className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
-                                                    value={residentForm.password}
-                                                    onChange={e => setResidentForm({ ...residentForm, password: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Linha: Tipo de Perfil */}
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-600 mb-2">Tipo de Perfil</label>
-                                        <div className="flex gap-4 mb-4">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="profileType"
-                                                    value="INQUILINO"
-                                                    checked={residentForm.profile_type === 'INQUILINO'}
-                                                    onChange={e => setResidentForm({ ...residentForm, profile_type: e.target.value })}
-                                                    className="w-4 h-4 text-[#437476] focus:ring-[#437476]"
-                                                />
-                                                <span className="text-sm text-slate-700">Inquilino</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="profileType"
-                                                    value="PROPRIETARIO"
-                                                    checked={residentForm.profile_type === 'PROPRIETARIO'}
-                                                    onChange={e => setResidentForm({ ...residentForm, profile_type: e.target.value })}
-                                                    className="w-4 h-4 text-[#437476] focus:ring-[#437476]"
-                                                />
-                                                <span className="text-sm text-slate-700">Proprietário</span>
-                                            </label>
-                                        </div>
-
-                                        {/* Role Selector (Only for Admin/Manager) */}
-                                        <label className="block text-sm font-bold text-slate-600 mb-2">Cargo no Sistema</label>
-                                        <select
-                                            className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
-                                            value={residentForm.role || 'RESIDENTE'}
-                                            onChange={e => setResidentForm({ ...residentForm, role: e.target.value })}
-                                        >
-                                            <option value="RESIDENTE">Morador (Padrão)</option>
-                                            <option value="SINDICO">Síndico</option>
-                                            <option value="SUBSINDICO">Subsíndico</option>
-                                            <option value="CONSELHO">Conselho Fiscal</option>
-                                            <option value="PORTEIRO">Porteiro</option>
-                                            <option value="FINANCEIRO">Financeiro</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Linha: Telefone | Bloco | Unidade */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                        <div className="col-span-1">
-                                            <label className="block text-sm font-bold text-slate-600 mb-2">Telefone</label>
-                                            <div className="relative">
-                                                <Phone size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                                                <input
-                                                    type="tel"
-                                                    placeholder="(99) 99999-9999"
-                                                    maxLength={15}
-                                                    className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
-                                                    value={residentForm.phone}
-                                                    onChange={e => setResidentForm({ ...residentForm, phone: formatPhoneNumber(e.target.value) })}
-                                                />
-                                            </div>
-                                        </div>
-                                        {/* Calculated Lists */}
-                                        {(() => {
-                                            // 1. Identify Occupied Units
-                                            const occupiedUnitIds = new Set(residents.filter(r => r.unit_id || r.unit?.id).map(r => r.unit_id || r.unit?.id));
-
-                                            // 2. Extract Unique Blocks
-                                            const uniqueBlocks = Array.from(new Set(units.map(u => u.block).filter(Boolean))).sort();
-
-                                            // 3. Filter Units for Selected Block (Available Only OR Current User's Unit)
-                                            // We need the ID of the unit currently assigned to the user being edited (if any)
-                                            // We can find it via residents list using editingId
-                                            const currentUser = editingId ? residents.find(r => r.id === editingId) : null;
-                                            const currentUserUnitId = currentUser ? (currentUser.unit_id || currentUser.unit?.id) : null;
-
-                                            const availableUnitsForBlock = units
-                                                .filter(u => u.block === residentForm.block)
-                                                // Removed occupied filter to allow Owner + Tenant in same unit
-                                                // .filter(u => !occupiedUnitIds.has(u.id) || (currentUserUnitId && u.id === currentUserUnitId))
-                                                .sort((a, b) => {
-                                                    const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
-                                                    const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
-                                                    return numA - numB;
-                                                });
-
-                                            return (
-                                                <>
-                                                    <div className="col-span-1">
-                                                        <label className="block text-sm font-bold text-slate-600 mb-2">Bloco</label>
-                                                        <div className="relative">
-                                                            <select
-                                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
-                                                                value={residentForm.block}
-                                                                onChange={e => setResidentForm({ ...residentForm, block: e.target.value, unit: '' })}
-                                                            >
-                                                                <option value="">Selecione...</option>
-                                                                {uniqueBlocks.map(block => (
-                                                                    <option key={block} value={block || ''}>{block}</option>
-                                                                ))}
-                                                            </select>
-                                                            <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400">
-                                                                <Building size={16} />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-span-1">
-                                                        <label className="block text-sm font-bold text-slate-600 mb-2">Nº da Unidade</label>
-                                                        <div className="relative">
-                                                            <select
-                                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
-                                                                value={residentForm.unit}
-                                                                onChange={e => setResidentForm({ ...residentForm, unit: e.target.value })}
-                                                                disabled={!residentForm.block}
-                                                            >
-                                                                <option value="">{residentForm.block ? 'Selecione a Unidade...' : 'Selecione o Bloco'}</option>
-                                                                {availableUnitsForBlock.map(u => (
-                                                                    <option key={u.id} value={u.number}>{u.number}</option>
-                                                                ))}
-                                                            </select>
-                                                            <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400">
-                                                                <Building size={16} />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-
-                                    {/* Linha: Datas */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-600 mb-2">Data de Entrada</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="DD/MM/AAAA"
-                                                    maxLength={10}
-                                                    value={residentForm.entryDate}
-                                                    onChange={e => setResidentForm({ ...residentForm, entryDate: formatDate(e.target.value) })}
-                                                    className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700"
-                                                />
-                                                <Calendar size={18} className="absolute right-3 top-3.5 text-slate-400" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-600 mb-2">Data de Saída (Opcional)</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="DD/MM/AAAA"
-                                                    maxLength={10}
-                                                    value={residentForm.exitDate}
-                                                    onChange={e => setResidentForm({ ...residentForm, exitDate: formatDate(e.target.value) })}
-                                                    className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 placeholder-slate-400"
-                                                />
-                                                <Calendar size={18} className="absolute right-3 top-3.5 text-slate-400" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Cadastrado Por (Readonly) */}
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-600 mb-2">Cadastrado por</label>
+                                    <div className="col-span-1">
+                                        <label className="block text-sm font-bold text-slate-600 mb-2">
+                                            {editingId ? 'Redefinir Senha' : 'Senha Inicial'}
+                                        </label>
                                         <div className="relative">
-                                            <UserIcon size={18} className="absolute left-3 top-3.5 text-slate-400" />
                                             <input
                                                 type="text"
-                                                readOnly
-                                                className="w-full pl-10 pr-4 py-3 bg-[#e8eaed] border border-slate-200 rounded-lg text-sm outline-none text-slate-600 uppercase font-medium cursor-not-allowed"
-                                                value={residentForm.registeredBy}
+                                                placeholder={editingId ? "Deixe em branco para manter" : "Padrão: Mudar@123"}
+                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
+                                                value={residentForm.password}
+                                                onChange={e => setResidentForm({ ...residentForm, password: e.target.value })}
                                             />
                                         </div>
                                     </div>
-
-                                    { /* Seção de Pets removida conforme solicitado */}
-
-                                    <button className="w-full py-4 bg-[#437476] text-white font-medium rounded-lg hover:bg-[#365e5f] shadow-sm transition-colors text-base" onClick={handleSaveResident}>
-                                        {editingId ? 'Atualizar Morador' : 'Salvar Morador'}
-                                    </button>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
 
-            {
-                viewingResident && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
-                            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                {/* Linha: Tipo de Perfil */}
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-700">Detalhes do Morador</h3>
-                                    <p className="text-xs text-slate-500">Visualização completa das informações.</p>
-                                </div>
-                                <button
-                                    onClick={() => setViewingResident(null)}
-                                    className="text-slate-400 hover:text-slate-600 bg-white border border-slate-200 p-1.5 rounded-full transition-colors"
-                                >
-                                    <X size={18} />
-                                </button>
-                            </div>
+                                    <label className="block text-sm font-bold text-slate-600 mb-2">Tipo de Perfil</label>
+                                    <div className="flex gap-4 mb-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="profileType"
+                                                value="INQUILINO"
+                                                checked={residentForm.profile_type === 'INQUILINO'}
+                                                onChange={e => setResidentForm({ ...residentForm, profile_type: e.target.value })}
+                                                className="w-4 h-4 text-[#437476] focus:ring-[#437476]"
+                                            />
+                                            <span className="text-sm text-slate-700">Inquilino</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="profileType"
+                                                value="PROPRIETARIO"
+                                                checked={residentForm.profile_type === 'PROPRIETARIO'}
+                                                onChange={e => setResidentForm({ ...residentForm, profile_type: e.target.value })}
+                                                className="w-4 h-4 text-[#437476] focus:ring-[#437476]"
+                                            />
+                                            <span className="text-sm text-slate-700">Proprietário</span>
+                                        </label>
+                                    </div>
 
-                            <div className="p-6 space-y-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-full bg-[#437476]/10 flex items-center justify-center text-[#437476] text-2xl font-bold">
-                                        {viewingResident.name.charAt(0)}
+                                    {/* Role Selector (Only for Admin/Manager) */}
+                                    <label className="block text-sm font-bold text-slate-600 mb-2">Cargo no Sistema</label>
+                                    <select
+                                        className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
+                                        value={residentForm.role || 'RESIDENTE'}
+                                        onChange={e => setResidentForm({ ...residentForm, role: e.target.value })}
+                                    >
+                                        <option value="RESIDENTE">Morador (Padrão)</option>
+                                        <option value="SINDICO">Síndico</option>
+                                        <option value="SUBSINDICO">Subsíndico</option>
+                                        <option value="CONSELHO">Conselho Fiscal</option>
+                                        <option value="PORTEIRO">Porteiro</option>
+                                        <option value="FINANCEIRO">Financeiro</option>
+                                    </select>
+                                </div>
+
+                                {/* Linha: Telefone | Bloco | Unidade */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    <div className="col-span-1">
+                                        <label className="block text-sm font-bold text-slate-600 mb-2">Telefone</label>
+                                        <div className="relative">
+                                            <Phone size={18} className="absolute left-3 top-3.5 text-slate-400" />
+                                            <input
+                                                type="tel"
+                                                placeholder="(99) 99999-9999"
+                                                maxLength={15}
+                                                className="w-full pl-10 pr-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] placeholder-slate-400 text-slate-700"
+                                                value={residentForm.phone}
+                                                onChange={e => setResidentForm({ ...residentForm, phone: formatPhoneNumber(e.target.value) })}
+                                            />
+                                        </div>
+                                    </div>
+                                    {/* Calculated Lists */}
+                                    {(() => {
+                                        // 3. Filter Units for Selected Block (Available Only OR Current User's Unit)
+                                        const availableUnitsForBlock = units
+                                            .filter(u => u.block === residentForm.block)
+                                            .sort((a, b) => {
+                                                const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
+                                                const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
+                                                return numA - numB;
+                                            });
+
+                                        return (
+                                            <>
+                                                <div className="col-span-1">
+                                                    <label className="block text-sm font-bold text-slate-600 mb-2">Bloco</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
+                                                            value={residentForm.block}
+                                                            onChange={e => setResidentForm({ ...residentForm, block: e.target.value, unit: '' })}
+                                                        >
+                                                            <option value="">Selecione...</option>
+                                                            {uniqueBlocks.map(block => (
+                                                                <option key={block} value={block || ''}>{block}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400">
+                                                            <Building size={16} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className="block text-sm font-bold text-slate-600 mb-2">Nº da Unidade</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 appearance-none"
+                                                            value={residentForm.unit}
+                                                            onChange={e => setResidentForm({ ...residentForm, unit: e.target.value })}
+                                                            disabled={!residentForm.block}
+                                                        >
+                                                            <option value="">{residentForm.block ? 'Selecione a Unidade...' : 'Selecione o Bloco'}</option>
+                                                            {availableUnitsForBlock.map(u => (
+                                                                <option key={u.id} value={u.number}>{u.number}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400">
+                                                            <Building size={16} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+
+                                {/* Linha: Datas */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-600 mb-2">Data de Entrada</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="DD/MM/AAAA"
+                                                maxLength={10}
+                                                value={residentForm.entryDate}
+                                                onChange={e => setResidentForm({ ...residentForm, entryDate: formatDate(e.target.value) })}
+                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700"
+                                            />
+                                            <Calendar size={18} className="absolute right-3 top-3.5 text-slate-400" />
+                                        </div>
                                     </div>
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-800">{viewingResident.name}</h2>
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            {viewingResident.status === 'ATIVO' ? 'Ativo' : viewingResident.status}
-                                        </span>
+                                        <label className="block text-sm font-bold text-slate-600 mb-2">Data de Saída (Opcional)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="DD/MM/AAAA"
+                                                maxLength={10}
+                                                value={residentForm.exitDate}
+                                                onChange={e => setResidentForm({ ...residentForm, exitDate: formatDate(e.target.value) })}
+                                                className="w-full px-4 py-3 bg-[#f3f4f6] border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476] text-slate-700 placeholder-slate-400"
+                                            />
+                                            <Calendar size={18} className="absolute right-3 top-3.5 text-slate-400" />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email</label>
-                                        <p className="text-sm font-medium text-slate-700">{viewingResident.email}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unidade</label>
-                                        <p className="text-sm font-medium text-slate-700">{getUnitName(viewingResident.unit_id)}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo</label>
-                                        <p className="text-sm font-medium text-slate-700">{viewingResident.profile_type || viewingResident.role}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Data de Cadastro</label>
-                                        <p className="text-sm font-medium text-slate-700">{new Date(viewingResident.created_at).toLocaleDateString('pt-BR')}</p>
+                                {/* Cadastrado Por (Readonly) */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-600 mb-2">Cadastrado por</label>
+                                    <div className="relative">
+                                        <UserIcon size={18} className="absolute left-3 top-3.5 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            className="w-full pl-10 pr-4 py-3 bg-[#e8eaed] border border-slate-200 rounded-lg text-sm outline-none text-slate-600 uppercase font-medium cursor-not-allowed"
+                                            value={residentForm.registeredBy}
+                                        />
                                     </div>
                                 </div>
 
-                                {viewingResident.pets && viewingResident.pets.length > 0 && (
-                                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-                                        <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                                            <Cat size={16} /> Animais de Estimação
-                                        </h4>
-                                        <ul className="space-y-2">
-                                            {viewingResident.pets.map((pet, idx) => (
-                                                <li key={idx} className="text-sm text-slate-600 flex justify-between border-b last:border-0 border-slate-200 pb-2 last:pb-0">
-                                                    <span>{pet.type}</span>
-                                                    <span className="font-medium bg-white px-2 py-0.5 rounded border border-slate-200 text-xs">{pet.quantity}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
-                                <button
-                                    onClick={() => setViewingResident(null)}
-                                    className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg text-sm hover:bg-slate-50"
-                                >
-                                    Fechar
+                                <button className="w-full py-4 bg-[#437476] text-white font-medium rounded-lg hover:bg-[#365e5f] shadow-sm transition-colors text-base" onClick={handleSaveResident}>
+                                    {editingId ? 'Atualizar Morador' : 'Salvar Morador'}
                                 </button>
                             </div>
                         </div>
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+
+            {viewingResident && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-700">Detalhes do Morador</h3>
+                                <p className="text-xs text-slate-500">Visualização completa das informações.</p>
+                            </div>
+                            <button
+                                onClick={() => setViewingResident(null)}
+                                className="text-slate-400 hover:text-slate-600 bg-white border border-slate-200 p-1.5 rounded-full transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 rounded-full bg-[#437476]/10 flex items-center justify-center text-[#437476] text-2xl font-bold">
+                                    {viewingResident.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">{viewingResident.name}</h2>
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        {viewingResident.status === 'ATIVO' ? 'Ativo' : viewingResident.status}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email</label>
+                                    <p className="text-sm font-medium text-slate-700">{viewingResident.email}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unidade</label>
+                                    <p className="text-sm font-medium text-slate-700">{getUnitName(viewingResident.unit_id)}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo</label>
+                                    <p className="text-sm font-medium text-slate-700">{viewingResident.profile_type || viewingResident.role}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Data de Cadastro</label>
+                                    <p className="text-sm font-medium text-slate-700">{new Date(viewingResident.created_at).toLocaleDateString('pt-BR')}</p>
+                                </div>
+                            </div>
+
+                            {viewingResident.pets && viewingResident.pets.length > 0 && (
+                                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                    <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                        <Cat size={16} /> Animais de Estimação
+                                    </h4>
+                                    <ul className="space-y-2">
+                                        {viewingResident.pets.map((pet, idx) => (
+                                            <li key={idx} className="text-sm text-slate-600 flex justify-between border-b last:border-0 border-slate-200 pb-2 last:pb-0">
+                                                <span>{pet.type}</span>
+                                                <span className="font-medium bg-white px-2 py-0.5 rounded border border-slate-200 text-xs">{pet.quantity}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                            <button
+                                onClick={() => setViewingResident(null)}
+                                className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg text-sm hover:bg-slate-50"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
