@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
-    Search, Filter, UserPlus, Edit2, User as UserIcon, Mail, Phone, Building, Calendar, Cat, X, Trash2, PlusCircle, Eye
+    Search, Filter, UserPlus, Edit2, User as UserIcon, Mail, Phone, Building, Calendar, Cat, X, Trash2, PlusCircle, Eye, MoreHorizontal
 } from 'lucide-react';
-import { MOCK_RESIDENTS } from '../../mock'; // Removido
 import { UserService, UnitService, User, Unit } from '../../services/userService';
 
 export const AdminResidents: React.FC = () => {
@@ -181,9 +180,67 @@ export const AdminResidents: React.FC = () => {
 
     const canEdit = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO'].includes(user?.role || '');
 
+    // Common Logic for Role/Type Display
+    const getRoleDisplay = (res: User) => {
+        const type = res.profile_type || res.role;
+        const map: Record<string, string> = {
+            'ADMIN': 'Administrador',
+            'RESIDENT': 'Morador',
+            'RESIDENTE': 'Morador',
+            'PORTER': 'Porteiro',
+            'PORTEIRO': 'Porteiro',
+            'FINANCIAL': 'Financeiro',
+            'FINANCEIRO': 'Financeiro',
+            'SINDICO': 'Síndico',
+            'SUBSINDICO': 'Subsíndico',
+            'CONSELHO': 'Conselho Fiscal',
+            'OWNER': 'Proprietário',
+            'PROPRIETARIO': 'Proprietário',
+            'TENANT': 'Inquilino',
+            'INQUILINO': 'Inquilino',
+            'STAFF': 'Funcionário'
+        };
+        return map[type] || type;
+    };
+
+    const filteredResidents = residents.filter(res => {
+        // Default Filter: Hide Inactive
+        if (!showInactive && res.status === 'INATIVO') {
+            return false;
+        }
+
+        // Search Filter
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            const unit = units.find(u => u.id === res.unit_id);
+            const unitName = unit ? `${unit.block ? unit.block + ' ' : ''}${unit.number}` : '';
+
+            const matchName = res.name.toLowerCase().includes(lowerTerm);
+            const matchUnit = unitName.toLowerCase().includes(lowerTerm);
+            const matchEmail = res.email.toLowerCase().includes(lowerTerm);
+
+            if (!matchName && !matchUnit && !matchEmail) return false;
+        }
+
+        // Block Filter
+        if (filterBlock) {
+            const unit = units.find(u => u.id === res.unit_id);
+            if (unit?.block !== filterBlock) return false;
+        }
+
+        // Type Filter
+        if (filterType) {
+            const type = res.profile_type || 'INQUILINO'; // Default fallback
+            if (type !== filterType) return false;
+        }
+
+        return true;
+    });
+
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
+        <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Header Responsivo */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-[#437476]">Moradores</h2>
                     <p className="text-sm text-slate-500 mt-1">Gerencie os moradores e unidades.</p>
@@ -191,61 +248,63 @@ export const AdminResidents: React.FC = () => {
                 {canEdit && (
                     <button
                         onClick={() => { resetForm(); setIsAddResidentModalOpen(true); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f]"
+                        className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-3 md:py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f] transition-all shadow-sm active:scale-95"
                     >
-                        <UserPlus size={16} /> Novo Morador
+                        <UserPlus size={18} />
+                        <span>Novo Morador</span>
                     </button>
                 )}
             </div>
 
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-200 flex flex-wrap gap-4 items-center justify-between">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search size={18} className="absolute left-3 top-2.5 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Buscar morador ou unidade..."
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#437476]"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={showInactive}
-                                onChange={(e) => setShowInactive(e.target.checked)}
-                                className="w-4 h-4 text-[#437476] rounded border-slate-300 focus:ring-[#437476]"
-                            />
-                            Mostrar Inativos
-                        </label>
-
-                        <div className="flex gap-2">
-                            <select
-                                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#437476] text-slate-600 cursor-pointer"
-                                value={filterBlock}
-                                onChange={(e) => setFilterBlock(e.target.value)}
-                            >
-                                <option value="">Todos os Blocos</option>
-                                {uniqueBlocks.map(b => <option key={b} value={b}>{b}</option>)}
-                            </select>
-
-                            <select
-                                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#437476] text-slate-600 cursor-pointer"
-                                value={filterType}
-                                onChange={(e) => setFilterType(e.target.value)}
-                            >
-                                <option value="">Todos os Tipos</option>
-                                <option value="PROPRIETARIO">Proprietário</option>
-                                <option value="INQUILINO">Inquilino</option>
-                            </select>
-                        </div>
-                    </div>
+            {/* Filtros Responsivos */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search size={18} className="absolute left-3 top-3 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por nome, unidade ou email..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]/20 transition-all text-slate-700"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
+
+                <div className="flex flex-col md:flex-row gap-3">
+                    <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-200 md:border-transparent md:bg-transparent">
+                        <input
+                            type="checkbox"
+                            checked={showInactive}
+                            onChange={(e) => setShowInactive(e.target.checked)}
+                            className="w-4 h-4 text-[#437476] rounded border-slate-300 focus:ring-[#437476]"
+                        />
+                        Mostrar Inativos
+                    </label>
+
+                    <select
+                        className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]/20 text-slate-600 cursor-pointer w-full md:w-auto"
+                        value={filterBlock}
+                        onChange={(e) => setFilterBlock(e.target.value)}
+                    >
+                        <option value="">Todos os Blocos</option>
+                        {uniqueBlocks.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+
+                    <select
+                        className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]/20 text-slate-600 cursor-pointer w-full md:w-auto"
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                    >
+                        <option value="">Todos os Tipos</option>
+                        <option value="PROPRIETARIO">Proprietário</option>
+                        <option value="INQUILINO">Inquilino</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <table className="w-full text-left text-sm text-slate-600">
-                    <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-xs tracking-wider">
                         <tr>
                             <th className="px-6 py-4">Morador</th>
                             <th className="px-6 py-4">Unidade</th>
@@ -256,134 +315,167 @@ export const AdminResidents: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {loading ? <tr><td colSpan={6} className="p-4 text-center">Carregando...</td></tr> : residents
-                            .filter(res => {
-                                // Default Filter: Hide Inactive
-                                if (!showInactive && res.status === 'INATIVO') {
-                                    return false;
-                                }
-
-                                // Search Filter
-                                if (searchTerm) {
-                                    const lowerTerm = searchTerm.toLowerCase();
-                                    const unit = units.find(u => u.id === res.unit_id);
-                                    const unitName = unit ? `${unit.block ? unit.block + ' ' : ''}${unit.number}` : '';
-
-                                    const matchName = res.name.toLowerCase().includes(lowerTerm);
-                                    const matchUnit = unitName.toLowerCase().includes(lowerTerm);
-                                    // Also allow searching by email
-                                    const matchEmail = res.email.toLowerCase().includes(lowerTerm);
-
-                                    if (!matchName && !matchUnit && !matchEmail) return false;
-                                }
-
-                                // Block Filter
-                                if (filterBlock) {
-                                    const unit = units.find(u => u.id === res.unit_id);
-                                    if (unit?.block !== filterBlock) return false;
-                                }
-
-                                // Type Filter
-                                if (filterType) {
-                                    const type = res.profile_type || 'INQUILINO'; // Default fallback
-                                    if (type !== filterType) return false;
-                                }
-
-                                return true;
-                            })
-                            .map((res) => (
-                                <tr key={res.id} className="hover:bg-slate-50">
-                                    <td className="px-6 py-4 flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">
-                                            {res.name.charAt(0)}
-                                        </div>
-                                        <span className="font-medium text-slate-900">{res.name}</span>
-                                    </td>
-                                    <td className="px-6 py-4">{getUnitName(res.unit_id)}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col text-xs">
-                                            <span>{res.email}</span>
-                                            <span className="text-slate-400">{res.phone || '-'}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {(() => {
-                                            const type = res.profile_type || res.role;
-                                            const map: Record<string, string> = {
-                                                'ADMIN': 'Administrador',
-                                                'RESIDENT': 'Morador',
-                                                'RESIDENTE': 'Morador',
-                                                'PORTER': 'Porteiro',
-                                                'PORTEIRO': 'Porteiro',
-                                                'FINANCIAL': 'Financeiro',
-                                                'FINANCEIRO': 'Financeiro',
-                                                'SINDICO': 'Síndico',
-                                                'SUBSINDICO': 'Subsíndico',
-                                                'CONSELHO': 'Conselho Fiscal',
-                                                'OWNER': 'Proprietário',
-                                                'PROPRIETARIO': 'Proprietário',
-                                                'TENANT': 'Inquilino',
-                                                'INQUILINO': 'Inquilino',
-                                                'STAFF': 'Funcionário'
-                                            };
-                                            return map[type] || type;
-                                        })()}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${res.status === 'ATIVO' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                            {res.status === 'ATIVO' ? 'Ativo' : res.status === 'PENDENTE' ? 'Pendente' : 'Inativo'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => handleDetails(res)}
-                                            className="text-slate-400 hover:text-[#437476] mx-1"
-                                            title="Ver Detalhes"
-                                        >
-                                            <Eye size={16} />
-                                        </button>
-                                        {canEdit && (
-                                            <>
+                        {loading ? <tr><td colSpan={6} className="p-8 text-center text-slate-400">Carregando...</td></tr> :
+                            filteredResidents.length === 0 ? <tr><td colSpan={6} className="p-8 text-center text-slate-400">Nenhum morador encontrado.</td></tr> :
+                                filteredResidents.map((res) => (
+                                    <tr key={res.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-bold text-sm shadow-sm">
+                                                {res.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-700">{res.name}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium">{getUnitName(res.unit_id)}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col text-xs space-y-0.5">
+                                                <span className="flex items-center gap-1.5"><Mail size={12} className="text-slate-400" /> {res.email}</span>
+                                                <span className="flex items-center gap-1.5 text-slate-500"><Phone size={12} className="text-slate-400" /> {res.phone || '-'}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wide">
+                                                {getRoleDisplay(res)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border ${res.status === 'ATIVO' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                                {res.status === 'ATIVO' ? 'Ativo' : res.status === 'PENDENTE' ? 'Pendente' : 'Inativo'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-1">
                                                 <button
-                                                    onClick={() => handleEdit(res)}
-                                                    className="text-slate-400 hover:text-[#437476] mx-1"
-                                                    title="Editar"
+                                                    onClick={() => handleDetails(res)}
+                                                    className="p-1.5 text-slate-400 hover:text-[#437476] hover:bg-[#437476]/10 rounded-lg transition-all"
+                                                    title="Ver Detalhes"
                                                 >
-                                                    <Edit2 size={16} />
+                                                    <Eye size={18} />
                                                 </button>
-                                                <button
-                                                    onClick={async () => {
-                                                        if (window.confirm(`Tem certeza que deseja excluir o morador ${res.name}? O histórico de ocupação será preservado, mas o acesso será revogado.`)) {
-                                                            try {
-                                                                await UserService.delete(res.id);
-                                                                alert('Morador excluído (desativado) com sucesso!');
-                                                                loadData();
-                                                            } catch (error: any) {
-                                                                alert(error.response?.data?.detail || "Erro ao excluir morador.");
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="text-slate-400 hover:text-red-500 mx-1"
-                                                    title="Excluir (Manter Histórico)"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                                                {canEdit && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEdit(res)}
+                                                            className="p-1.5 text-slate-400 hover:text-[#437476] hover:bg-[#437476]/10 rounded-lg transition-all"
+                                                            title="Editar"
+                                                        >
+                                                            <Edit2 size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (window.confirm(`Tem certeza que deseja excluir o morador ${res.name}?`)) {
+                                                                    try {
+                                                                        await UserService.delete(res.id);
+                                                                        alert('Morador excluído (desativado) com sucesso!');
+                                                                        loadData();
+                                                                    } catch (error: any) {
+                                                                        alert(error.response?.data?.detail || "Erro ao excluir morador.");
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                            title="Excluir"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
                     </tbody>
                 </table>
             </div>
 
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {loading ? <div className="text-center p-8 text-slate-400">Carregando...</div> :
+                    filteredResidents.length === 0 ? <div className="text-center p-8 text-slate-400">Nenhum morador encontrado.</div> :
+                        filteredResidents.map(res => (
+                            <div key={res.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 transition-all active:scale-[0.99]">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-bold text-lg shadow-sm">
+                                            {res.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 text-lg leading-tight">{res.name}</h3>
+                                            <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wide border ${res.status === 'ATIVO' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                                {res.status === 'ATIVO' ? 'Ativo' : res.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {/* Menu de Ações Mobile (Opcional, ou botões abaixo) */}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                    <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Unidade</p>
+                                        <p className="font-bold text-slate-700 text-sm">{getUnitName(res.unit_id)}</p>
+                                    </div>
+                                    <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Perfil</p>
+                                        <p className="font-bold text-slate-700 text-sm overflow-hidden text-ellipsis whitespace-nowrap">{getRoleDisplay(res)}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5 mb-4 text-sm text-slate-600">
+                                    <div className="flex items-center gap-2">
+                                        <Mail size={14} className="text-slate-400 shrink-0" />
+                                        <span className="truncate">{res.email}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-slate-400 shrink-0" />
+                                        <span>{res.phone || 'Sem telefone'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2 pt-3 border-t border-slate-100">
+                                    <button
+                                        onClick={() => handleDetails(res)}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 bg-slate-50 text-slate-600 rounded-lg text-sm font-bold active:bg-slate-100 hover:bg-slate-100 transition-colors"
+                                    >
+                                        <Eye size={16} /> Detalhes
+                                    </button>
+                                    {canEdit && (
+                                        <>
+                                            <button
+                                                onClick={() => handleEdit(res)}
+                                                className="flex-1 flex items-center justify-center gap-2 py-2 bg-[#437476]/10 text-[#437476] rounded-lg text-sm font-bold active:bg-[#437476]/20 hover:bg-[#437476]/20 transition-colors"
+                                            >
+                                                <Edit2 size={16} /> Editar
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm(`Excluir ${res.name}?`)) {
+                                                        try {
+                                                            await UserService.delete(res.id);
+                                                            alert('Excluído.');
+                                                            loadData();
+                                                        } catch (e) { alert('Erro ao excluir.'); }
+                                                    }
+                                                }}
+                                                className="w-10 flex items-center justify-center bg-red-50 text-red-500 rounded-lg active:bg-red-100"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                }
+            </div>
+
             {isAddResidentModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-[#fcfbf9] rounded-lg shadow-xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
-                        <div className="px-8 py-6 border-b border-slate-100 bg-white flex justify-between items-center">
+                    <div className="bg-[#fcfbf9] rounded-xl shadow-xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative max-h-[90vh] flex flex-col">
+                        <div className="px-6 py-4 md:px-8 md:py-6 border-b border-slate-100 bg-white flex justify-between items-center shrink-0">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-700">{editingId ? 'Editar Morador' : 'Novo Morador'}</h3>
-                                <p className="text-sm text-slate-500 mt-1">{editingId ? 'Atualize as informações do morador.' : 'Preencha os detalhes abaixo para registrar um novo morador.'}</p>
+                                <h3 className="text-lg md:text-xl font-bold text-slate-700">{editingId ? 'Editar Morador' : 'Novo Morador'}</h3>
+                                <p className="text-xs md:text-sm text-slate-500 mt-0.5">{editingId ? 'Atualize as informações.' : 'Preencha os detalhes.'}</p>
                             </div>
                             <button
                                 onClick={() => setIsAddResidentModalOpen(false)}
@@ -393,7 +485,7 @@ export const AdminResidents: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="px-8 py-6 max-h-[75vh] overflow-y-auto custom-scrollbar bg-[#fcfbf9]">
+                        <div className="px-6 py-6 md:px-8 overflow-y-auto custom-scrollbar bg-[#fcfbf9] flex-1">
                             <div className="space-y-5">
                                 {/* Nome Completo */}
                                 <div>
@@ -445,7 +537,7 @@ export const AdminResidents: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-bold text-slate-600 mb-2">Tipo de Perfil</label>
                                     <div className="flex gap-4 mb-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 flex-1 justify-center md:flex-none md:justify-start">
                                             <input
                                                 type="radio"
                                                 name="profileType"
@@ -454,9 +546,9 @@ export const AdminResidents: React.FC = () => {
                                                 onChange={e => setResidentForm({ ...residentForm, profile_type: e.target.value })}
                                                 className="w-4 h-4 text-[#437476] focus:ring-[#437476]"
                                             />
-                                            <span className="text-sm text-slate-700">Inquilino</span>
+                                            <span className="text-sm text-slate-700 font-medium">Inquilino</span>
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 flex-1 justify-center md:flex-none md:justify-start">
                                             <input
                                                 type="radio"
                                                 name="profileType"
@@ -465,7 +557,7 @@ export const AdminResidents: React.FC = () => {
                                                 onChange={e => setResidentForm({ ...residentForm, profile_type: e.target.value })}
                                                 className="w-4 h-4 text-[#437476] focus:ring-[#437476]"
                                             />
-                                            <span className="text-sm text-slate-700">Proprietário</span>
+                                            <span className="text-sm text-slate-700 font-medium">Proprietário</span>
                                         </label>
                                     </div>
 
@@ -605,6 +697,7 @@ export const AdminResidents: React.FC = () => {
                                 <button className="w-full py-4 bg-[#437476] text-white font-medium rounded-lg hover:bg-[#365e5f] shadow-sm transition-colors text-base" onClick={handleSaveResident}>
                                     {editingId ? 'Atualizar Morador' : 'Salvar Morador'}
                                 </button>
+                                <div className="h-4 md:hidden"></div> {/* Extra space for mobile scroll */}
                             </div>
                         </div>
                     </div>
@@ -613,7 +706,7 @@ export const AdminResidents: React.FC = () => {
 
             {viewingResident && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-700">Detalhes do Morador</h3>
@@ -627,7 +720,7 @@ export const AdminResidents: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-full bg-[#437476]/10 flex items-center justify-center text-[#437476] text-2xl font-bold">
                                     {viewingResident.name.charAt(0)}
@@ -640,7 +733,7 @@ export const AdminResidents: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email</label>
                                     <p className="text-sm font-medium text-slate-700">{viewingResident.email}</p>
