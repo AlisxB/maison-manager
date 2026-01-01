@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export const AdminAnnouncements: React.FC = () => {
     const { user } = useAuth();
-    const canManage = ['ADMIN', 'SINDICO', 'SUBSINDICO'].includes(user?.role || '');
+    const canManage = ['ADMIN', 'SINDICO'].includes(user?.role || '');
 
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState(true);

@@ -15,8 +15,8 @@ class AnnouncementService:
         return await self.repo.get_all(condo_id)
 
     async def create_announcement(self, data: AnnouncementCreate, role: str, condo_id: UUID) -> Announcement:
-        if role != 'ADMIN':
-             raise HTTPException(status_code=403, detail="Not authorized")
+        if role not in ['ADMIN', 'SINDICO']:
+            raise HTTPException(status_code=403, detail="Not authorized")
              
         announcement = Announcement(
             condominium_id=condo_id,
@@ -28,12 +28,12 @@ class AnnouncementService:
         return announcement
 
     async def update_announcement(self, id: UUID, data: AnnouncementUpdate, role: str, condo_id: UUID) -> Announcement:
-        if role != 'ADMIN':
-             raise HTTPException(status_code=403, detail="Not authorized")
+        if role not in ['ADMIN', 'SINDICO']:
+            raise HTTPException(status_code=403, detail="Not authorized")
              
         announcement = await self.repo.get_by_id(id, condo_id)
         if not announcement:
-             raise HTTPException(status_code=404, detail="Announcement not found")
+            raise HTTPException(status_code=404, detail="Announcement not found")
              
         if data.title: announcement.title = data.title
         if data.description: announcement.description = data.description
@@ -45,12 +45,12 @@ class AnnouncementService:
         return announcement
 
     async def delete_announcement(self, id: UUID, role: str, condo_id: UUID) -> None:
-        if role != 'ADMIN':
-             raise HTTPException(status_code=403, detail="Not authorized")
+        if role not in ['ADMIN', 'SINDICO']:
+            raise HTTPException(status_code=403, detail="Not authorized")
              
         announcement = await self.repo.get_by_id(id, condo_id)
         if not announcement:
-             raise HTTPException(status_code=404, detail="Announcement not found")
+            raise HTTPException(status_code=404, detail="Announcement not found")
              
         await self.repo.delete(announcement)
         await self.db.commit()
