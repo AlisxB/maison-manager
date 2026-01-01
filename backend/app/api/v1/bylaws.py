@@ -21,8 +21,8 @@ async def create_bylaw(
     db: AsyncSession = Depends(deps.get_db), 
     current_user = Depends(deps.get_current_user)
 ):
-    if current_user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Only admins can create bylaws")
+    if current_user.role not in ["ADMIN", "SINDICO"]:
+        raise HTTPException(status_code=403, detail="Only admins and managers can create bylaws")
         
     new_bylaw = BylawModel(
         condominium_id=current_user.condo_id,
@@ -40,8 +40,8 @@ async def update_bylaw(
     db: AsyncSession = Depends(deps.get_db),
     current_user = Depends(deps.get_current_user)
 ):
-    if current_user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Only admins can update bylaws")
+    if current_user.role not in ["ADMIN", "SINDICO"]:
+        raise HTTPException(status_code=403, detail="Only admins and managers can update bylaws")
 
     result = await db.execute(select(BylawModel).where(BylawModel.id == id))
     existing_bylaw = result.scalar_one_or_none()
@@ -62,8 +62,8 @@ async def delete_bylaw(
     db: AsyncSession = Depends(deps.get_db),
     current_user = Depends(deps.get_current_user)
 ):
-    if current_user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Only admins can delete bylaws")
+    if current_user.role not in ["ADMIN", "SINDICO"]:
+        raise HTTPException(status_code=403, detail="Only admins and managers can delete bylaws")
 
     result = await db.execute(select(BylawModel).where(BylawModel.id == id))
     existing_bylaw = result.scalar_one_or_none()
