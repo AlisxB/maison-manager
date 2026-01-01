@@ -18,12 +18,41 @@ class UserService:
     async def get_users(self, skip: int = 0, limit: int = 100, status: str = None) -> List[User]:
         return await self.repo.get_all(skip, limit, status)
 
+    async def _validate_unit_occupancy(self, unit_id: UUID, profile_type: str, exclude_user_id: UUID = None):
+        if not unit_id or not profile_type:
+            return
+
+        # Check existing active/pending users in this unit with this profile type
+        # Constraint: Max 1 Owner, Max 1 Tenant per unit
+        from sqlalchemy import select, and_
+        stmt = select(User).where(
+            User.unit_id == unit_id,
+            User.profile_type == profile_type,
+            User.status.in_(['ATIVO', 'PENDENTE'])
+        )
+        
+        if exclude_user_id:
+             stmt = stmt.where(User.id != exclude_user_id)
+            
+        result = await self.db.execute(stmt)
+        existing = result.scalars().first()
+        
+        if existing:
+            pt_label = "Proprietário" if profile_type == 'PROPRIETARIO' else "Inquilino"
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Esta unidade já possui um {pt_label} cadastrado ({existing.name}). Apenas um por unidade é permitido."
+            )
+
     async def create_user(self, user_in: UserCreate, current_user_role: str, current_condo_id: UUID) -> User:
         if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO']:
             raise HTTPException(status_code=403, detail="Apenas administradores podem criar usuários")
         
         if user_in.role == 'ADMIN':
              raise HTTPException(status_code=403, detail="Não é permitido criar novos Administradores.")
+             
+        if user_in.unit_id and user_in.profile_type:
+             await self._validate_unit_occupancy(user_in.unit_id, user_in.profile_type)
 
         email_hash = hashlib.sha256(user_in.email.lower().encode('utf-8')).hexdigest()
         
@@ -99,6 +128,17 @@ class UserService:
         if user_in.department: db_user.department = user_in.department
         if user_in.work_hours: db_user.work_hours = user_in.work_hours
         if user_in.status: db_user.status = user_in.status
+        
+        # Validate Occupancy if changing unit or profile
+        target_unit = user_in.unit_id if user_in.unit_id is not None else db_user.unit_id
+        target_profile = user_in.profile_type if user_in.profile_type else db_user.profile_type
+        
+        # Only validate if something relevant for occupancy changed
+        if (user_in.unit_id is not None and user_in.unit_id != db_user.unit_id) or \
+           (user_in.profile_type and user_in.profile_type != db_user.profile_type) or \
+           (user_in.status == 'ATIVO' and db_user.status != 'ATIVO'):
+                if target_unit and target_profile:
+                     await self._validate_unit_occupancy(target_unit, target_profile, exclude_user_id=db_user.id)
         
         if occupation_changed:
             # 1. Close current open history
