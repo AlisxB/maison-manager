@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Building, Search, PlusCircle, X, Eye, History, User } from 'lucide-react';
-import { UnitService, Unit, UnitDetails } from '../../services/userService';
+import { Building, Search, PlusCircle, X, Eye, History, User, CheckCircle, Home, Info } from 'lucide-react';
+import { UnitService, UserService, Unit, UnitDetails, User as UserType } from '../../services/userService';
+import { useAuth } from '../../context/AuthContext';
 
 export const AdminUnits: React.FC = () => {
+    const { user } = useAuth();
     const [units, setUnits] = useState<Unit[]>([]);
+    const [residents, setResidents] = useState<UserType[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [viewingUnit, setViewingUnit] = useState<UnitDetails | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterBlock, setFilterBlock] = useState('');
 
     // Form
     const [form, setForm] = useState({
@@ -25,13 +30,22 @@ export const AdminUnits: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const data = await UnitService.getAll();
-            // Ordenar por Bloco e depois Número (Numérico se possível, senão String)
-            data.sort((a, b) => {
+            const [unitsData, usersData] = await Promise.all([
+                UnitService.getAll(),
+                UserService.getAll()
+            ]);
+
+            // Filter active residents only to avoid clutter
+            const activeResidents = usersData.filter(u => u.status === 'ATIVO' || u.status === 'PENDENTE');
+
+            // Ordenar por Bloco e depois Número
+            unitsData.sort((a, b) => {
                 if (a.block !== b.block) return (a.block || '').localeCompare(b.block || '');
                 return parseInt(a.number) - parseInt(b.number) || a.number.localeCompare(b.number);
             });
-            setUnits(data);
+
+            setUnits(unitsData);
+            setResidents(activeResidents);
         } catch (error) {
             console.error(error);
         } finally {
@@ -39,16 +53,35 @@ export const AdminUnits: React.FC = () => {
         }
     };
 
+    // Derived State for UI
+    const getUnitResidents = (unitId: string) => {
+        return residents.filter(r => r.unit_id === unitId);
+    };
+
+
+    // Unique Blocks for Filter
+    const uniqueBlocks = Array.from(new Set(units.map(u => u.block).filter(Boolean))).sort();
+
+    const getUnitStatus = (unitId: string) => {
+        const unitRes = getUnitResidents(unitId);
+        return unitRes.length > 0 ? 'OCUPADA' : 'VAGA';
+    };
+
+    // Stats
+    const totalUnits = units.length;
+    const occupiedUnits = units.filter(u => getUnitStatus(u.id) === 'OCUPADA').length;
+    const vacantUnits = totalUnits - occupiedUnits;
+    const occupancyRate = totalUnits > 0 ? ((occupiedUnits / totalUnits) * 100).toFixed(1) : 0;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const promises = [];
 
             if (form.isBatch) {
-                // Batch Logic: Loop Floors and Units
                 for (let f = 1; f <= form.floors; f++) {
                     for (let u = 1; u <= form.unitsPerFloor; u++) {
-                        const unitNumber = `${f}${u.toString().padStart(2, '0')}`; // Ex: 1 -> 101, 1 -> 102
+                        const unitNumber = `${f}${u.toString().padStart(2, '0')}`;
                         promises.push(UnitService.create({
                             block: form.block,
                             number: unitNumber,
@@ -57,35 +90,13 @@ export const AdminUnits: React.FC = () => {
                     }
                 }
 
-                // Execute chunks
-                const CHUNK_SIZE = 3;
-                let createdCount = 0;
-
+                // Batch Execution Logic
+                const CHUNK_SIZE = 5;
                 for (let i = 0; i < promises.length; i += CHUNK_SIZE) {
-                    const chunk = promises.slice(i, i + CHUNK_SIZE);
-
-                    // Executamos com tratamento de erro individual para não parar o lote por duplicatas
-                    const results = await Promise.all(
-                        chunk.map(p => p.catch(err => {
-                            if (err.response && err.response.status === 409) {
-                                console.warn("Unidade duplicada pulada.");
-                                return "skipped";
-                            }
-                            console.error("Erro ao criar unidade:", err);
-                            return null;
-                        }))
-                    );
-
-                    // Contar sucessos (não nulos e não skipped se quisermos ser estritos, mas User quer "sucesso" na operação)
-                    // Vamos contar apenas os criados efetivamente no alert, mas sucesso geral da operação.
-                    createdCount += results.filter(r => r && r !== 'skipped').length;
-
-                    await new Promise(r => setTimeout(r, 100));
+                    await Promise.all(promises.slice(i, i + CHUNK_SIZE).map(p => p.catch(e => console.warn(e))));
                 }
-
-                alert(`Processo finalizado! ${createdCount} novas unidades criadas.`);
+                alert('Processo de lote finalizado!');
             } else {
-                // Single Logic
                 await UnitService.create({
                     block: form.block,
                     number: form.number,
@@ -112,171 +123,287 @@ export const AdminUnits: React.FC = () => {
         }
     };
 
-    return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Gestão de Unidades</h2>
-                    <p className="text-sm text-slate-500 mt-1">Gerencie os apartamentos e blocos do condomínio.</p>
-                </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#437476] text-white rounded-lg text-sm font-medium hover:bg-[#365e5f] transition-colors"
-                >
-                    <PlusCircle size={18} /> Nova Unidade
-                </button>
-            </div>
+    const filteredUnits = units.filter(u => {
+        const matchSearch = u.number.includes(searchTerm) || (u.block && u.block.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchBlock = filterBlock ? u.block === filterBlock : true;
+        return matchSearch && matchBlock;
+    });
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                    <div className="flex items-center gap-2 text-slate-500">
-                        <Building size={18} />
-                        <span className="font-medium text-sm">{units.length} Unidades Cadastradas</span>
+    return (
+        <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
+
+            {/* Header & Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="md:col-span-1">
+                    <h2 className="text-2xl font-black text-[#437476] tracking-tight">Gestão de Unidades</h2>
+                    <p className="text-sm text-slate-500 mt-1 font-medium">Controle de ocupação e cadastro.</p>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de Unidades</p>
+                        <p className="text-2xl font-black text-slate-700">{totalUnits}</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                        <Building size={20} />
                     </div>
                 </div>
 
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Taxa de Ocupação</p>
+                        <p className="text-2xl font-black text-[#437476]">{occupancyRate}%</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-[#437476]">
+                        <CheckCircle size={20} />
+                    </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unidades Vagas</p>
+                        <p className="text-2xl font-black text-slate-700">{vacantUnits}</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        <Home size={20} />
+                    </div>
+                </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="relative w-full sm:w-96">
+                    <Search size={20} className="absolute left-3 top-2.5 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por número ou bloco..."
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476]/20 transition-all font-medium text-slate-700"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                <div className="relative w-full sm:w-48">
+                    <select
+                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476]/20 transition-all font-medium text-slate-700 appearance-none"
+                        value={filterBlock}
+                        onChange={e => setFilterBlock(e.target.value)}
+                    >
+                        <option value="">Todos os Blocos</option>
+                        {uniqueBlocks.map(block => (
+                            <option key={block} value={block || ''}>{block}</option>
+                        ))}
+                    </select>
+                </div>
+                {user?.role === 'ADMIN' && (
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#437476] text-white rounded-xl text-sm font-bold hover:bg-[#365e5f] transition-all shadow-sm hover:shadow-md"
+                    >
+                        <PlusCircle size={18} /> Nova Unidade
+                    </button>
+                )}
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <table className="w-full text-left text-sm text-slate-600">
-                    <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
                         <tr>
-                            <th className="px-6 py-4">Bloco</th>
-                            <th className="px-6 py-4">Número</th>
+                            <th className="px-6 py-4">Unidade</th>
                             <th className="px-6 py-4">Tipo</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4">Moradores</th>
                             <th className="px-6 py-4 text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {loading ? (
-                            <tr><td colSpan={4} className="p-8 text-center text-slate-400">Carregando...</td></tr>
-                        ) : units.length === 0 ? (
-                            <tr><td colSpan={4} className="p-8 text-center text-slate-400">Nenhuma unidade encontrada.</td></tr>
+                            <tr><td colSpan={5} className="p-8 text-center text-slate-400 font-medium">Carregando unidades...</td></tr>
+                        ) : filteredUnits.length === 0 ? (
+                            <tr><td colSpan={5} className="p-8 text-center text-slate-400 font-medium">Nenhuma unidade encontrada.</td></tr>
                         ) : (
-                            units.map(u => (
-                                <tr key={u.id} className="hover:bg-slate-50">
-                                    <td className="px-6 py-4 font-bold text-slate-700">{u.block || '-'}</td>
-                                    <td className="px-6 py-4 font-bold text-slate-800">{u.number}</td>
-                                    <td className="px-6 py-4">
-                                        <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-xs font-bold uppercase">
-                                            {u.type || 'Apartamento'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-slate-400">
-                                        <button
-                                            onClick={() => handleViewDetails(u.id)}
-                                            className="hover:text-[#437476] transition-colors p-1"
-                                            title="Ver Detalhes e Histórico"
-                                        >
-                                            <Eye size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
+                            filteredUnits.map(u => {
+                                const status = getUnitStatus(u.id);
+                                const unitResidents = getUnitResidents(u.id);
+                                return (
+                                    <tr key={u.id} className="hover:bg-slate-50/80 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-lg text-slate-700">{u.number}</span>
+                                                {u.block && <span className="text-xs font-bold text-slate-400">Bloco {u.block}</span>}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide">
+                                                {u.type || 'Apartamento'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {status === 'OCUPADA' ? (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wide shadow-sm">
+                                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                                    Ocupada
+                                                </span>
+                                            ) : (
+                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 uppercase tracking-wide border border-slate-200">
+                                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                                                    Vaga
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {unitResidents.length > 0 ? (
+                                                <div className="flex -space-x-3 overflow-hidden p-1">
+                                                    {unitResidents.slice(0, 3).map((res, i) => (
+                                                        <div key={res.id} className="relative group/avatar cursor-help">
+                                                            <div className="w-8 h-8 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-black text-slate-600 uppercase bg-gradient-to-br from-slate-100 to-slate-200">
+                                                                {res.name.charAt(0)}
+                                                            </div>
+                                                            {/* Tooltip */}
+                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover/avatar:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                                                {res.name} ({res.profile_type})
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {unitResidents.length > 3 && (
+                                                        <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
+                                                            +{unitResidents.length - 3}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 italic font-medium p-1">---</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={() => handleViewDetails(u.id)}
+                                                className="bg-white hover:bg-[#437476] text-slate-400 hover:text-white border border-slate-200 hover:border-[#437476] transition-all p-2 rounded-lg shadow-sm group-hover:shadow-md"
+                                                title="Ver Detalhes e Histórico"
+                                            >
+                                                <Eye size={18} className="transition-transform group-hover:scale-110" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
             </div>
 
-            {/* Modal */}
+            {/* Create Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <h3 className="font-bold text-slate-700">Nova Unidade</h3>
-                                <div className="flex bg-slate-100 p-1 rounded-lg">
-                                    <button
-                                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${!form.isBatch ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
-                                        onClick={() => setForm(prev => ({ ...prev, isBatch: false }))}
-                                    >
-                                        Individual
-                                    </button>
-                                    <button
-                                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${form.isBatch ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
-                                        onClick={() => setForm(prev => ({ ...prev, isBatch: true }))}
-                                    >
-                                        Lote
-                                    </button>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div>
+                                <h3 className="font-bold text-slate-800 text-lg">Nova Unidade</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Preencha os dados da unidade.</p>
                             </div>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                            <button onClick={() => setIsModalOpen(false)} className="p-1 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-red-500">
                                 <X size={20} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-600 mb-1">Bloco</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ex: A"
-                                    className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#437476]/20"
-                                    value={form.block}
-                                    onChange={e => setForm({ ...form, block: e.target.value })}
-                                />
+                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                            {/* Batch Toggle */}
+                            <div className="bg-slate-50 p-1 rounded-xl flex">
+                                <button
+                                    type="button"
+                                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${!form.isBatch ? 'bg-white shadow-sm text-[#437476]' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={() => setForm(prev => ({ ...prev, isBatch: false }))}
+                                >
+                                    Individual
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${form.isBatch ? 'bg-white shadow-sm text-[#437476]' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={() => setForm(prev => ({ ...prev, isBatch: true }))}
+                                >
+                                    Lote (Múltiplas)
+                                </button>
                             </div>
 
-                            {!form.isBatch ? (
-                                /* Individual Mode */
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-600 mb-1">Número</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Bloco / Torre</label>
                                     <input
                                         type="text"
-                                        required={!form.isBatch}
-                                        placeholder="Ex: 101"
-                                        className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#437476]/20"
-                                        value={form.number}
-                                        onChange={e => setForm({ ...form, number: e.target.value })}
+                                        placeholder="Ex: Torre A"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476] transition-all font-medium text-slate-700"
+                                        value={form.block}
+                                        onChange={e => setForm({ ...form, block: e.target.value })}
                                     />
                                 </div>
-                            ) : (
-                                /* Batch Mode */
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-600 mb-1">Andares</label>
-                                        <input
-                                            type="number"
-                                            min="1" max="50"
-                                            required={form.isBatch}
-                                            placeholder="Ex: 10"
-                                            className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#437476]/20"
-                                            value={form.floors}
-                                            onChange={e => setForm({ ...form, floors: parseInt(e.target.value) || 0 })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-600 mb-1">Aptos/Andar</label>
-                                        <input
-                                            type="number"
-                                            min="1" max="20"
-                                            required={form.isBatch}
-                                            placeholder="Ex: 4"
-                                            className="w-full p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                            value={form.unitsPerFloor}
-                                            onChange={e => setForm({ ...form, unitsPerFloor: parseInt(e.target.value) || 0 })}
-                                        />
-                                    </div>
-                                    <div className="col-span-2 text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">
-                                        Serão geradas <strong>{(form.floors || 0) * (form.unitsPerFloor || 0)}</strong> unidades. <br />
-                                        Ex: 101, 102... 201, 202...
-                                    </div>
-                                </div>
-                            )}
 
-                            <div>
-                                <label className="block text-sm font-bold text-slate-600 mb-1">Tipo</label>
-                                <select
-                                    className="w-full p-2.5 rounded-lg border border-slate-200 bg-white"
-                                    value={form.type}
-                                    onChange={e => setForm({ ...form, type: e.target.value })}
-                                >
-                                    <option value="Apartamento">Apartamento</option>
-                                    <option value="Casa">Casa</option>
-                                    <option value="Loja">Loja</option>
-                                    <option value="Comercial">Comercial</option>
-                                </select>
+                                {!form.isBatch ? (
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Número da Unidade</label>
+                                        <input
+                                            type="text"
+                                            required={!form.isBatch}
+                                            placeholder="Ex: 101"
+                                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476] transition-all font-medium text-slate-700"
+                                            value={form.number}
+                                            onChange={e => setForm({ ...form, number: e.target.value })}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Andares</label>
+                                            <input
+                                                type="number"
+                                                min="1" max="50"
+                                                required={form.isBatch}
+                                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476] transition-all font-medium text-slate-700"
+                                                value={form.floors}
+                                                onChange={e => setForm({ ...form, floors: parseInt(e.target.value) || 0 })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Unidades/Andar</label>
+                                            <input
+                                                type="number"
+                                                min="1" max="20"
+                                                required={form.isBatch}
+                                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476] transition-all font-medium text-slate-700"
+                                                value={form.unitsPerFloor}
+                                                onChange={e => setForm({ ...form, unitsPerFloor: parseInt(e.target.value) || 0 })}
+                                            />
+                                        </div>
+                                        <div className="col-span-2 bg-blue-50 border border-blue-100 p-3 rounded-lg flex gap-3 items-start">
+                                            <Info size={16} className="text-blue-500 mt-0.5 shrink-0" />
+                                            <p className="text-xs text-blue-700 leading-relaxed">
+                                                Serão geradas <strong>{(form.floors || 0) * (form.unitsPerFloor || 0)}</strong> unidades automaticamente. <br />Ex: 101, 102... 201, 202...
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tipo de Imóvel</label>
+                                    <select
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#437476] transition-all font-medium text-slate-700 appearance-none"
+                                        value={form.type}
+                                        onChange={e => setForm({ ...form, type: e.target.value })}
+                                    >
+                                        <option value="Apartamento">Apartamento</option>
+                                        <option value="Casa">Casa</option>
+                                        <option value="Loja">Loja</option>
+                                        <option value="Cobertura">Cobertura</option>
+                                    </select>
+                                </div>
                             </div>
-                            <button type="submit" className="w-full bg-[#437476] text-white py-3 rounded-lg font-bold hover:bg-[#365e5f] transition-colors">
-                                {form.isBatch ? 'Gerar Unidades' : 'Criar Unidade'}
-                            </button>
+
+                            <div className="pt-2">
+                                <button type="submit" className="w-full bg-[#437476] text-white py-3 rounded-xl font-bold hover:bg-[#365e5f] transition-all shadow-lg shadow-[#437476]/20 active:scale-[0.98]">
+                                    {form.isBatch ? 'Gerar Unidades em Lote' : 'Criar Unidade Individual'}
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -284,91 +411,96 @@ export const AdminUnits: React.FC = () => {
 
             {/* Details Modal */}
             {viewingUnit && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                            <div>
-                                <h3 className="font-bold text-slate-700 text-lg">Detalhes da Unidade</h3>
-                                <p className="text-sm text-slate-500">Bloco {viewingUnit.block || '-'} - Unidade {viewingUnit.number}</p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        {/* Header Details */}
+                        <div className="relative bg-[#437476] text-white p-6 overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Building size={120} />
                             </div>
-                            <button onClick={() => setViewingUnit(null)} className="text-slate-400 hover:text-slate-600">
-                                <X size={20} />
+                            <button onClick={() => setViewingUnit(null)} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors z-20 cursor-pointer shadow-sm">
+                                <X size={24} className="text-white drop-shadow-sm" />
                             </button>
+
+                            <div className="relative z-10">
+                                <span className="inline-block px-2 py-0.5 rounded bg-white/20 text-[10px] font-bold uppercase tracking-wider mb-2 backdrop-blur-sm">
+                                    {viewingUnit.type || 'Unidade'}
+                                </span>
+                                <h3 className="text-3xl font-black">Unidade {viewingUnit.number}</h3>
+                                {viewingUnit.block && <p className="text-slate-300 font-medium">Bloco {viewingUnit.block}</p>}
+                            </div>
                         </div>
 
-                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                            {/* Current Residents */}
+                        <div className="p-6 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+
+                            {/* Current Occupation */}
                             <div>
-                                <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                                    <User size={18} className="text-[#437476]" />
+                                <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+                                    <User size={16} className="text-[#437476]" />
                                     Ocupação Atual
                                 </h4>
+
                                 {viewingUnit.current_residents.length > 0 ? (
-                                    <div className="bg-slate-50 rounded-lg border border-slate-100 divide-y divide-slate-100">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {viewingUnit.current_residents.map(res => (
-                                            <div key={res.id} className="p-3 flex justify-between items-center">
-                                                <div>
-                                                    <p className="font-medium text-slate-700">{res.name}</p>
-                                                    <p className="text-xs text-slate-400">{res.email}</p>
+                                            <div key={res.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center font-black text-slate-600 shadow-sm">
+                                                    {res.name.charAt(0)}
                                                 </div>
-                                                <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase ${res.profile_type === 'PROPRIETARIO' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                    {res.profile_type || 'INQUILINO'}
-                                                </span>
+                                                <div>
+                                                    <p className="font-bold text-slate-700 text-sm">{res.name}</p>
+                                                    <p className="text-xs text-slate-400">{res.email}</p>
+                                                    <span className={`inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${res.profile_type === 'PROPRIETARIO' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                        {res.profile_type || 'INQUILINO'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-lg text-center text-slate-400 text-sm">
-                                        Nenhum morador atual.
+                                    <div className="p-6 bg-slate-50 border border-slate-100 rounded-xl text-center flex flex-col items-center justify-center gap-2">
+                                        <Home size={32} className="text-slate-300" />
+                                        <p className="text-slate-400 font-medium text-sm">Esta unidade está vaga no momento.</p>
                                     </div>
                                 )}
                             </div>
 
-                            {/* History */}
+                            {/* History Timeline */}
                             <div>
-                                <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                                    <History size={18} className="text-[#437476]" />
+                                <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+                                    <History size={16} className="text-[#437476]" />
                                     Histórico de Ocupação
                                 </h4>
-                                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                                            <tr>
-                                                <th className="px-4 py-3">Morador</th>
-                                                <th className="px-4 py-3">Tipo</th>
-                                                <th className="px-4 py-3">Entrada</th>
-                                                <th className="px-4 py-3">Saída</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {viewingUnit.occupation_history.length > 0 ? (
-                                                viewingUnit.occupation_history.map(hist => (
-                                                    <tr key={hist.id} className="hover:bg-slate-50">
-                                                        <td className="px-4 py-3 font-medium text-slate-700">
-                                                            {hist.user_name || 'Usuário Desconhecido'}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-xs uppercase text-slate-500">
-                                                            {hist.profile_type}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-slate-600">
-                                                            {new Date(hist.start_date).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-slate-600">
-                                                            {hist.end_date ? new Date(hist.end_date).toLocaleDateString() : <span className="text-green-600 font-bold text-xs">Atual</span>}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan={4} className="p-4 text-center text-slate-400">
-                                                        Sem histórico registrado.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
+
+                                <div className="space-y-4 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+                                    {viewingUnit.occupation_history.length > 0 ? (
+                                        viewingUnit.occupation_history.map(hist => (
+                                            <div key={hist.id} className="relative pl-10">
+                                                <div className={`absolute left-3 top-2 w-3 h-3 rounded-full border-2 border-white shadow-sm ${!hist.end_date ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                                                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <p className="font-bold text-slate-700 text-sm">{hist.user_name || 'Usuário Removido'}</p>
+                                                            <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{hist.profile_type}</span>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-xs font-bold text-slate-600">
+                                                                {new Date(hist.start_date).toLocaleDateString()}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-400 mt-0.5">
+                                                                até {hist.end_date ? new Date(hist.end_date).toLocaleDateString() : 'o momento'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="pl-10 text-xs text-slate-400 italic">Nenhum histórico registrado.</p>
+                                    )}
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
