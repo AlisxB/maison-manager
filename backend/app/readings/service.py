@@ -20,11 +20,14 @@ class ReadingService:
         self.repo = ReadingRepository(db)
 
     def _check_auth(self, role: str):
-        if role not in ['ADMIN', 'RESIDENTE', 'PORTEIRO']:
+        # Allow all authenticated roles to list (except perhaps strictly external?)
+        # Including CONSELHO, FINANCIAL, MANAGEMENT
+        if role not in ['ADMIN', 'RESIDENTE', 'PORTEIRO', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO', 'CONSELHO']:
              raise HTTPException(status_code=403, detail="Not authorized")
 
-    def _check_admin(self, role: str):
-        if role != 'ADMIN':
+    def _check_manage(self, role: str):
+        # Allow managers to create/update
+        if role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'PORTEIRO', 'FINANCEIRO']:
             raise HTTPException(status_code=403, detail="Not authorized")
 
     async def list_water(self, role: str, condo_id: UUID) -> List[ReadingWater]:
@@ -40,7 +43,7 @@ class ReadingService:
         return await self.repo.get_electricity(condo_id)
 
     async def create_water(self, data: WaterReadingCreate, role: str, condo_id: UUID) -> ReadingWater:
-        self._check_admin(role)
+        self._check_manage(role)
         
         # Check if already exists for this month/unit? 
         # Ignoring complex validation for now to match refactor scope.
@@ -54,7 +57,7 @@ class ReadingService:
         return reading
 
     async def create_gas(self, data: GasReadingCreate, role: str, condo_id: UUID) -> ReadingGas:
-        self._check_admin(role)
+        self._check_manage(role)
         reading = ReadingGas(condominium_id=condo_id, **data.model_dump())
         # Add to session but don't commit yet
         # Add to session but don't commit yet - Wait for transaction!
@@ -85,7 +88,7 @@ class ReadingService:
         return reading
 
     async def create_electricity(self, data: ElectricityReadingCreate, role: str, condo_id: UUID) -> ReadingElectricity:
-        self._check_admin(role)
+        self._check_manage(role)
         reading = ReadingElectricity(condominium_id=condo_id, **data.model_dump())
         # self.db.add(reading)
 
@@ -114,7 +117,7 @@ class ReadingService:
         return reading
 
     async def update_water(self, id: UUID, data: WaterReadingUpdate, role: str, condo_id: UUID) -> ReadingWater:
-        self._check_admin(role)
+        self._check_manage(role)
         reading = await self.repo.get_water_by_id(id, condo_id)
         if not reading:
              raise HTTPException(status_code=404, detail="Reading not found")
