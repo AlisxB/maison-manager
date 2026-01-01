@@ -445,7 +445,7 @@ ALTER TABLE bylaws ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY bylaws_policy ON bylaws
     USING (condominium_id = current_condo_id())
-    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() = 'ADMIN');
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'SINDICO'));
 
 CREATE TRIGGER audit_bylaws_trigger AFTER INSERT OR UPDATE OR DELETE ON bylaws
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
