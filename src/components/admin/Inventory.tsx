@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Trash2, Edit2, Package, AlertOctagon } from 'lucide-react';
-import { InventoryService, InventoryItem, InventoryItemCreate, InventoryItemUpdate } from '../../services/inventoryService';
+import { InventoryService, InventoryItem, InventoryItemCreate } from '../../services/inventoryService';
 
 export const AdminInventory: React.FC = () => {
     const [items, setItems] = useState<InventoryItem[]>([]);
@@ -115,29 +115,98 @@ export const AdminInventory: React.FC = () => {
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
+        <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Header Responsivo */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-black text-[#437476] tracking-tight">Gestão de Estoque</h2>
                     <p className="text-sm text-slate-400 font-bold mt-1">Controle de suprimentos e materiais.</p>
                 </div>
-                <button onClick={handleOpenCreate} className="bg-[#437476] text-white px-4 py-2 rounded-xl flex items-center gap-2 font-bold hover:bg-[#356062] transition-colors shadow-sm">
+                <button
+                    onClick={handleOpenCreate}
+                    className="w-full sm:w-auto bg-[#437476] text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#356062] transition-all shadow-lg shadow-[#437476]/20 active:scale-95"
+                >
                     <Plus size={18} /> Novo Item
                 </button>
             </div>
 
+            {/* Search Bar */}
             <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
                 <Search className="text-slate-400" size={20} />
                 <input
                     type="text"
-                    placeholder="Buscar por nome ou categoria..."
+                    placeholder="Buscar por nome, categoria..."
                     className="flex-1 outline-none text-slate-600 font-medium placeholder:font-normal"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+            {/* Mobile Card List */}
+            <div className="md:hidden space-y-4">
+                {loading ? (
+                    <div className="p-8 text-center text-slate-400 font-bold">Carregando estoque...</div>
+                ) : filteredItems.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 font-bold bg-white rounded-xl border border-slate-200">Nenhum item encontrado.</div>
+                ) : (
+                    filteredItems.map(item => {
+                        const isLowStock = item.quantity <= (item.min_quantity || 0);
+                        return (
+                            <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm active:scale-[0.99] transition-transform">
+                                <div className="flex items-start gap-3 mb-3">
+                                    <div className={`p-3 rounded-xl shrink-0 ${isLowStock ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'}`}>
+                                        {isLowStock ? <AlertOctagon size={20} /> : <Package size={20} />}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="font-bold text-slate-800 text-lg leading-tight">{item.name}</h3>
+                                            {isLowStock && <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full uppercase tracking-wide">Baixo</span>}
+                                        </div>
+                                        <p className="text-xs text-slate-500 font-medium mt-1">{item.category}</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Estoque</p>
+                                        <p className={`text-lg font-black ${isLowStock ? 'text-red-500' : 'text-slate-700'}`}>
+                                            {item.quantity} <span className="text-sm font-bold text-slate-400">{item.unit}</span>
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleOpenStockUpdate(item, 'remove')}
+                                            className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 font-black text-lg active:bg-slate-100 transition-colors"
+                                        >-</button>
+                                        <button
+                                            onClick={() => handleOpenStockUpdate(item, 'add')}
+                                            className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 font-black text-lg active:bg-slate-100 transition-colors"
+                                        >+</button>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleOpenEdit(item)}
+                                        className="flex-1 py-2 bg-[#437476]/5 text-[#437476] rounded-lg text-sm font-bold active:bg-[#437476]/10 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Edit2 size={16} /> Editar
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(item.id)}
+                                        className="w-10 flex items-center justify-center bg-red-50 text-red-500 rounded-lg active:bg-red-100 transition-colors"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead className="bg-slate-50 border-b border-slate-100">
@@ -184,10 +253,10 @@ export const AdminInventory: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => handleOpenEdit(item)} className="p-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors">
+                                                    <button onClick={() => handleOpenEdit(item)} className="p-2 text-slate-400 hover:text-[#437476] hover:bg-[#437476]/10 rounded-lg transition-colors">
                                                         <Edit2 size={16} />
                                                     </button>
-                                                    <button onClick={() => handleDelete(item.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                                                    <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
@@ -202,24 +271,24 @@ export const AdminInventory: React.FC = () => {
             </div>
 
             {showModal && (
-                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl border border-slate-100">
-                        <h3 className="text-xl font-black text-slate-700 mb-4">{isEditing ? 'Editar Item' : 'Novo Item'}</h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-[2rem] p-6 md:p-8 w-full max-w-md shadow-2xl border border-white/50 animate-in fade-in zoom-in-95">
+                        <h3 className="text-xl font-black text-slate-800 mb-6 tracking-tight">{isEditing ? 'Editar Item' : 'Novo Item'}</h3>
+                        <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome</label>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Nome</label>
                                 <input
                                     type="text" required
-                                    className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700 focus:ring-2 focus:ring-[#437476]/20"
+                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700 focus:ring-2 focus:ring-[#437476]/20 transition-all placeholder-slate-400"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Categoria</label>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Categoria</label>
                                     <select
-                                        className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700"
+                                        className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700 appearance-none"
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                     >
@@ -227,9 +296,9 @@ export const AdminInventory: React.FC = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Unidade</label>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Unidade</label>
                                     <select
-                                        className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700"
+                                        className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700 appearance-none"
                                         value={formData.unit}
                                         onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                                     >
@@ -239,29 +308,29 @@ export const AdminInventory: React.FC = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Quantidade</label>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Qtde.</label>
                                     <input
                                         type="number" required min="0"
-                                        className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700"
+                                        className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700"
                                         value={formData.quantity}
                                         onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Mínimo (Alerta)</label>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Mínimo</label>
                                     <input
                                         type="number" required min="1"
-                                        className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700"
+                                        className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700"
                                         value={formData.min_quantity}
                                         onChange={(e) => setFormData({ ...formData, min_quantity: parseInt(e.target.value) })}
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Localização (Opcional)</label>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Localização (Opcional)</label>
                                 <input
                                     type="text"
-                                    className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700"
+                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl border-none outline-none font-bold text-slate-700"
                                     value={formData.location || ''}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                 />
@@ -269,7 +338,7 @@ export const AdminInventory: React.FC = () => {
 
                             <div className="flex gap-3 mt-6">
                                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Cancelar</button>
-                                <button type="submit" className="flex-1 py-3 bg-[#437476] text-white font-bold rounded-xl hover:bg-[#356062] shadow-sm transition-transform active:scale-95">Salvar</button>
+                                <button type="submit" className="flex-1 py-3 bg-[#437476] text-white font-bold rounded-xl hover:bg-[#356062] shadow-lg shadow-[#437476]/20 transition-transform active:scale-95 uppercase tracking-wide text-sm">Salvar</button>
                             </div>
                         </form>
                     </div>
@@ -277,29 +346,29 @@ export const AdminInventory: React.FC = () => {
             )}
 
             {stockModal && (
-                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
-                        <h3 className="text-xl font-black text-slate-700 mb-2">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl border border-white/50 animate-in fade-in zoom-in-95 duration-200">
+                        <h3 className="text-xl font-black text-slate-800 mb-2">
                             {stockModal.action === 'add' ? 'Adicionar Estoque' : 'Remover Estoque'}
                         </h3>
-                        <p className="text-sm text-slate-400 mb-6 font-medium">
+                        <p className="text-sm text-slate-500 mb-8 font-medium">
                             {stockModal.item.name} <span className="text-slate-300">|</span> Atual: {stockModal.item.quantity} {stockModal.item.unit}
                         </p>
 
-                        <form onSubmit={handleStockUpdateConfirm} className="space-y-4">
+                        <form onSubmit={handleStockUpdateConfirm} className="space-y-6">
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Quantidade a {stockModal.action === 'add' ? 'Adicionar' : 'Remover'}</label>
-                                <div className="flex items-center gap-3">
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 text-center">Quantidade</label>
+                                <div className="flex items-center gap-4 justify-center">
                                     <button
                                         type="button"
                                         onClick={() => setStockAmount(Math.max(1, stockAmount - 1))}
-                                        className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 font-black hover:bg-slate-200 transition-colors"
+                                        className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 font-black hover:bg-slate-200 transition-colors text-xl active:scale-95"
                                     >-</button>
                                     <input
                                         type="number"
                                         min="1"
                                         required
-                                        className="flex-1 text-center p-2.5 bg-slate-50 rounded-xl border-none outline-none font-black text-lg text-slate-700"
+                                        className="w-20 text-center p-2 bg-transparent border-none outline-none font-black text-3xl text-slate-700"
                                         value={stockAmount}
                                         onChange={(e) => setStockAmount(Math.max(1, parseInt(e.target.value) || 0))}
                                         autoFocus
@@ -307,16 +376,16 @@ export const AdminInventory: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => setStockAmount(stockAmount + 1)}
-                                        className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 font-black hover:bg-slate-200 transition-colors"
+                                        className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 font-black hover:bg-slate-200 transition-colors text-xl active:scale-95"
                                     >+</button>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 mt-6">
-                                <button type="button" onClick={() => setStockModal(null)} className="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Cancelar</button>
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={() => setStockModal(null)} className="flex-1 py-3.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Cancelar</button>
                                 <button
                                     type="submit"
-                                    className={`flex-1 py-3 text-white font-bold rounded-xl shadow-sm transition-transform active:scale-95 ${stockModal.action === 'add' ? 'bg-[#437476] hover:bg-[#356062]' : 'bg-red-500 hover:bg-red-600'}`}
+                                    className={`flex-[1.5] py-3.5 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95 uppercase tracking-wide text-sm ${stockModal.action === 'add' ? 'bg-[#437476] hover:bg-[#356062] shadow-[#437476]/20' : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'}`}
                                 >
                                     Confirmar
                                 </button>
