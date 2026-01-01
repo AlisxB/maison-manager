@@ -390,7 +390,7 @@ CREATE POLICY readings_water_policy ON readings_water
     USING (
         condominium_id = current_condo_id()
         AND (
-            current_app_role() IN ('ADMIN', 'PORTEIRO') OR 
+            current_app_role() IN ('ADMIN', 'PORTEIRO', 'SINDICO', 'SUBSINDICO') OR 
             unit_id IN (SELECT unit_id FROM users WHERE id = current_user_id())
         )
     );
@@ -398,17 +398,17 @@ CREATE POLICY readings_water_policy ON readings_water
 -- Gas: Admin/Financial sees all. Residents view-only.
 CREATE POLICY readings_gas_policy ON readings_gas
     USING (condominium_id = current_condo_id())
-    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO'));
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO', 'SINDICO', 'SUBSINDICO'));
 
 -- Electricity: Admin/Financial sees all. Residents view-only.
 CREATE POLICY readings_electricity_policy ON readings_electricity
     USING (condominium_id = current_condo_id())
-    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO'));
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO', 'SINDICO', 'SUBSINDICO'));
 
 
 CREATE POLICY transactions_policy ON transactions
     USING (condominium_id = current_condo_id())
-    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO'));
+    WITH CHECK (condominium_id = current_condo_id() AND current_app_role() IN ('ADMIN', 'FINANCEIRO', 'SINDICO', 'SUBSINDICO'));
 
 -- Inventory Items
 CREATE TABLE IF NOT EXISTS inventory_items (
@@ -537,7 +537,7 @@ CREATE POLICY occurrences_select_policy ON occurrences FOR SELECT
     USING (
         condominium_id = current_condo_id()
         AND (
-            current_app_role() = 'ADMIN' OR
+            current_app_role() IN ('ADMIN', 'SINDICO', 'SUBSINDICO', 'PORTEIRO') OR
             user_id = current_user_id()
         )
     );
@@ -554,14 +554,14 @@ CREATE POLICY occurrences_update_policy ON occurrences FOR UPDATE
     USING (
         condominium_id = current_condo_id()
         AND (
-            current_app_role() = 'ADMIN' OR
+            current_app_role() IN ('ADMIN', 'SINDICO', 'SUBSINDICO', 'PORTEIRO') OR
             (user_id = current_user_id() AND status = 'ABERTO')
         )
     )
     WITH CHECK (
         condominium_id = current_condo_id()
         AND (
-            current_app_role() = 'ADMIN' OR
+            current_app_role() IN ('ADMIN', 'SINDICO', 'SUBSINDICO', 'PORTEIRO') OR
             (user_id = current_user_id() AND status = 'ABERTO')
         )
     );

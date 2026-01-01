@@ -12,21 +12,29 @@ class OccurrenceService:
         self.repo = OccurrenceRepository(db)
 
     async def list_occurrences(self, user_id: UUID, role: str, condo_id: UUID) -> List[Occurrence]:
-        # Residents see own, Admin sees all
-        filter_user = user_id if role == 'RESIDENTE' else None
+        # Residents see own, Allowed Management roles see all.
+        # Others (Financeiro, Conselho) should NOT see all occurrences.
+        
+        allowed_view_all = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'PORTEIRO']
+        
+        if role == 'RESIDENTE':
+            filter_user = user_id
+        elif role in allowed_view_all:
+            filter_user = None
+        else:
+             # Example: Financeiro/Conselho trying to list occurrences.
+             # Option A: Return empty list
+             # Option B: Raise 403
+             # Going with empty list (or own if they are also residents? Usually separate roles in this system).
+             # Let's assume strict RBAC for now as requested "Only... can see".
+             raise HTTPException(status_code=403, detail="Not authorized to view occurrences.")
+
         occurrences = await self.repo.get_all(condo_id, filter_user)
         
         # Anonymization Logic
         for occ in occurrences:
              if occ.is_anonymous and role == 'RESIDENTE' and str(occ.user_id) != str(user_id):
-                  # Should not happen as residents only see own, but if logic changes:
                   occ.user = None
-             elif occ.is_anonymous and role != 'RESIDENTE':
-                  # Admins see content but name is hidden? Or full anonymous?
-                  # Rules say "Anonymous". So Admin shouldn't know who sent it if truly anonymous?
-                  # Usually Admin sees it's anonymous, user relation might be kept for DB integrity but hidden in response.
-                  pass
-                  
         return occurrences
 
     async def create_occurrence(self, data: OccurrenceCreate, user_id: UUID, condo_id: UUID) -> Occurrence:
@@ -37,12 +45,12 @@ class OccurrenceService:
         )
         await self.repo.create(occurrence)
         await self.db.commit()
-        # Return re-fetched object with relationships loaded to avoid MissingGreenlet error in Pydantic
+        # Return re-fetched object with relationships loaded
         return await self.repo.get_by_id(occurrence.id, condo_id)
 
     async def update_occurrence(self, id: UUID, data: OccurrenceUpdate, role: str, condo_id: UUID) -> Occurrence:
-        if role != 'ADMIN':
-             raise HTTPException(status_code=403, detail="Only admins can update occurrences (respond/status).")
+        if role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'PORTEIRO']:
+             raise HTTPException(status_code=403, detail="Only management roles (Admin, Sindico, Porteiro) can update occurrences.")
              
         occ = await self.repo.get_by_id(id, condo_id)
         if not occ:
