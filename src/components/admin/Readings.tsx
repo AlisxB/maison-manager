@@ -74,6 +74,19 @@ export const AdminReadings: React.FC = () => {
         setElecReadings(data);
     };
 
+    // Currency helpers
+    const formatCurrency = (value: string) => {
+        const numeric = value.replace(/\D/g, '');
+        if (!numeric) return '';
+        const numberValue = Number(numeric) / 100;
+        return numberValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    const parseCurrency = (value: string) => {
+        const numeric = value.replace(/\D/g, '');
+        return Number(numeric) / 100;
+    };
+
     // Submits
     const handleWaterSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -131,7 +144,7 @@ export const AdminReadings: React.FC = () => {
             await ReadingService.createGas({
                 supplier: gasForm.supplier,
                 purchase_date: gasForm.date,
-                total_price: parseFloat(gasForm.totalPrice),
+                total_price: parseCurrency(gasForm.totalPrice),
                 cylinder_1_kg: parseFloat(gasForm.cyl1),
                 cylinder_2_kg: parseFloat(gasForm.cyl2),
                 cylinder_3_kg: parseFloat(gasForm.cyl3),
@@ -149,7 +162,7 @@ export const AdminReadings: React.FC = () => {
             await ReadingService.createElectricity({
                 due_date: elecForm.date,
                 consumption_kwh: parseFloat(elecForm.kwh),
-                total_value: parseFloat(elecForm.totalValue),
+                total_value: parseCurrency(elecForm.totalValue),
                 status: elecForm.status as any
             });
             alert('Registro de Energia salvo!');
@@ -307,10 +320,11 @@ export const AdminReadings: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Valor Total (R$)</label>
                                     <input
-                                        type="number" step="0.01" required
+                                        type="text" required
                                         className="w-full p-2.5 rounded-xl border border-slate-200"
                                         value={gasForm.totalPrice}
-                                        onChange={e => setGasForm({ ...gasForm, totalPrice: e.target.value })}
+                                        onChange={e => setGasForm({ ...gasForm, totalPrice: formatCurrency(e.target.value) })}
+                                        placeholder="R$ 0,00"
                                     />
                                 </div>
                                 <button type="submit" className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 transition-all">
@@ -343,10 +357,11 @@ export const AdminReadings: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Valor Total (R$)</label>
                                     <input
-                                        type="number" step="0.01" required
+                                        type="text" required
                                         className="w-full p-2.5 rounded-xl border border-slate-200"
                                         value={elecForm.totalValue}
-                                        onChange={e => setElecForm({ ...elecForm, totalValue: e.target.value })}
+                                        onChange={e => setElecForm({ ...elecForm, totalValue: formatCurrency(e.target.value) })}
+                                        placeholder="R$ 0,00"
                                     />
                                 </div>
                                 <div>
