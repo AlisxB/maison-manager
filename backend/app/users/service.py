@@ -121,6 +121,53 @@ class UserService:
            (user_in.profile_type and user_in.profile_type != db_user.profile_type):
             occupation_changed = True
 
+        # Fix: Reactivation / Approval should also trigger history creation
+        # If user is currently NOT Active (Pending/Inactive) and is becoming Active (explicitly or implicitly via unit add)
+        # OR if we are adding a unit to an Inactive user (Reactivation case)
+        
+        is_activating = False
+        if user_in.status == 'ATIVO' and db_user.status != 'ATIVO':
+             is_activating = True
+             
+        if is_activating:
+             occupation_changed = True
+             # Ensure deleted_at is cleared
+             db_user.deleted_at = None
+             
+        # Case: Previously Inactive/Msg Deleted user being assigned to a unit (user_in.unit_id set)
+        # Even if they didn't send status='ATIVO', if they are currently Inactive and get a unit, we Reactivate.
+        if db_user.status == 'INATIVO' and user_in.unit_id:
+             db_user.status = 'ATIVO'
+             db_user.deleted_at = None
+             occupation_changed = True
+             occupation_changed = True
+             is_activating = True
+
+             from sqlalchemy import text
+             # Physical delete
+             stmt_del = text(f"DELETE FROM users WHERE id = '{db_user.id}'")
+             await self.db.execute(stmt_del)
+             
+             # Expunge from session to avoid StaleDataError on commit
+             self.db.expunge(db_user)
+             
+             await self.db.commit()
+             
+             # Return User object as it was before delete (in memory) but marked rejected for response
+             db_user.status = "REJEITADO"
+             db_user.unit_id = None
+             db_user.unit = None # Explicitly set relation to None to avoid lazy load access
+             
+             # Populate transient email for schema validation
+             if hasattr(db_user, 'email_encrypted') and db_user.email_encrypted and db_user.email_encrypted.startswith("ENC("):
+                  db_user.email = db_user.email_encrypted[4:-1]
+             else:
+                  db_user.email = "rejected@unknown.com" # Fallback if missing
+                  
+             return db_user
+
+
+
         if user_in.name: db_user.name = user_in.name
         if user_in.role: db_user.role = user_in.role
         if user_in.profile_type: db_user.profile_type = user_in.profile_type
@@ -129,12 +176,12 @@ class UserService:
         if user_in.work_hours: db_user.work_hours = user_in.work_hours
         if user_in.status: db_user.status = user_in.status
         
-        # Validate Occupancy if changing unit or profile
+        # Validate Occupancy if changing unit or profile (SKIP if Rejecting)
         target_unit = user_in.unit_id if user_in.unit_id is not None else db_user.unit_id
         target_profile = user_in.profile_type if user_in.profile_type else db_user.profile_type
         
         # Always validate occupancy to ensure consistency, excluding self
-        if target_unit and target_profile:
+        if target_unit and target_profile and user_in.status != 'REJEITADO':
              await self._validate_unit_occupancy(target_unit, target_profile, exclude_user_id=db_user.id)
         
         if occupation_changed:
@@ -161,6 +208,26 @@ class UserService:
                 start_date=datetime.now()
             )
             self.db.add(new_history)
+            
+        elif db_user.status == 'ATIVO' and user_in.status == 'ATIVO' and not occupation_changed:
+             # Already active, no occupation change. Do nothing history-wise.
+             # But wait, what if they were PENDING -> ATIVO? 
+             # The client sends status="ATIVO" in update.
+             pass
+
+        # Reactivation / Activation Logic
+        # If transitioning to ATIVO (from INATIVO or PENDING), ensure history exists or create it
+        if user_in.status == 'ATIVO' and db_user.status != 'ATIVO':
+             # 1. Clear Deleted At
+             db_user.deleted_at = None
+             
+             # 2. Check if we have an open history (we shouldn't if inactive/pending usually, but let's check)
+             # Actually, simpler: Treat as occupation change if no open history exists?
+             pass 
+             # Logic refactor: The block above `if occupation_changed` runs before status update.
+             # We need to FORCE `occupation_changed` to True if activating.
+             
+        # Let's adjust the `occupation_changed` detection earlier.
 
         if user_in.phone:
             db_user.phone_encrypted = f"ENC({user_in.phone})"
