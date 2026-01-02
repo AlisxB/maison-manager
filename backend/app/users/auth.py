@@ -189,8 +189,8 @@ async def register_public(
             role, profile_type, status
         ) VALUES (
             :condo_id, :unit_id, :name,
-            pgp_sym_encrypt(:email, :key), :email_hash,
-            pgp_sym_encrypt(:phone, :key), :phone_hash,
+            :email, :email_hash,
+            :phone, :phone_hash,
             :password_hash,
             'RESIDENTE', :profile_type, 'PENDENTE'
         ) RETURNING id, status, created_at, role
@@ -200,10 +200,9 @@ async def register_public(
         "condo_id": unit.condominium_id,
         "unit_id": unit.id,
         "name": user_in.name,
-        "email": user_in.email.lower(),
-        "key": config.settings.APP_ENCRYPTION_KEY,
+        "email": f"ENC({user_in.email.lower()})",
         "email_hash": email_hash,
-        "phone": user_in.phone,
+        "phone": f"ENC({user_in.phone})",
         "phone_hash": phone_hash,
         "password_hash": password_hash,
         "profile_type": user_in.profile_type or 'INQUILINO'
