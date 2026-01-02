@@ -29,8 +29,9 @@ export const AdminRequests: React.FC = () => {
             alert(`Usuário ${selectedRequest.name} aprovado!`);
             setSelectedRequest(null);
             fetchRequests();
-        } catch (error) {
-            alert("Erro ao aprovar usuário.");
+        } catch (error: any) {
+            const msg = error.response?.data?.detail || "Erro ao aprovar usuário.";
+            alert(msg);
         }
     };
 
