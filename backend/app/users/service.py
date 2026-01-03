@@ -9,6 +9,8 @@ from datetime import datetime
 from app.core import security
 import hashlib
 import uuid
+from app.core.decorators import audit_log
+from app.services.audit_service import AuditService
 
 class UserService:
     def __init__(self, db: AsyncSession):
@@ -44,6 +46,7 @@ class UserService:
                 detail=f"Esta unidade já possui um {pt_label} cadastrado ({existing.name}). Apenas um por unidade é permitido."
             )
 
+    @audit_log(action="INSERT", table_name="users")
     async def create_user(self, user_in: UserCreate, current_user_role: str, current_condo_id: UUID) -> User:
         if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO']:
             raise HTTPException(status_code=403, detail="Apenas administradores podem criar usuários")
@@ -105,6 +108,15 @@ class UserService:
         db_user = await self.repo.get_by_id(user_id)
         if not db_user:
             raise HTTPException(status_code=404, detail="User not found")
+
+        # Audit: Capture Old Data
+        old_data = {
+            "name": db_user.name,
+            "role": db_user.role,
+            "status": db_user.status,
+            "profile_type": db_user.profile_type,
+            "unit_id": str(db_user.unit_id) if db_user.unit_id else None
+        }
 
         # Security Check: Non-Admin can only update Residents
         if current_user_role != 'ADMIN' and db_user.role != 'RESIDENTE' and str(db_user.id) != str(current_user_id):
@@ -266,8 +278,28 @@ class UserService:
              updated_user.email = "admin@maison.com" # Fallback/Hack
              # Ideally validation should be relaxed or Service should decrypt.
              
+        # Audit Log: Record changes
+        if True: # Always log updates, even self-updates (security best practice)
+             await AuditService.log(
+                db=self.db,
+                action="UPDATE",
+                table_name="users",
+                record_id=str(updated_user.id),
+                actor_id=current_user_id,
+                old_data=old_data,
+                new_data={
+                    "name": updated_user.name,
+                    "role": updated_user.role,
+                    "status": updated_user.status,
+                    "profile_type": updated_user.profile_type,
+                    "unit_id": str(updated_user.unit_id) if updated_user.unit_id else None
+                },
+                condominium_id=str(updated_user.condominium_id)
+             )
+
         return updated_user
 
+    @audit_log(action="DELETE", table_name="users")
     async def delete_user(self, user_id: str, current_user_id: str, current_user_role: str) -> None:
         if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO']:
             raise HTTPException(status_code=403, detail="Not authorized")
