@@ -63,6 +63,19 @@ export const AdminFinancial: React.FC = () => {
     const incomeCategories = ['Condomínio', 'Reservas', 'Multas', 'Outros'];
     const expenseCategories = ['Manutenção', 'Serviços', 'Utilidades', 'Pessoal', 'Gás', 'Energia Elétrica', 'Outros'];
 
+    // Currency helpers
+    const formatCurrency = (value: string) => {
+        const numeric = value.replace(/\D/g, '');
+        if (!numeric) return '';
+        const numberValue = Number(numeric) / 100;
+        return numberValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    const parseCurrency = (value: string) => {
+        const numeric = value.replace(/\D/g, '');
+        return Number(numeric) / 100;
+    };
+
     const loadData = async () => {
         setLoading(true);
         try {
@@ -91,10 +104,11 @@ export const AdminFinancial: React.FC = () => {
 
     const openEditModal = (tx: Transaction) => {
         setEditingId(tx.id);
+        const amountString = tx.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         setTxForm({
             type: tx.type,
             description: tx.description,
-            amount: String(tx.amount),
+            amount: amountString,
             date: tx.date, // Assuming date comes as YYYY-MM-DD from getAll or adjusted
             category: tx.category || '',
             status: tx.status,
@@ -126,14 +140,14 @@ export const AdminFinancial: React.FC = () => {
 
             const payload = {
                 ...txForm,
-                amount: Number(txForm.amount),
+                amount: parseCurrency(txForm.amount),
                 status: txForm.status // txForm.status is already 'paid' or 'pending'
             } as any;
 
             if (editingId) {
                 await FinancialService.update(editingId, {
                     ...txForm,
-                    amount: Number(txForm.amount),
+                    amount: parseCurrency(txForm.amount),
                     status: txForm.status as 'paid' | 'pending'
                 });
                 alert('Transação atualizada!');
@@ -515,12 +529,11 @@ export const AdminFinancial: React.FC = () => {
                                         <div className="relative group">
                                             <DollarSign size={18} className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-[#437476] transition-colors" />
                                             <input
-                                                type="number"
-                                                placeholder="0.00"
-                                                step="0.01"
+                                                type="text"
+                                                placeholder="R$ 0,00"
                                                 className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-black text-slate-700 outline-none focus:ring-4 focus:ring-[#437476]/5 focus:border-[#437476] transition-all placeholder-slate-300"
                                                 value={txForm.amount}
-                                                onChange={e => setTxForm({ ...txForm, amount: e.target.value })}
+                                                onChange={e => setTxForm({ ...txForm, amount: formatCurrency(e.target.value) })}
                                             />
                                         </div>
                                     </div>

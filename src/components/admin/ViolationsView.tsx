@@ -42,6 +42,19 @@ export const ViolationsView: React.FC = () => {
         }
     };
 
+    // Currency helpers
+    const formatCurrency = (value: string) => {
+        const numeric = value.replace(/\D/g, '');
+        if (!numeric) return '';
+        const numberValue = Number(numeric) / 100;
+        return numberValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    const parseCurrency = (value: string) => {
+        const numeric = value.replace(/\D/g, '');
+        return Number(numeric) / 100;
+    };
+
     // Dynamic Filter for Bylaws based on selected Type
     const filteredBylaws = bylaws.filter(b => {
         if (formData.type === 'MULTA') return b.category === 'Multa';
@@ -53,6 +66,7 @@ export const ViolationsView: React.FC = () => {
         try {
             const payload = {
                 ...formData,
+                amount: parseCurrency(String(formData.amount)),
                 bylaw_id: formData.bylaw_id || null // Send null if empty string
             };
             await ViolationService.create(payload as ViolationCreate);
@@ -243,12 +257,12 @@ export const ViolationsView: React.FC = () => {
                                 <div className="animate-in fade-in slide-in-from-top-2">
                                     <label className="text-xs font-bold text-slate-400 uppercase">Valor da Multa (R$)</label>
                                     <input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
+                                        placeholder="R$ 0,00"
                                         required
                                         className="w-full p-2 border rounded-lg mt-1 font-mono text-red-600 font-bold"
-                                        value={formData.amount}
-                                        onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                                        value={typeof formData.amount === 'number' ? formData.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : formData.amount}
+                                        onChange={e => setFormData({ ...formData, amount: formatCurrency(e.target.value) as any })}
                                     />
                                 </div>
                             )}
