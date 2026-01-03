@@ -148,10 +148,14 @@ function SettingsMenu({ onNavigate }: { onNavigate: (view: SettingsView) => void
     );
 }
 
+import { Eye } from 'lucide-react';
+
 function LogsView({ onBack }: { onBack: () => void }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
 
     useEffect(() => {
         fetchLogs();
@@ -181,7 +185,8 @@ function LogsView({ onBack }: { onBack: () => void }) {
             'condominiums': 'Condomínio',
             'vehicles': 'Veículos',
             'pets': 'Pets',
-            'bylaws': 'Regimentos'
+            'bylaws': 'Regimentos',
+            'occupation_history': 'Histórico de Ocupação'
         };
         return map[table] || table;
     };
@@ -194,6 +199,49 @@ function LogsView({ onBack }: { onBack: () => void }) {
             case 'LOGIN': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">Login</span>;
             default: return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase">{action}</span>;
         }
+    };
+
+    const handleViewDetails = (log: AuditLog) => {
+        setSelectedLog(log);
+        setIsDetailOpen(true);
+    };
+
+    const formatLogData = (data: any) => {
+        if (!data) return [];
+
+        const translations: Record<string, string> = {
+            name: 'Nome',
+            email: 'E-mail',
+            role: 'Cargo',
+            status: 'Status',
+            type: 'Tipo',
+            description: 'Descrição',
+            amount: 'Valor',
+            date: 'Data',
+            category: 'Categoria',
+            observation: 'Observação',
+            block: 'Bloco',
+            number: 'Número',
+            capacity: 'Capacidade',
+            price_per_hour: 'Preço/Hora',
+            is_active: 'Ativo',
+            address: 'Endereço',
+            contact_email: 'Email de Contato',
+            gate_phone: 'Telefone',
+            profile_type: 'Perfil',
+            phone: 'Telefone Celular'
+        };
+
+        const ignored = ['id', 'password_hash', 'email_hash', 'email_encrypted', 'phone_hash', 'phone_encrypted', 'cnpj_hash', 'cnpj_encrypted', 'cpf_hash', 'cpf_encrypted', 'condominium_id', 'created_at', 'updated_at', 'deleted_at', 'unit_id', 'condominiums_id'];
+
+        return Object.entries(data)
+            .filter(([key]) => !ignored.includes(key) && !key.endsWith('_id'))
+            .map(([key, value]) => ({
+                key: key,
+                label: translations[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+                value: value
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
     };
 
     return (
@@ -221,7 +269,7 @@ function LogsView({ onBack }: { onBack: () => void }) {
                                 <th className="px-6 py-4">Ação</th>
                                 <th className="px-6 py-4">Módulo</th>
                                 <th className="px-6 py-4">Recurso ID</th>
-                                <th className="px-6 py-4 text-right">Origem</th>
+                                <th className="px-6 py-4 text-center">Detalhes</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -256,12 +304,14 @@ function LogsView({ onBack }: { onBack: () => void }) {
                                         <td className="px-6 py-4">
                                             <p className="text-xs text-slate-600 line-clamp-1 italic font-mono">{log.record_id}</p>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex flex-col items-end gap-1">
-                                                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                                                    <Monitor size={10} /> {log.ip_address || 'N/A'}
-                                                </span>
-                                            </div>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => handleViewDetails(log)}
+                                                className="p-2 text-slate-400 hover:text-[#437476] hover:bg-[#437476]/10 rounded-full transition-all"
+                                                title="Ver Detalhes"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -274,6 +324,77 @@ function LogsView({ onBack }: { onBack: () => void }) {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Exibindo os últimos {logs.length} registros de auditoria</p>
                 </div>
             </div>
+
+            {isDetailOpen && selectedLog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col animate-in zoom-in-95">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2">
+                                    Detalhes da Auditoria
+                                    {getActionBadge(selectedLog.action)}
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-1 font-mono">{selectedLog.id}</p>
+                            </div>
+                            <button onClick={() => setIsDetailOpen(false)} className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"><X size={20} /></button>
+                        </div>
+
+                        <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+                                <div className="bg-white border server-slate-200 rounded-xl overflow-hidden flex flex-col">
+                                    <div className="bg-red-50 px-4 py-2 border-b border-red-100 text-red-700 font-bold text-xs uppercase">
+                                        Dados Anteriores (Antes)
+                                    </div>
+                                    <div className="p-4 overflow-auto custom-scrollbar flex-1 space-y-2">
+                                        {formatLogData(selectedLog.old_data).length > 0 ? (
+                                            formatLogData(selectedLog.old_data).map((item) => {
+                                                const newValue = selectedLog.new_data?.[item.key];
+                                                const isChanged = JSON.stringify(item.value) !== JSON.stringify(newValue);
+                                                return (
+                                                    <div key={item.key} className={`text-xs font-mono p-2 rounded border border-transparent ${isChanged ? 'bg-yellow-50 border-yellow-100' : 'hover:bg-slate-50'}`}>
+                                                        <span className="font-bold text-slate-500 block mb-0.5">{item.label}</span>
+                                                        <span className="text-slate-700">{typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value)}</span>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="h-full flex items-center justify-center text-slate-300 italic text-sm">Nenhum dado importante</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white border server-slate-200 rounded-xl overflow-hidden flex flex-col">
+                                    <div className="bg-green-50 px-4 py-2 border-b border-green-100 text-green-700 font-bold text-xs uppercase">
+                                        Novos Dados (Depois)
+                                    </div>
+                                    <div className="p-4 overflow-auto custom-scrollbar flex-1 space-y-2">
+                                        {formatLogData(selectedLog.new_data).length > 0 ? (
+                                            formatLogData(selectedLog.new_data).map((item) => {
+                                                const oldValue = selectedLog.old_data?.[item.key];
+                                                const isChanged = selectedLog.action === 'UPDATE' && JSON.stringify(item.value) !== JSON.stringify(oldValue);
+
+                                                return (
+                                                    <div key={item.key} className={`text-xs font-mono p-2 rounded border border-transparent ${isChanged ? 'bg-yellow-50 border-yellow-100' : 'hover:bg-slate-50'}`}>
+                                                        <span className="font-bold text-slate-500 block mb-0.5">{item.label}</span>
+                                                        <span className="text-slate-700">{typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value)}</span>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="h-full flex items-center justify-center text-slate-300 italic text-sm">Nenhum dado importante</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-slate-100 bg-white rounded-b-xl flex justify-between items-center text-xs text-slate-500">
+                            <span>IP: {selectedLog.ip_address || 'N/A'}</span>
+                            <span>Data: {new Date(selectedLog.created_at).toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
