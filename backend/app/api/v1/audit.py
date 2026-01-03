@@ -49,4 +49,77 @@ async def get_audit_logs(
     result = await db.execute(text(query_str), params)
     rows = result.mappings().all()
     
-    return rows
+    # Process rows to decrypt sensitive data
+    # We support two modes:
+    # 1. "ENC(...)" -> Simple string masking used by Service: Decrypt by stripping.
+    # 2. Real pgp_sym_encrypt -> Decrypt via DB.
+    
+    encrypted_values_for_db = set()
+    decrypted_map = {}
+    
+    sensitive_keys = ['email_encrypted', 'phone_encrypted', 'cpf_encrypted', 'cnpj_encrypted']
+
+    def process_val(val):
+        if not val or not isinstance(val, str):
+            return None, None
+        if val.startswith("ENC("):
+            # Mode 1: ENC(...)
+            return "LOCAL", val[4:-1]
+        else:
+            # Mode 2: Potential DB encryption
+            return "DB", val
+
+    # First pass: Identify local vs db
+    for row in rows:
+        for data in [row.get('old_data'), row.get('new_data')]:
+            if not data: continue
+            for key in sensitive_keys:
+                if key in data:
+                    mode, res = process_val(data[key])
+                    if mode == "LOCAL":
+                        decrypted_map[data[key]] = res
+                    elif mode == "DB":
+                        encrypted_values_for_db.add(res)
+
+    # Batch decrypt DB values
+    if encrypted_values_for_db:
+        vals_list = list(encrypted_values_for_db)
+        decrypt_query = """
+            SELECT 
+                val as original,
+                pgp_sym_decrypt(val::bytea, current_setting('app.current_user_key')) as decrypted
+            FROM unnest(:vals::text[]) as val
+        """
+        try:
+             res_decrypt = await db.execute(text(decrypt_query), {"vals": vals_list})
+             for r in res_decrypt:
+                 decrypted_map[r[0]] = r[1]
+        except Exception as e:
+            print(f"Decryption error in audit: {e}")
+            pass
+
+    # Reconstruct response objects
+    final_rows = []
+    for row in rows:
+        row_dict = dict(row)
+        
+        # Inject decrypted fields
+        if row_dict.get('old_data'):
+            od = dict(row_dict['old_data'])
+            for k in sensitive_keys:
+                if k in od and od[k] in decrypted_map:
+                    simple_key = k.replace("_encrypted", "")
+                    od[simple_key] = decrypted_map[od[k]]
+            row_dict['old_data'] = od
+
+        if row_dict.get('new_data'):
+            nd = dict(row_dict['new_data'])
+            for k in sensitive_keys:
+                if k in nd and nd[k] in decrypted_map:
+                     simple_key = k.replace("_encrypted", "")
+                     nd[simple_key] = decrypted_map[nd[k]]
+            row_dict['new_data'] = nd
+            
+        final_rows.append(row_dict)
+    
+    return final_rows

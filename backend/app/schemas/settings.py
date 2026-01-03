@@ -53,11 +53,11 @@ class AuditLogRead(BaseModel):
     actor_id: Optional[UUID]
     action: str
     table_name: str
-    record_id: UUID
+    record_id: str
     old_data: Optional[Dict[str, Any]]
     new_data: Optional[Dict[str, Any]]
     ip_address: Optional[str]
-    created_at: datetime
+    created_at: Optional[datetime]
     
     actor_name: Optional[str] = None # Enriched field
 

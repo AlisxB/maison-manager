@@ -36,6 +36,20 @@ async def startup_event():
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    body = await request.body()
+    logger.error(f"Validation Error: {exc.errors()}")
+    logger.error(f"Request Body: {body.decode()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": body.decode()},
+    )
+
 # Configuração de CORS
 # Em produção, restritir origins para o domínio do frontend
 app.add_middleware(
