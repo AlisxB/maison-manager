@@ -200,6 +200,20 @@ const MainLayout: React.FC<LayoutProps> = ({
     </div>
   );
 
+  const getRoleLabel = (role: string) => {
+    const map: Record<string, string> = {
+      'ADMIN': 'Administrador',
+      'SINDICO': 'Síndico',
+      'SUBSINDICO': 'Sub-síndico',
+      'CONSELHO': 'Conselho',
+      'PORTEIRO': 'Portaria',
+      'FINANCEIRO': 'Financeiro',
+      'RESIDENT': 'Morador',
+      'RESIDENTE': 'Morador'
+    };
+    return map[role] || role;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {isMobileMenuOpen && (
@@ -276,7 +290,7 @@ const MainLayout: React.FC<LayoutProps> = ({
                       {user?.name || (showAdminSidebar ? 'Administrador' : 'Morador')}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {showAdminSidebar ? 'Gestor' : (user?.unit ? `Unidade ${user.unit}` : 'Residente')}
+                      {showAdminSidebar ? getRoleLabel(role) : (user?.unit ? `Unidade ${user.unit}` : 'Residente')}
                     </p>
                   </div>
                 </button>
