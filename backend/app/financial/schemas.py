@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Optional, List, Dict
 import datetime
 from decimal import Decimal
 import uuid
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_validator
 
 class TransactionBase(BaseModel):
     type: str # income, expense
@@ -30,11 +30,8 @@ class TransactionRead(TransactionBase):
     condominium_id: uuid.UUID
     created_at: Optional[datetime.datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-    from pydantic import field_validator
-    
     @field_validator('type', mode='before')
     @classmethod
     def map_type(cls, v):
@@ -47,29 +44,6 @@ class TransactionRead(TransactionBase):
     def map_status(cls, v):
         if v == 'PAGO': return 'paid'
         if v == 'PENDENTE': return 'pending'
-        return v
-
-    @classmethod
-    def from_orm(cls, obj):
-        # Override to handle type mapping if needed, or use a validator
-        # But from_attributes uses fields.
-        pass
-
-    @property
-    def type_mapped(self):
-        # This doesn't modify the 'type' field which is what Pydantic serializes by default
-        return self.type
-
-    # Pydantic V2 style validator or V1?
-    # Using V1 style @validator for compatibility or V2 if available.
-    # Assuming Pydantic V2 based on "model_dump".
-    from pydantic import field_validator
-    
-    @field_validator('type', mode='before')
-    @classmethod
-    def map_type(cls, v):
-        if v == 'RECEITA': return 'income'
-        if v == 'DESPESA': return 'expense'
         return v
 
 class ShareCreate(BaseModel):
@@ -85,5 +59,5 @@ class PublicReportResponse(BaseModel):
     month: int
     year: int
     summary: dict # FinancialSummary
-    transactions: list[TransactionRead]
+    transactions: List[TransactionRead]
     generated_at: datetime.datetime

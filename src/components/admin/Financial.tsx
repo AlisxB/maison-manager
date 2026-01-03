@@ -72,8 +72,10 @@ export const AdminFinancial: React.FC = () => {
     };
 
     const parseCurrency = (value: string) => {
+        if (!value) return 0;
         const numeric = value.replace(/\D/g, '');
-        return Number(numeric) / 100;
+        const result = Number(numeric) / 100;
+        return isNaN(result) ? 0 : result;
     };
 
     const loadData = async () => {
@@ -138,23 +140,29 @@ export const AdminFinancial: React.FC = () => {
                 return;
             }
 
+            const parsedAmount = parseCurrency(txForm.amount);
+            if (parsedAmount <= 0) {
+                alert('O valor deve ser maior que zero.');
+                return;
+            }
+
             const payload = {
                 ...txForm,
-                amount: parseCurrency(txForm.amount),
+                amount: parsedAmount,
                 status: txForm.status // txForm.status is already 'paid' or 'pending'
             } as any;
 
             if (editingId) {
                 await FinancialService.update(editingId, {
                     ...txForm,
-                    amount: parseCurrency(txForm.amount),
+                    amount: parsedAmount,
                     status: txForm.status as 'paid' | 'pending'
                 });
                 alert('Transação atualizada!');
             } else {
                 await FinancialService.create({
                     ...txForm,
-                    amount: Number(txForm.amount),
+                    amount: parsedAmount,
                     status: txForm.status as 'paid' | 'pending'
                 });
                 alert('Transação registrada!');
