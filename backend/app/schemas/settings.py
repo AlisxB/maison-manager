@@ -53,9 +53,9 @@ class AuditLogRead(BaseModel):
     actor_id: Optional[UUID]
     action: str
     table_name: str
-    record_id: str
-    old_data: Optional[Dict[str, Any]]
-    new_data: Optional[Dict[str, Any]]
+    record_id: UUID
+    old_data: Optional[Any]
+    new_data: Optional[Any]
     ip_address: Optional[str]
     created_at: Optional[datetime]
     
