@@ -57,6 +57,7 @@ async def get_audit_logs(
     try:
         encrypted_values_for_db = set()
         decrypted_map = {}
+        unit_ids_to_fetch = set()
         
         sensitive_keys = ['email_encrypted', 'phone_encrypted', 'cpf_encrypted', 'cnpj_encrypted']
 
@@ -67,17 +68,18 @@ async def get_audit_logs(
                 # Mode 1: ENC(...)
                 return "LOCAL", val[4:-1]
             elif val.startswith("\\x") or val.startswith("x"): 
-                # Mode 2: Potential DB encryption (Hex Bytea in Postgres usually starts with \x)
+                # Mode 2: Potential DB encryption
                 return "DB", val
-            return None, None # Treat as plain text or invalid for decryption
+            return None, None
 
-        # First pass: Identify local vs db
+        # First pass: Identify local vs db AND unit_ids
         for row in rows:
             for data in [row.get('old_data'), row.get('new_data')]:
                 if not data: continue
-                # CRITICAL: Fix for 500 error. Data might be a List or String in some legacy cases.
+                # CRITICAL: Fix for 500 error.
                 if not isinstance(data, dict): continue
                 
+                # Check for sensitive keys
                 for key in sensitive_keys:
                     if key in data:
                         mode, res = process_val(data[key])
@@ -85,6 +87,14 @@ async def get_audit_logs(
                             decrypted_map[data[key]] = res
                         elif mode == "DB":
                             encrypted_values_for_db.add(res)
+                
+                # Check for unit_id
+                if 'unit_id' in data and data['unit_id']:
+                    try:
+                        # Append to set
+                        unit_ids_to_fetch.add(str(data['unit_id']))
+                    except:
+                        pass
 
         # Batch decrypt DB values
         if encrypted_values_for_db:
@@ -96,39 +106,61 @@ async def get_audit_logs(
                 FROM unnest(:vals::text[]) as val
             """
             try:
-                # Use execute directly
                  res_decrypt = await db.execute(text(decrypt_query), {"vals": vals_list})
                  for r in res_decrypt:
                      decrypted_map[r[0]] = r[1]
             except Exception as e:
-                # Log this internally, but don't crash
                 print(f"DB Decryption error in audit: {e}")
                 pass
+        
+        # Batch Fetch Units
+        unit_map = {}
+        if unit_ids_to_fetch:
+             u_list = list(unit_ids_to_fetch)
+             # Cast to UUID[] if necessary or rely on postgres casting from text
+             unit_query = """
+                SELECT id, block, number FROM units WHERE id::text = ANY(:uids)
+             """
+             try:
+                 res_units = await db.execute(text(unit_query), {"uids": u_list})
+                 for u in res_units:
+                     # Create readable label: "Block A - 101" or just "101"
+                     label = f"{u.number}"
+                     if u.block:
+                         label = f"Bloco {u.block} - {u.number}"
+                     unit_map[str(u.id)] = label
+             except Exception as eu:
+                 print(f"Unit fetch error: {eu}")
 
         # Reconstruct response objects
         final_rows = []
         for row in rows:
             row_dict = dict(row)
             
-            # Inject decrypted fields
+            # Helper to inject data
+            def enrich_data(data_dict):
+                if not isinstance(data_dict, dict): return data_dict
+                new_d = dict(data_dict)
+                
+                # 1. Decrypt
+                for k in sensitive_keys:
+                    if k in new_d and new_d[k] in decrypted_map:
+                        simple_key = k.replace("_encrypted", "")
+                        new_d[simple_key] = decrypted_map[new_d[k]]
+                
+                # 2. Inject Unit Name
+                if 'unit_id' in new_d and new_d['unit_id']:
+                    uid_str = str(new_d['unit_id'])
+                    if uid_str in unit_map:
+                        new_d['unidade'] = unit_map[uid_str]
+                
+                return new_d
+
             if row_dict.get('old_data'):
-                # Ensure it's a dict before copy/modify
-                if isinstance(row_dict['old_data'], dict):
-                    od = dict(row_dict['old_data'])
-                    for k in sensitive_keys:
-                        if k in od and od[k] in decrypted_map:
-                            simple_key = k.replace("_encrypted", "")
-                            od[simple_key] = decrypted_map[od[k]]
-                    row_dict['old_data'] = od
+                row_dict['old_data'] = enrich_data(row_dict['old_data'])
 
             if row_dict.get('new_data'):
-                if isinstance(row_dict['new_data'], dict):
-                    nd = dict(row_dict['new_data'])
-                    for k in sensitive_keys:
-                        if k in nd and nd[k] in decrypted_map:
-                             simple_key = k.replace("_encrypted", "")
-                             nd[simple_key] = decrypted_map[nd[k]]
-                    row_dict['new_data'] = nd
+                row_dict['new_data'] = enrich_data(row_dict['new_data'])
                 
             final_rows.append(row_dict)
         
@@ -136,5 +168,4 @@ async def get_audit_logs(
 
     except Exception as general_e:
         print(f"CRITICAL: Failed to process audit logs decryption: {general_e}")
-        # Build Safe Fallback: Return raw rows
         return [dict(row) for row in rows]

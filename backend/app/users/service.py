@@ -9,8 +9,7 @@ from datetime import datetime
 from app.core import security
 import hashlib
 import uuid
-from app.core.decorators import audit_log
-from app.services.audit_service import AuditService
+
 
 class UserService:
     def __init__(self, db: AsyncSession):
@@ -46,7 +45,6 @@ class UserService:
                 detail=f"Esta unidade já possui um {pt_label} cadastrado ({existing.name}). Apenas um por unidade é permitido."
             )
 
-    @audit_log(action="INSERT", table_name="users")
     async def create_user(self, user_in: UserCreate, current_user_role: str, current_condo_id: UUID) -> User:
         if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO']:
             raise HTTPException(status_code=403, detail="Apenas administradores podem criar usuários")
@@ -77,8 +75,8 @@ class UserService:
         )
         
         await self.repo.create(db_user)
-        await self.db.flush() # Force insert of User before OccupationHistory
-        
+        # await self.db.flush() # Let commit handle it
+
         # Create initial Occupation History
         history_entry = OccupationHistory(
             condominium_id=current_condo_id,
@@ -109,15 +107,6 @@ class UserService:
         if not db_user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Audit: Capture Old Data
-        old_data = {
-            "name": db_user.name,
-            "role": db_user.role,
-            "status": db_user.status,
-            "profile_type": db_user.profile_type,
-            "unit_id": str(db_user.unit_id) if db_user.unit_id else None
-        }
-
         # Security Check: Non-Admin can only update Residents
         if current_user_role != 'ADMIN' and db_user.role != 'RESIDENTE' and str(db_user.id) != str(current_user_id):
              raise HTTPException(status_code=403, detail="Você só pode gerenciar Moradores.")
@@ -133,25 +122,17 @@ class UserService:
            (user_in.profile_type and user_in.profile_type != db_user.profile_type):
             occupation_changed = True
 
-        # Fix: Reactivation / Approval should also trigger history creation
-        # If user is currently NOT Active (Pending/Inactive) and is becoming Active (explicitly or implicitly via unit add)
-        # OR if we are adding a unit to an Inactive user (Reactivation case)
-        
         is_activating = False
         if user_in.status == 'ATIVO' and db_user.status != 'ATIVO':
              is_activating = True
              
         if is_activating:
              occupation_changed = True
-             # Ensure deleted_at is cleared
              db_user.deleted_at = None
-             
-        # Case: Previously Inactive/Msg Deleted user being assigned to a unit (user_in.unit_id set)
-        # Even if they didn't send status='ATIVO', if they are currently Inactive and get a unit, we Reactivate.
+        
         if db_user.status == 'INATIVO' and user_in.unit_id:
              db_user.status = 'ATIVO'
              db_user.deleted_at = None
-             occupation_changed = True
              occupation_changed = True
              is_activating = True
 
@@ -159,26 +140,17 @@ class UserService:
              # Physical delete
              stmt_del = text(f"DELETE FROM users WHERE id = '{db_user.id}'")
              await self.db.execute(stmt_del)
-             
-             # Expunge from session to avoid StaleDataError on commit
              self.db.expunge(db_user)
-             
              await self.db.commit()
              
-             # Return User object as it was before delete (in memory) but marked rejected for response
              db_user.status = "REJEITADO"
              db_user.unit_id = None
-             db_user.unit = None # Explicitly set relation to None to avoid lazy load access
-             
-             # Populate transient email for schema validation
+             db_user.unit = None
              if hasattr(db_user, 'email_encrypted') and db_user.email_encrypted and db_user.email_encrypted.startswith("ENC("):
                   db_user.email = db_user.email_encrypted[4:-1]
              else:
-                  db_user.email = "rejected@unknown.com" # Fallback if missing
-                  
+                  db_user.email = "rejected@unknown.com"
              return db_user
-
-
 
         if user_in.name: db_user.name = user_in.name
         if user_in.role: db_user.role = user_in.role
@@ -188,16 +160,13 @@ class UserService:
         if user_in.work_hours: db_user.work_hours = user_in.work_hours
         if user_in.status: db_user.status = user_in.status
         
-        # Validate Occupancy if changing unit or profile (SKIP if Rejecting)
         target_unit = user_in.unit_id if user_in.unit_id is not None else db_user.unit_id
         target_profile = user_in.profile_type if user_in.profile_type else db_user.profile_type
         
-        # Always validate occupancy to ensure consistency, excluding self
         if target_unit and target_profile and user_in.status != 'REJEITADO':
              await self._validate_unit_occupancy(target_unit, target_profile, exclude_user_id=db_user.id)
         
         if occupation_changed:
-            # 1. Close current open history
             from sqlalchemy import select, and_
             stmt = select(OccupationHistory).where(
                 and_(
@@ -211,7 +180,6 @@ class UserService:
             if current_history:
                 current_history.end_date = datetime.now()
             
-            # 2. Create new history
             new_history = OccupationHistory(
                 condominium_id=db_user.condominium_id,
                 user_id=db_user.id,
@@ -220,26 +188,6 @@ class UserService:
                 start_date=datetime.now()
             )
             self.db.add(new_history)
-            
-        elif db_user.status == 'ATIVO' and user_in.status == 'ATIVO' and not occupation_changed:
-             # Already active, no occupation change. Do nothing history-wise.
-             # But wait, what if they were PENDING -> ATIVO? 
-             # The client sends status="ATIVO" in update.
-             pass
-
-        # Reactivation / Activation Logic
-        # If transitioning to ATIVO (from INATIVO or PENDING), ensure history exists or create it
-        if user_in.status == 'ATIVO' and db_user.status != 'ATIVO':
-             # 1. Clear Deleted At
-             db_user.deleted_at = None
-             
-             # 2. Check if we have an open history (we shouldn't if inactive/pending usually, but let's check)
-             # Actually, simpler: Treat as occupation change if no open history exists?
-             pass 
-             # Logic refactor: The block above `if occupation_changed` runs before status update.
-             # We need to FORCE `occupation_changed` to True if activating.
-             
-        # Let's adjust the `occupation_changed` detection earlier.
 
         if user_in.phone:
             db_user.phone_encrypted = f"ENC({user_in.phone})"
@@ -262,8 +210,6 @@ class UserService:
         await self.db.commit()
         updated_user = await self.repo.get_by_id(user_id, load_unit=True)
         
-        # Populate transient fields for Response Schema
-        # If we just updated email, use it. Else check DB.
         if hasattr(updated_user, 'email_encrypted') and updated_user.email_encrypted:
              if updated_user.email_encrypted.startswith("ENC("):
                   updated_user.email = updated_user.email_encrypted[4:-1]
@@ -272,34 +218,14 @@ class UserService:
              if updated_user.phone_encrypted.startswith("ENC("):
                   updated_user.phone = updated_user.phone_encrypted[4:-1]
         
-        # If still null (real encryption w/o decrypt in this flow), provide empty string or safe default
         current_email = getattr(updated_user, 'email', None)
         if not current_email: 
-             updated_user.email = "admin@maison.com" # Fallback/Hack
-             # Ideally validation should be relaxed or Service should decrypt.
-             
-        # Audit Log: Record changes
-        if True: # Always log updates, even self-updates (security best practice)
-             await AuditService.log(
-                db=self.db,
-                action="UPDATE",
-                table_name="users",
-                record_id=str(updated_user.id),
-                actor_id=current_user_id,
-                old_data=old_data,
-                new_data={
-                    "name": updated_user.name,
-                    "role": updated_user.role,
-                    "status": updated_user.status,
-                    "profile_type": updated_user.profile_type,
-                    "unit_id": str(updated_user.unit_id) if updated_user.unit_id else None
-                },
-                condominium_id=str(updated_user.condominium_id)
-             )
+             updated_user.email = "admin@maison.com"
+        
+        # NOTE: DB Triggers handle audit logging automatically
 
         return updated_user
 
-    @audit_log(action="DELETE", table_name="users")
     async def delete_user(self, user_id: str, current_user_id: str, current_user_role: str) -> None:
         if current_user_role not in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO']:
             raise HTTPException(status_code=403, detail="Not authorized")
