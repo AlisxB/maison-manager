@@ -210,29 +210,94 @@ function LogsView({ onBack }: { onBack: () => void }) {
         if (!data) return [];
 
         const translations: Record<string, string> = {
+            // General
             name: 'Nome',
             email: 'E-mail',
             role: 'Cargo',
             status: 'Status',
             type: 'Tipo',
             description: 'Descrição',
+            observation: 'Observação',
+            is_active: 'Ativo',
+
+            // Units / Users
+            unit_id: 'ID Unidade', // Usually hidden in favor of 'unidade'
+            unidade: 'Unidade', // Enriched field
+            profile_type: 'Perfil',
+            phone: 'Telefone Celular',
+            department: 'Departamento',
+            work_hours: 'Horário',
+
+            // Vehicles / Pets
+            model: 'Modelo',
+            color: 'Cor',
+            plate: 'Placa',
+            breed: 'Raça',
+
+            // Common Areas / Reservations
+            capacity: 'Capacidade',
+            price_per_hour: 'Preço/Hora',
+            start_time: 'Início',
+            end_time: 'Fim',
+            total_price: 'Valor Total',
+            reason: 'Motivo',
+            common_area_id: 'ID Área',
+            area_comum: 'Área Comum', // Enriched field
+
+            // Financial / Readings
             amount: 'Valor',
             date: 'Data',
             category: 'Categoria',
-            observation: 'Observação',
-            block: 'Bloco',
-            number: 'Número',
-            capacity: 'Capacidade',
-            price_per_hour: 'Preço/Hora',
-            is_active: 'Ativo',
-            address: 'Endereço',
-            contact_email: 'Email de Contato',
-            gate_phone: 'Telefone',
-            profile_type: 'Perfil',
-            phone: 'Telefone Celular'
+            value_m3: 'Leitura (m³)',
+            consumption_kwh: 'Consumo (kWh)',
+            total_value: 'Valor da Conta',
+            supplier: 'Fornecedor',
+            due_date: 'Vencimento',
+
+            // Inventory
+            quantity: 'Quantidade',
+            min_quantity: 'Estoque Mínimo',
+            location: 'Localização',
+            unit: 'Unidade Medida',
+
+            // Documents / Bylaws
+            title: 'Título',
+            file_path: 'Arquivo',
+
+            // Violations / Target Users
+            resident_id: 'ID Morador',
+            morador_alvo_nome: 'Morador Alvo',
+            morador_alvo_unidade: 'Unidade do Alvo',
+            bylaw_id: 'ID Regra',
+            occurred_at: 'Ocorrido em',
+            admin_response: 'Resposta Oficial',
+
+            // Generic Targets
+            user_id: 'ID Usuário',
+            usuario_alvo: 'Usuário Alvo',
+
+            // Reservations Specific
+            solicitante_nome: 'Solicitante (Nome)',
+            solicitante_unidade: 'Solicitante (Unidade)',
+
+            created_by: 'Criado Por (ID)',
+            criado_por_nome: 'Criado Por',
+            criado_por_unidade: 'Unidade Criador',
+
+            // Meta
+            responsavel_acao: 'Realizado Por (Admin)'
         };
 
-        const ignored = ['id', 'password_hash', 'email_hash', 'email_encrypted', 'phone_hash', 'phone_encrypted', 'cnpj_hash', 'cnpj_encrypted', 'cpf_hash', 'cpf_encrypted', 'condominium_id', 'created_at', 'updated_at', 'deleted_at', 'unit_id', 'condominiums_id'];
+        const ignored = [
+            'id', 'password_hash', 'email_hash', 'email_encrypted',
+            'phone_hash', 'phone_encrypted', 'cnpj_hash', 'cnpj_encrypted',
+            'cpf_hash', 'cpf_encrypted', 'condominium_id', 'condominiums_id',
+            'created_at', 'updated_at', 'deleted_at',
+            'unit_id', 'common_area_id', 'user_id', 'resident_id', 'bylaw_id', 'transaction_id', 'created_by', // Hide IDs
+            'photo_url', 'image_url', 'mime_type', 'file_size',
+            // Deprecated/Legacy fields we might have added briefly
+            'morador_alvo', 'usuario_alvo', 'morador_solicitante'
+        ];
 
         return Object.entries(data)
             .filter(([key]) => !ignored.includes(key) && !key.endsWith('_id'))
