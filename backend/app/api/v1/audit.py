@@ -33,6 +33,7 @@ async def get_audit_logs(
         FROM audit_logs al
         LEFT JOIN users u ON al.actor_id = u.id
         WHERE al.condominium_id = :condo_id
+        AND u.role IN ('ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO', 'PORTEIRO', 'CONSELHO')
     """
     
     params = {"condo_id": current_user.condo_id, "limit": limit}
@@ -131,6 +132,64 @@ async def get_audit_logs(
                      unit_map[str(u.id)] = label
              except Exception as eu:
                  print(f"Unit fetch error: {eu}")
+        
+        # Batch Fetch Common Areas (New Enrichment)
+        ca_ids_to_fetch = set()
+        # Batch Fetch Target Users (New Enrichment for Violations, Reservations)
+        target_user_ids = set()
+        
+        for row in rows:
+            for data in [row.get('old_data'), row.get('new_data')]:
+                if not data or not isinstance(data, dict): continue
+                
+                # Check for Common Areas
+                if 'common_area_id' in data and data['common_area_id']:
+                    ca_ids_to_fetch.add(str(data['common_area_id']))
+                
+                # Check for Target Users (Residents in violations, creators of reservations)
+                if 'resident_id' in data and data['resident_id']:
+                    target_user_ids.add(str(data['resident_id']))
+                if 'user_id' in data and data['user_id']:
+                    target_user_ids.add(str(data['user_id']))
+                if 'created_by' in data and data['created_by']:
+                    target_user_ids.add(str(data['created_by']))
+        
+        ca_map = {}
+        if ca_ids_to_fetch:
+            ca_list = list(ca_ids_to_fetch)
+            ca_query = "SELECT id, name FROM common_areas WHERE id::text = ANY(:cids)"
+            try:
+                res_ca = await db.execute(text(ca_query), {"cids": ca_list})
+                for ca in res_ca:
+                     ca_map[str(ca.id)] = ca.name
+            except Exception as eca:
+                 print(f"CA fetch error: {eca}")
+
+        user_map = {}
+        if target_user_ids:
+            tu_list = list(target_user_ids)
+            # Fetch names and unit info for context
+            tu_query = """
+                SELECT u.id, u.name, un.block, un.number 
+                FROM users u 
+                LEFT JOIN units un ON u.unit_id = un.id 
+                WHERE u.id::text = ANY(:uids)
+            """
+            try:
+                res_tu = await db.execute(text(tu_query), {"uids": tu_list})
+                for tu in res_tu:
+                     # Store as dict to allow splitting fields
+                     unit_label = None
+                     if tu.number:
+                         unit_label = f"{tu.number}"
+                         if tu.block: unit_label = f"{tu.block} - {unit_label}"
+                     
+                     user_map[str(tu.id)] = {
+                         "name": tu.name,
+                         "unit": unit_label
+                     }
+            except Exception as etu:
+                 print(f"Target User fetch error: {etu}")
 
         # Reconstruct response objects
         final_rows = []
@@ -154,6 +213,36 @@ async def get_audit_logs(
                     if uid_str in unit_map:
                         new_d['unidade'] = unit_map[uid_str]
                 
+                # 3. Inject Common Area Name
+                if 'common_area_id' in new_d and new_d['common_area_id']:
+                    ca_str = str(new_d['common_area_id'])
+                    if ca_str in ca_map:
+                        new_d['area_comum'] = ca_map[ca_str]
+
+                # 4. Inject Target User Name (Split Name and Unit)
+                # Helper to inject user fields
+                def inject_user_info(id_key, prefix_name, prefix_unit):
+                    if id_key in new_d and new_d[id_key]:
+                        uid_str = str(new_d[id_key])
+                        if uid_str in user_map:
+                            info = user_map[uid_str]
+                            new_d[prefix_name] = info['name']
+                            if info['unit']:
+                                new_d[prefix_unit] = info['unit']
+
+                # For resident_id
+                inject_user_info('resident_id', 'morador_alvo_nome', 'morador_alvo_unidade')
+                
+                # For user_id (Generic or Requester)
+                inject_user_info('user_id', 'solicitante_nome', 'solicitante_unidade')
+                
+                # For created_by
+                inject_user_info('created_by', 'criado_por_nome', 'criado_por_unidade')
+
+                # 5. Inject Actor Name
+                if 'actor_name' in row_dict and row_dict['actor_name']:
+                     new_d['responsavel_acao'] = row_dict['actor_name']
+
                 return new_d
 
             if row_dict.get('old_data'):
