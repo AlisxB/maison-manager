@@ -185,8 +185,10 @@ function LogsView({ onBack }: { onBack: () => void }) {
             'condominiums': 'Condomínio',
             'vehicles': 'Veículos',
             'pets': 'Pets',
-            'bylaws': 'Regimentos',
-            'occupation_history': 'Histórico de Ocupação'
+            'bylaws': 'Normas / Regimentos',
+            'occupation_history': 'Histórico de Ocupação',
+            'violations': 'Multas / Notificações',
+            'occurrences': 'Ocorrências'
         };
         return map[table] || table;
     };
@@ -363,7 +365,15 @@ function LogsView({ onBack }: { onBack: () => void }) {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                                                {getTableName(log.table_name)}
+                                                {(() => {
+                                                    const base = getTableName(log.table_name);
+                                                    if (log.table_name === 'bylaws') {
+                                                        const cat = log.new_data?.category || log.old_data?.category;
+                                                        if (cat === 'Multa') return 'Regra de Multa';
+                                                        if (cat === 'Aviso') return 'Aviso / Comunicado';
+                                                    }
+                                                    return base;
+                                                })()}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -1080,7 +1090,7 @@ function BylawsView({ onBack }: { onBack: () => void }) {
     const [bylaws, setBylaws] = useState<Bylaw[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState<Partial<Bylaw>>({ title: '', description: '', category: 'Norma' });
+    const [formData, setFormData] = useState<Partial<Bylaw>>({ title: '', description: '', category: 'Multa' });
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -1099,7 +1109,7 @@ function BylawsView({ onBack }: { onBack: () => void }) {
     };
 
     const handleOpenCreate = () => {
-        setFormData({ title: '', description: '', category: 'Norma' });
+        setFormData({ title: '', description: '', category: 'Multa' });
         setIsEditing(false);
         setShowModal(true);
     };
