@@ -18,7 +18,8 @@ async def get_audit_logs(
     """
     Get system audit logs. RESTRICTED TO ADMIN.
     """
-    if current_user.role != 'ADMIN':
+    allowed_roles = ['ADMIN', 'SINDICO']
+    if current_user.role not in allowed_roles:
         raise HTTPException(status_code=403, detail="Not authorized to view logs")
         
     # Construct query dynamically or use basic filtering
