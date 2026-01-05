@@ -34,6 +34,17 @@ async def get_audit_logs(
         LEFT JOIN users u ON al.actor_id = u.id
         WHERE al.condominium_id = :condo_id
         AND u.role IN ('ADMIN', 'SINDICO', 'SUBSINDICO', 'FINANCEIRO', 'PORTEIRO', 'CONSELHO')
+        -- Filter out 'Self-Service' actions (where Admin acts as Resident for themselves)
+        AND NOT (
+            -- Tables where user_id is the target
+            (al.table_name IN ('reservations', 'occurrences', 'pets', 'vehicles') AND (
+                (al.new_data->>'user_id' = al.actor_id::text) OR 
+                (al.old_data->>'user_id' = al.actor_id::text)
+            ))
+            OR
+            -- Users table (editing self)
+            (al.table_name = 'users' AND al.record_id::text = al.actor_id::text)
+        )
     """
     
     params = {"condo_id": current_user.condo_id, "limit": limit}
