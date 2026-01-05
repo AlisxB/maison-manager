@@ -56,7 +56,13 @@ async def create_reservation(
     current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
 ):
     service = ReservationService(db)
-    return await service.create_reservation(data, current_user.user_id, current_user.role, current_user.condo_id)
+    
+    # Fix: Allow Admin to create reservation for another user
+    target_user_id = current_user.user_id
+    if current_user.role == 'ADMIN' and data.user_id:
+        target_user_id = data.user_id
+        
+    return await service.create_reservation(data, target_user_id, current_user.role, current_user.condo_id)
 
 @router.patch("/{id}", response_model=ReservationRead)
 async def update_reservation(
