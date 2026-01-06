@@ -41,6 +41,11 @@ async def get_notifications(
         is_read = False
         if last_check and ann.created_at <= last_check:
             is_read = True
+
+        # Determine link based on role
+        target_link = '/resident/announcements'
+        if current_user.role in ['ADMIN', 'SINDICO', 'SUBSINDICO', 'CONSELHO', 'PORTEIRO', 'FINANCEIRO']:
+            target_link = '/admin/announcements'
             
         notifications.append(NotificationItem(
             id=str(ann.id),
@@ -49,7 +54,7 @@ async def get_notifications(
             type='ANNOUNCEMENT',
             created_at=ann.created_at,
             read=is_read,
-            link='/resident/announcements'
+            link=target_link
         ))
         
     # 2. Fetch recent Violations (last 5) if Resident
