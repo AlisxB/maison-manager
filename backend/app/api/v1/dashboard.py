@@ -88,14 +88,25 @@ async def get_dashboard_stats(
     total_units_res = await db.execute(select(func.count(Unit.id)).where(Unit.condominium_id == current_user.condo_id))
     total_units = total_units_res.scalar() or 0
     
-    residents_res = await db.execute(select(func.count(User.id)).where(User.condominium_id == current_user.condo_id, User.role == 'RESIDENTE', User.status == 'ATIVO'))
+    # Count all active users with a unit assigned (Residents, Owners, etc living there)
+    residents_res = await db.execute(select(func.count(User.id)).where(
+        User.condominium_id == current_user.condo_id, 
+        User.status == 'ATIVO',
+        User.unit_id.isnot(None)
+    ))
     residents_count = residents_res.scalar() or 0
     
-    # Occupied units can be inferred if we have a status on Unit or count distinct units in Users
-    # Let's assume residents_count is the proxy for "Inquilinos" card
+    # Count distinct units that have at least one active user
+    occupied_units_res = await db.execute(select(func.count(func.distinct(User.unit_id))).where(
+        User.condominium_id == current_user.condo_id, 
+        User.status == 'ATIVO',
+        User.unit_id.isnot(None)
+    ))
+    occupied_units_count = occupied_units_res.scalar() or 0
+    
     occupancy_stats = DashboardOccupancyStats(
         total_units=total_units,
-        occupied_units=residents_count, # Simplification
+        occupied_units=occupied_units_count,
         residents_count=residents_count
     )
 
