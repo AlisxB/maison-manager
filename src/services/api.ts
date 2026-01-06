@@ -25,16 +25,64 @@ api.interceptors.request.use(
     }
 );
 
-// Interceptor para lidar com 401 (Sessão Expirada)
+// Interceptor para lidar com 401 (Sessão Expirada) e Refresh Token
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
-        if (error.response && error.response.status === 401) {
-            // Token expirou ou inválido
-            // Opcional: Tentar refresh token aqui antes de deslogar
-            console.warn('Sessão expirada. Redirecionando para login...');
-            // localStorage.removeItem('token');
-            // window.location.href = '/login'; // Ou tratar via Contexto
+    async (error) => {
+        const originalRequest = error.config;
+        
+        // Se erro for 401 e não for uma tentativa de login ou refresh
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login')) {
+            
+            // Se falhou o próprio refresh, rejeita e redireciona
+            if (originalRequest.url.includes('/auth/refresh')) {
+                // window.location.href = '/login'; // Deixa o AuthContext lidar ou faz reload
+                return Promise.reject(error);
+            }
+
+            if (isRefreshing) {
+                return new Promise(function(resolve, reject) {
+                    failedQueue.push({resolve, reject});
+                }).then(() => {
+                    return api(originalRequest);
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                // Tenta renovar o token (cookie HttpOnly)
+                await api.post('/auth/refresh');
+                
+                isRefreshing = false;
+                processQueue(null, 'success');
+                
+                // Refaz a requisição original
+                return api(originalRequest);
+            } catch (refreshError) {
+                isRefreshing = false;
+                processQueue(refreshError, null);
+                // Logout forçado
+                // window.location.href = '/'; 
+                return Promise.reject(refreshError);
+            }
         }
         return Promise.reject(error);
     }

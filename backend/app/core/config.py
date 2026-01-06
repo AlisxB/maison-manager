@@ -13,13 +13,14 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = None
     
     # Security
-    SECRET_KEY: str = "CHANGE_THIS_IN_PRODUCTION_TO_A_STRONG_RANDOM_KEY"
+    # These MUST be provided via environment variables. The app will fail to start if missing.
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # Encryption Key for PGCrypto (must match what was used in DB Setup if applicable, or for App-side logic)
-    # In strictly DB-encrypted setup, this might be passed to DB session.
-    APP_ENCRYPTION_KEY: str = "super_secure_key_for_pgcrypto" 
+    APP_ENCRYPTION_KEY: str 
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 

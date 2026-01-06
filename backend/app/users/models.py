@@ -50,6 +50,23 @@ class User(Base):
     updated_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
     deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+    
+    id = uuid_pk()
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String(64), nullable=False, index=True)
+    family_id = Column(UUID(as_uuid=True), default=uuid.uuid4, nullable=False)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("refresh_tokens.id"), nullable=True)
+    
+    device_info = Column(Text, nullable=True)
+    ip_address = Column(INET, nullable=True)
+    
+    expires_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+    revoked_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    replaced_by = Column(UUID(as_uuid=True), ForeignKey("refresh_tokens.id"), nullable=True)
+
 class AccessLog(Base):
     __tablename__ = "access_logs"
     

@@ -6,6 +6,9 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+import secrets
+import hashlib
+
 def create_access_token(subject: Union[str, Any], claims: dict, expires_delta: timedelta = None) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -16,6 +19,12 @@ def create_access_token(subject: Union[str, Any], claims: dict, expires_delta: t
     to_encode.update(claims)
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
+
+def create_refresh_token() -> str:
+    return secrets.token_urlsafe(32)
+
+def get_token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
