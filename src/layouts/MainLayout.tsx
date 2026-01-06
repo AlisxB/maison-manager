@@ -85,7 +85,20 @@ const MainLayout: React.FC<LayoutProps> = ({
 
   const handleNotificationClick = (note: Notification) => {
     if (note.link) {
-      const view = note.link.replace('/resident/', 'resident_').replace('/', '');
+      let view = note.link;
+      
+      // Handle both resident and admin paths logic
+      if (view.startsWith('/resident/')) {
+        view = view.replace('/resident/', 'resident_');
+      } else if (view.startsWith('/admin/')) {
+        view = view.replace('/admin/', 'admin_');
+      } else {
+        view = view.replace('/', '');
+      }
+      
+      // Remove any leading slashes
+      view = view.replace(/^\//, '');
+
       onNavigate(view);
     }
     setIsNotificationsOpen(false);
