@@ -148,23 +148,36 @@ function SettingsMenu({ onNavigate }: { onNavigate: (view: SettingsView) => void
     );
 }
 
-import { Eye } from 'lucide-react';
+import { Eye, Shield, Globe, Smartphone, Monitor } from 'lucide-react';
 
 function LogsView({ onBack }: { onBack: () => void }) {
+    const [activeTab, setActiveTab] = useState<'audit' | 'access'>('audit');
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // Audit State
     const [logs, setLogs] = useState<AuditLog[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
+    
+    // Access State
+    const [accessLogs, setAccessLogs] = useState<any[]>([]);
+
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchLogs();
-    }, []);
+        fetchData();
+    }, [activeTab]);
 
-    const fetchLogs = async () => {
+    const fetchData = async () => {
+        setLoading(true);
         try {
-            const data = await AuditService.getLogs();
-            setLogs(data);
+            if (activeTab === 'audit') {
+                const data = await AuditService.getLogs();
+                setLogs(data);
+            } else {
+                const data = await AuditService.getAccessLogs();
+                setAccessLogs(data);
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -313,13 +326,29 @@ function LogsView({ onBack }: { onBack: () => void }) {
 
     return (
         <div className="space-y-6">
+            {/* Tabs */}
+            <div className="flex gap-4 border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab('audit')}
+                    className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'audit' ? 'border-[#437476] text-[#437476]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                >
+                    Auditoria de Dados
+                </button>
+                <button
+                    onClick={() => setActiveTab('access')}
+                    className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'access' ? 'border-[#437476] text-[#437476]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                >
+                    Histórico de Acessos
+                </button>
+            </div>
+
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
                 <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="relative flex-1 w-full max-w-md">
                         <Search size={18} className="absolute left-3 top-2.5 text-slate-400" />
                         <input
                             type="text"
-                            placeholder="Filtrar por administrador ou ação..."
+                            placeholder={activeTab === 'audit' ? "Filtrar por administrador ou ação..." : "Filtrar por usuário ou IP..."}
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#437476]/10 focus:border-[#437476]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -330,73 +359,134 @@ function LogsView({ onBack }: { onBack: () => void }) {
                 <div className="flex-1 overflow-auto custom-scrollbar">
                     <table className="w-full text-left text-sm text-slate-600 border-collapse">
                         <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider sticky top-0 z-10">
-                            <tr>
-                                <th className="px-6 py-4">Data/Hora</th>
-                                <th className="px-6 py-4">Administrador</th>
-                                <th className="px-6 py-4">Ação</th>
-                                <th className="px-6 py-4">Módulo</th>
-                                <th className="px-6 py-4">Recurso ID</th>
-                                <th className="px-6 py-4 text-center">Detalhes</th>
-                            </tr>
+                            {activeTab === 'audit' ? (
+                                <tr>
+                                    <th className="px-6 py-4">Data/Hora</th>
+                                    <th className="px-6 py-4">Administrador</th>
+                                    <th className="px-6 py-4">Ação</th>
+                                    <th className="px-6 py-4">Módulo</th>
+                                    <th className="px-6 py-4">Recurso ID</th>
+                                    <th className="px-6 py-4 text-center">Detalhes</th>
+                                </tr>
+                            ) : (
+                                <tr>
+                                    <th className="px-6 py-4">Data/Hora</th>
+                                    <th className="px-6 py-4">Usuário</th>
+                                    <th className="px-6 py-4">Perfil</th>
+                                    <th className="px-6 py-4">Dispositivo</th>
+                                    <th className="px-6 py-4">IP</th>
+                                    <th className="px-6 py-4">Localização (Est.)</th>
+                                </tr>
+                            )}
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr><td colSpan={6} className="p-6 text-center text-slate-400">Carregando logs...</td></tr>
-                            ) : logs.length === 0 ? (
-                                <tr><td colSpan={6} className="p-6 text-center text-slate-400">Nenhum log encontrado.</td></tr>
+                            ) : (activeTab === 'audit' ? logs : accessLogs).length === 0 ? (
+                                <tr><td colSpan={6} className="p-6 text-center text-slate-400">Nenhum registro encontrado.</td></tr>
                             ) : (
-                                logs.filter(l => !searchTerm || l.action.includes(searchTerm.toUpperCase()) || l.actor_name?.toLowerCase().includes(searchTerm.toLowerCase())).map(log => (
-                                    <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-slate-400 font-mono text-[11px]">
-                                                {new Date(log.created_at).toLocaleString()}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
-                                                    {(log.actor_name || '?').charAt(0)}
+                                activeTab === 'audit' ? (
+                                    logs.filter(l => !searchTerm || l.action.includes(searchTerm.toUpperCase()) || l.actor_name?.toLowerCase().includes(searchTerm.toLowerCase())).map(log => (
+                                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="text-slate-400 font-mono text-[11px]">
+                                                    {new Date(log.created_at).toLocaleString()}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
+                                                        {(log.actor_name || '?').charAt(0)}
+                                                    </div>
+                                                    <span className="font-bold text-slate-700">{log.actor_name || 'Sistema'}</span>
                                                 </div>
-                                                <span className="font-bold text-slate-700">{log.actor_name || 'Sistema'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {getActionBadge(log.action)}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                                                {(() => {
-                                                    const base = getTableName(log.table_name);
-                                                    if (log.table_name === 'bylaws') {
-                                                        const cat = log.new_data?.category || log.old_data?.category;
-                                                        if (cat === 'Multa') return 'Regra de Multa';
-                                                        if (cat === 'Aviso') return 'Aviso / Comunicado';
-                                                    }
-                                                    return base;
-                                                })()}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="text-xs text-slate-600 line-clamp-1 italic font-mono">{log.record_id}</p>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={() => handleViewDetails(log)}
-                                                className="p-2 text-slate-400 hover:text-[#437476] hover:bg-[#437476]/10 rounded-full transition-all"
-                                                title="Ver Detalhes"
-                                            >
-                                                <Eye size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {getActionBadge(log.action)}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                                                    {(() => {
+                                                        const base = getTableName(log.table_name);
+                                                        if (log.table_name === 'bylaws') {
+                                                            const cat = log.new_data?.category || log.old_data?.category;
+                                                            if (cat === 'Multa') return 'Regra de Multa';
+                                                            if (cat === 'Aviso') return 'Aviso / Comunicado';
+                                                        }
+                                                        return base;
+                                                    })()}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="text-xs text-slate-600 line-clamp-1 italic font-mono">{log.record_id}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <button
+                                                    onClick={() => handleViewDetails(log)}
+                                                    className="p-2 text-slate-400 hover:text-[#437476] hover:bg-[#437476]/10 rounded-full transition-all"
+                                                    title="Ver Detalhes"
+                                                >
+                                                    <Eye size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    accessLogs.filter(l => !searchTerm || l.user_name.toLowerCase().includes(searchTerm.toLowerCase()) || l.ip_address.includes(searchTerm)).map(log => (
+                                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="text-slate-400 font-mono text-[11px]">
+                                                    {new Date(log.created_at).toLocaleString()}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black uppercase text-white ${log.user_role === 'ADMIN' ? 'bg-slate-700' : 'bg-emerald-500'}`}>
+                                                        {log.user_name.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-700 text-xs">{log.user_name}</p>
+                                                        <p className="text-[10px] text-slate-400">{log.user_email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-[10px] font-bold px-2 py-1 rounded uppercase bg-slate-100 text-slate-500 border border-slate-200">
+                                                    {log.user_role}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2 text-slate-600">
+                                                    {log.device.includes('iPhone') || log.device.includes('Android') ? <Smartphone size={14} /> : <Monitor size={14} />}
+                                                    <span className="text-xs">{log.device}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-1.5 font-mono text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-100 w-fit">
+                                                    <Globe size={10} />
+                                                    {log.ip_address}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-xs text-slate-400 italic">
+                                                    {log.location || 'N/A'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )
                             )}
                         </tbody>
                     </table>
                 </div>
 
                 <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Exibindo os últimos {logs.length} registros de auditoria</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                        {activeTab === 'audit' 
+                            ? `Exibindo os últimos ${logs.length} registros de alterações`
+                            : `Exibindo os últimos ${accessLogs.length} registros de acesso`
+                        }
+                    </p>
                 </div>
             </div>
 
