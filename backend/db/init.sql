@@ -204,6 +204,23 @@ CREATE TABLE IF NOT EXISTS readings_electricity (
 );
 ALTER TABLE readings_electricity ENABLE ROW LEVEL SECURITY;
 
+-- Refresh Tokens (Auth Security)
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL,
+    family_id UUID DEFAULT uuid_generate_v4() NOT NULL,
+    parent_id UUID REFERENCES refresh_tokens(id),
+    device_info TEXT,
+    ip_address INET,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    replaced_by UUID REFERENCES refresh_tokens(id)
+);
+CREATE INDEX idx_refresh_token_hash ON refresh_tokens(token_hash);
+ALTER TABLE refresh_tokens ENABLE ROW LEVEL SECURITY;
+
 -- Access Logs (Login History)
 CREATE TABLE IF NOT EXISTS access_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -383,6 +400,10 @@ CREATE POLICY access_logs_policy ON access_logs
         condominium_id = current_condo_id()
         AND user_id = current_user_id()
     );
+
+-- Refresh Tokens Policy
+CREATE POLICY refresh_tokens_policy ON refresh_tokens
+    USING (user_id = current_user_id());
 
 -- Readings Policies
 -- Water: Admin sees all. Resident sees own unit's.
