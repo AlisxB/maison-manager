@@ -80,7 +80,7 @@ class DocumentService:
         return doc
 
     async def update_document(self, id: UUID, data: DocumentUpdate, condo_id: UUID, role: str) -> Document:
-        if role != 'ADMIN':
+        if role not in ['ADMIN', 'SINDICO']:
             raise HTTPException(status_code=403, detail="Not authorized")
             
         doc = await self.get_document(id, condo_id)
@@ -93,7 +93,7 @@ class DocumentService:
         return doc
         
     async def toggle_status(self, id: UUID, is_active: bool, condo_id: UUID, role: str) -> Document:
-        if role != 'ADMIN':
+        if role not in ['ADMIN', 'SINDICO']:
             raise HTTPException(status_code=403, detail="Not authorized")
             
         doc = await self.get_document(id, condo_id)
@@ -103,7 +103,7 @@ class DocumentService:
         return doc
 
     async def delete_document(self, id: UUID, condo_id: UUID, role: str) -> None:
-        if role != 'ADMIN':
+        if role not in ['ADMIN', 'SINDICO']:
             raise HTTPException(status_code=403, detail="Not authorized")
             
         doc = await self.get_document(id, condo_id)

@@ -28,7 +28,7 @@ async def create_document(
     db: Annotated[AsyncSession, Depends(deps.get_db)] = None, # Depends trick
     current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)] = None
 ):
-    if current_user.role != 'ADMIN':
+    if current_user.role not in ['ADMIN', 'SINDICO']:
          raise HTTPException(status_code=403, detail="Not authorized")
          
     service = DocumentService(db)

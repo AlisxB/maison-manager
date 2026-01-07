@@ -728,11 +728,11 @@ ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY documents_admin_policy ON documents
     USING (
         condominium_id = current_condo_id()
-        AND current_app_role() = 'ADMIN'
+        AND current_app_role() IN ('ADMIN', 'SINDICO')
     )
     WITH CHECK (
         condominium_id = current_condo_id()
-        AND current_app_role() = 'ADMIN'
+        AND current_app_role() IN ('ADMIN', 'SINDICO')
     );
 
 -- Residents: Read Only & Active Only
