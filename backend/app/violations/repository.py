@@ -13,10 +13,12 @@ class ViolationRepository:
         self.db.add(violation)
         return violation
 
-    async def get_all(self, condo_id: UUID, user_id: Optional[UUID] = None) -> List[Violation]:
+    async def get_all(self, condo_id: UUID, user_id: Optional[UUID] = None, type_filter: Optional[str] = None) -> List[Violation]:
         query = select(Violation).options(joinedload(Violation.bylaw)).where(Violation.condominium_id == condo_id)
         if user_id:
             query = query.where(Violation.resident_id == user_id)
+        if type_filter:
+            query = query.where(Violation.type == type_filter)
             
         query = query.order_by(desc(Violation.created_at))
         result = await self.db.execute(query)

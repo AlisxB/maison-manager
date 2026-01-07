@@ -11,10 +11,12 @@ router = APIRouter()
 @router.get("/", response_model=List[ViolationRead])
 async def list_violations(
     db: Annotated[AsyncSession, Depends(deps.get_db)],
-    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)]
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)],
+    resident_id: Optional[UUID] = None,
+    type: Optional[str] = None
 ):
     service = ViolationService(db)
-    return await service.list_violations(current_user.user_id, current_user.role, current_user.condo_id)
+    return await service.list_violations(current_user.user_id, current_user.role, current_user.condo_id, resident_id, type)
 
 @router.post("/", response_model=ViolationRead)
 async def create_violation(

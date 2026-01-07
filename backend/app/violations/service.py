@@ -12,9 +12,15 @@ class ViolationService:
         self.db = db
         self.repo = ViolationRepository(db)
 
-    async def list_violations(self, user_id: UUID, role: str, condo_id: UUID) -> List[Violation]:
-        filter_user = user_id if role == 'RESIDENTE' else None
-        return await self.repo.get_all(condo_id, filter_user)
+    async def list_violations(self, user_id: UUID, role: str, condo_id: UUID, target_resident_id: UUID = None, type_filter: str = None) -> List[Violation]:
+        # If user is a Resident, they can ONLY see their own violations
+        if role == 'RESIDENTE':
+            filter_user = user_id
+        else:
+            # If Admin/Sindico, allow filtering by specific resident if requested
+            filter_user = target_resident_id
+
+        return await self.repo.get_all(condo_id, filter_user, type_filter)
 
     async def create_violation(self, data: ViolationCreate, role: str, condo_id: UUID) -> Violation:
         if role not in ['ADMIN', 'SINDICO']:
