@@ -270,3 +270,67 @@ async def get_audit_logs(
     except Exception as general_e:
         print(f"CRITICAL: Failed to process audit logs decryption: {general_e}")
         return [dict(row) for row in rows]
+
+@router.get("/access-logs", response_model=List[dict])
+async def get_access_logs(
+    db: Annotated[AsyncSession, Depends(deps.get_db)],
+    current_user: Annotated[deps.TokenData, Depends(deps.get_current_user)],
+    limit: int = 50,
+    user_id: Optional[str] = None
+):
+    """
+    Get access/login logs. RESTRICTED TO ADMIN.
+    """
+    allowed_roles = ['ADMIN', 'SINDICO']
+    if current_user.role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Not authorized to view logs")
+        
+    # Manually select columns to avoid issues with model loading
+    query_str = """
+        SELECT 
+            al.id, al.user_id, al.ip_address, al.user_agent, al.location, al.created_at,
+            u.name as user_name, u.role as user_role, u.email_encrypted
+        FROM access_logs al
+        JOIN users u ON al.user_id = u.id
+        WHERE al.condominium_id = :condo_id
+    """
+    
+    params = {"condo_id": current_user.condo_id, "limit": limit}
+    
+    if user_id:
+        query_str += " AND al.user_id = :user_id"
+        params["user_id"] = user_id
+        
+    query_str += " ORDER BY al.created_at DESC LIMIT :limit"
+    
+    result = await db.execute(text(query_str), params)
+    rows = result.mappings().all()
+    
+    processed_rows = []
+    for row in rows:
+        d = dict(row)
+        # Simple decrypt logic for display purposes
+        # Assuming ENC(...) format as per other modules
+        email_enc = d.get('email_encrypted', '')
+        if email_enc and isinstance(email_enc, str) and email_enc.startswith('ENC('):
+             d['user_email'] = email_enc[4:-1]
+        else:
+             d['user_email'] = "..." # Do not show full raw encrypted string
+        
+        # User Agent Parser
+        ua = d.get('user_agent', '') or ''
+        if 'Windows' in ua: d['device'] = 'Windows PC'
+        elif 'Macintosh' in ua: d['device'] = 'Mac'
+        elif 'Linux' in ua: d['device'] = 'Linux'
+        elif 'Android' in ua: d['device'] = 'Android'
+        elif 'iPhone' in ua: d['device'] = 'iPhone'
+        else: d['device'] = 'Outro'
+        
+        # Clean IP (remove ::ffff: if present)
+        ip = str(d.get('ip_address', ''))
+        if ip.startswith('::ffff:'):
+            d['ip_address'] = ip.replace('::ffff:', '')
+            
+        processed_rows.append(d)
+        
+    return processed_rows

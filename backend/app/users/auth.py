@@ -75,8 +75,22 @@ async def login_access_token(
     # 3. GeoIP & Access Log (Best Effort)
     try:
         # Simple Location Logic
-        location = "Desconhecido"
-        # ... (skipping complex geoip for brevity/stability, assuming logs handled elsewhere or simplified)
+        async def get_location_from_ip(ip: str):
+            if not ip or ip in ('127.0.0.1', 'localhost', '::1'):
+                return "Localhost"
+            try:
+                # Run blocking call in thread
+                url = f"http://ip-api.com/json/{ip}?fields=status,city,regionName,country"
+                response = await asyncio.to_thread(urllib.request.urlopen, url, timeout=3)
+                data = json.loads(response.read())
+                if data.get('status') == 'success':
+                    return f"{data['city']}, {data['regionName']} - {data['country']}"
+            except Exception as e:
+                print(f"GeoIP Error: {e}")
+            return "Desconhecido"
+
+        location = await get_location_from_ip(client_ip)
+        
         log_entry = AccessLog(
             condominium_id=user.condominium_id,
             user_id=user.id,
