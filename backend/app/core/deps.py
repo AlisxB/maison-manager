@@ -33,23 +33,32 @@ async def get_current_user(request: Request, token: Annotated[str | None, Depend
     except JWTError:
         raise credentials_exception
 
-async def get_db(current_user: Annotated[TokenData, Depends(get_current_user)]) -> AsyncGenerator:
+async def get_db(request: Request, current_user: Annotated[TokenData, Depends(get_current_user)]) -> AsyncGenerator:
     """
-    CRITICAL: This dependency injects security context into the DB session.
-    RLS policies rely on these settings.
+    IMPORTANTE: Esta dependência injeta o contexto de segurança na sessão do banco.
+    As políticas de RLS (Segurança ao nível de linha) dependem dessas configurações.
     """
     async with database.AsyncSessionLocal() as session:
-        # Set Session Context (Zero Trust)
+        # Define o contexto da sessão (Zero Trust)
         try:
-             # Using parameters in set_config can be tricky with some drivers, but text() handles binding.
-             # Note: current_setting values are strings.
+             # Extrai o IP (FastAPI Request.client.host já lida com X-Forwarded-For se proxy-headers estiver ativo)
+             client_ip = request.client.host if request.client else None
+             
+             # O uso de parâmetros no set_config garante segurança contra injeção de SQL.
+             # Nota: os valores de current_setting no Postgres são sempre strings.
              await session.execute(
-                 text("SELECT set_config('app.current_user_id', :uid, false), set_config('app.current_condo_id', :cid, false), set_config('app.current_role', :role, false), set_config('app.current_user_key', :key, false)"),
-                 {"uid": current_user.user_id, "cid": current_user.condo_id, "role": current_user.role, "key": config.settings.APP_ENCRYPTION_KEY}
+                 text("SELECT set_config('app.current_user_id', :uid, false), set_config('app.current_condo_id', :cid, false), set_config('app.current_role', :role, false), set_config('app.current_user_key', :key, false), set_config('app.current_user_ip', :ip, false)"),
+                 {
+                     "uid": current_user.user_id, 
+                     "cid": current_user.condo_id, 
+                     "role": current_user.role, 
+                     "key": config.settings.APP_ENCRYPTION_KEY,
+                     "ip": client_ip
+                 }
              )
         except Exception as e:
-            # If we can't set context, we must not yield a session.
-             raise HTTPException(status_code=500, detail="Failed to initialize security context")
+            # Se não conseguir definir o contexto, não deve liberar a sessão.
+             raise HTTPException(status_code=500, detail="Falha ao inicializar o contexto de segurança")
 
         try:
             yield session
@@ -59,12 +68,11 @@ async def get_db(current_user: Annotated[TokenData, Depends(get_current_user)]) 
         finally:
             await session.close()
 
-# Special dependency for Auth (Login) which doesn't have a user yet
+# Dependência especial para Autenticação (Login) que ainda não possui usuário logado
 async def get_db_no_context() -> AsyncGenerator:
     """
-    Limited session generator for login flows.
-    ONLY use this for initial authentication where context is not yet established.
-    Be extremely careful with queries using this session.
+    Gerador de sessão limitado para fluxos de login.
+    USE APENAS para autenticação inicial onde o contexto ainda não foi estabelecido.
     """
     async with database.AsyncSessionLocal() as session:
         try:
