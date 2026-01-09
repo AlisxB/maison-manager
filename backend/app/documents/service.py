@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.documents.repository import DocumentRepository
 from app.documents.models import Document
 from app.documents.schemas import DocumentCreate, DocumentUpdate
+from app.utils.file_optimizer import optimize_pdf, optimize_image
 
 UPLOAD_DIR = "backend/storage/uploads/documents"
 
@@ -36,39 +37,61 @@ class DocumentService:
                               user_id: UUID,
                               description: Optional[str] = None) -> Document:
         
-        # 1. Validate File
+        # 1. Validação do Arquivo
         if file.content_type not in ["application/pdf", "image/jpeg", "image/png"]:
-            raise HTTPException(status_code=400, detail="Invalid file type. Only PDF, JPG, PNG allowed.")
+            raise HTTPException(status_code=400, detail="Tipo de arquivo inválido. Apenas PDF, JPG, PNG são permitidos.")
         
-        # Max 10MB (Check content-length if available, else stream check - simplified here)
+        # 2. Preparação do Armazenamento
+        # Nota: a extensão pode mudar se a otimização converter PNG -> JPG
+        original_ext = os.path.splitext(file.filename)[1]
         
-        # 2. Save File
-        file_ext = os.path.splitext(file.filename)[1]
-        safe_filename = f"{uuid.uuid4()}{file_ext}"
-        
-        # Condo specific folder
+        # Pasta específica do condomínio
         save_dir = os.path.join(UPLOAD_DIR, str(condo_id))
         os.makedirs(save_dir, exist_ok=True)
         
-        file_path = os.path.join(save_dir, safe_filename)
+        final_mime_type = file.content_type
         
         try:
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            # Lê o conteúdo para memória
+            content = await file.read()
+            file_size = len(content)
+            
+            # 3. Otimiza se for maior que 1MB
+            if file_size > 1 * 1024 * 1024:
+                import asyncio
                 
-            file_size = os.path.getsize(file_path)
-            
+                if file.content_type == "application/pdf":
+                    content = await asyncio.to_thread(optimize_pdf, content)
+                    
+                elif file.content_type in ["image/jpeg", "image/png"]:
+                    content, new_mime = await asyncio.to_thread(optimize_image, content)
+                    final_mime_type = new_mime
+                    
+                    # Atualiza extensão se o mime mudou
+                    if new_mime == "image/jpeg" and original_ext.lower() != ".jpg" and original_ext.lower() != ".jpeg":
+                        original_ext = ".jpg"
+                        
+                file_size = len(content) # Atualiza o tamanho final
+
+            # Gera nome seguro com a extensão correta
+            safe_filename = f"{uuid.uuid4()}{original_ext}"
+            file_path = os.path.join(save_dir, safe_filename)
+
+            # Escreve no disco
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
+                
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Falha no processamento do arquivo: {str(e)}")
             
-        # 3. Create DB Record
+        # 4. Cria o registro no Banco de Dados
         doc = Document(
             condominium_id=condo_id,
             title=title,
             description=description,
             category=category,
             file_path=file_path,
-            mime_type=file.content_type,
+            mime_type=final_mime_type,
             file_size=file_size,
             is_active=True,
             created_by=user_id
