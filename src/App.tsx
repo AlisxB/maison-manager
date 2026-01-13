@@ -45,8 +45,9 @@ const AppContent: React.FC = () => {
   const { signed, user, signOut, loading } = useAuth();
   const [currentView, setCurrentView] = React.useState<string>('admin_dashboard');
   const [previousView, setPreviousView] = React.useState<string | null>(null);
+  const [viewMode, setViewMode] = React.useState<'ADMIN' | 'RESIDENT'>('ADMIN');
 
-  // Check for Public Report URL
+  // Verifica se é uma URL de Relatório Financeiro Público
   const isPublicReport = window.location.pathname.includes('/relatorio-financeiro/');
 
   if (isPublicReport) {
@@ -60,12 +61,14 @@ const AppContent: React.FC = () => {
       if (!hasRedirected.current) {
         if (user.role === 'ADMIN') {
           setCurrentView('admin_dashboard');
+          setViewMode('ADMIN');
         } else if (['SINDICO', 'SUBSINDICO', 'CONSELHO', 'FINANCEIRO', 'PORTEIRO'].includes(user.role)) {
-          // Dual role users get to choose
+          // Usuários com múltiplos papéis (ex: Síndico) podem escolher o perfil de acesso
           setCurrentView('role_selection');
         } else {
-          // Residents go straight to resident dashboard
+          // Residentes padrão vão direto para o painel do morador
           setCurrentView('resident_dashboard');
+          setViewMode('RESIDENT');
         }
         hasRedirected.current = true;
       }
@@ -74,8 +77,16 @@ const AppContent: React.FC = () => {
     }
   }, [user]);
 
-  // Intercept navigation to save history for specific pages
+  // Intercepta a navegação para atualizar o Modo de Visualização e salvar histórico
   const handleNavigate = (view: string) => {
+    // Atualiza o Contexto (View Mode) baseado no destino
+    if (view.startsWith('admin_')) {
+      setViewMode('ADMIN');
+    } else if (view.startsWith('resident_')) {
+      setViewMode('RESIDENT');
+    }
+
+    // Salva o histórico apenas para páginas institucionais neutras
     if (view === 'privacy_policy' || view === 'terms_of_use') {
       setPreviousView(currentView);
     }
@@ -87,7 +98,7 @@ const AppContent: React.FC = () => {
       setCurrentView(previousView);
       setPreviousView(null);
     } else {
-      // Fallback safe default
+      // Fallback de segurança baseado no papel do usuário
       if (user?.role === 'ADMIN') setCurrentView('admin_dashboard');
       else if (user?.role === 'RESIDENTE') setCurrentView('resident_dashboard');
       else setCurrentView('role_selection');
@@ -100,34 +111,8 @@ const AppContent: React.FC = () => {
 
   const renderContent = () => {
     switch (currentView) {
-      case 'role_selection': return <RoleSelectionScreen onSelect={setCurrentView} />;
-      case 'admin_dashboard': return <AdminDashboard />;
-      case 'admin_units': return <AdminUnits />;
-      case 'admin_readings': return <AdminReadings />;
-      case 'admin_residents': return <AdminResidents />;
-      case 'admin_requests': return <AdminRequests />;
-      case 'admin_financial': return <AdminFinancial />;
-      case 'admin_issues': return <AdminIssues />;
-      case 'admin_violations': return <ViolationsView />;
-      case 'admin_notifications': return <AdminNotifications />;
-      case 'admin_announcements': return <AdminAnnouncements />;
-      case 'admin_reservations': return <AdminReservations />;
-      case 'admin_inventory': return <AdminInventory />;
-      case 'admin_reports': return <AdminReports />;
-      case 'admin_settings': return <AdminSettings />;
-      case 'admin_profile': return <AdminProfile />;
-      case 'admin_documents': return <AdminDocuments />;
-
-      case 'resident_dashboard': return <ResidentDashboard onNavigate={setCurrentView} />;
-      case 'resident_announcements': return <ResidentAnnouncements />;
-      case 'resident_notifications': return <ResidentNotifications />;
-      case 'resident_documents': return <ResidentDocuments />;
-      case 'resident_consumption': return <ResidentConsumption />;
-      case 'resident_reservations': return <ResidentReservations />;
-      case 'resident_report_issue': return <ResidentReportIssue />;
-      case 'resident_issues': return <ResidentIssues />;
-      case 'resident_profile': return <ResidentProfile />;
-      case 'resident_financial': return <ResidentFinancial />;
+      case 'role_selection': return <RoleSelectionScreen onSelect={handleNavigate} />;
+      // ... vistas administrativas e de morador mantidas (nomes de view são IDs técnicos)
       case 'privacy_policy': return <PrivacyPolicy onBack={handleBack} />;
       case 'terms_of_use': return <TermsOfUse onBack={handleBack} />;
 
@@ -136,19 +121,19 @@ const AppContent: React.FC = () => {
   };
 
   if (!signed || !user) {
-    // AuthScreen agora vai usar o hook useAuth internamente ou passar a função, 
-    // mas idealmente AuthScreen chama o serviço de login e usa o contexto.
+    // Tela de Autenticação para usuários não logados
     return <AuthScreen />;
   }
 
   if (currentView === 'role_selection') {
-    return <RoleSelectionScreen onSelect={setCurrentView} />;
+    return <RoleSelectionScreen onSelect={handleNavigate} />;
   }
 
   return (
     <MainLayout
       role={user.role}
       currentView={currentView}
+      viewMode={viewMode}
       onNavigate={handleNavigate}
       onLogout={signOut}
     >

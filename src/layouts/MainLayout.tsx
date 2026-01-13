@@ -20,6 +20,8 @@ interface LayoutProps {
   children: React.ReactNode;
   role: Role;
   currentView: string;
+  previousView?: string | null;
+  viewMode?: 'ADMIN' | 'RESIDENT';
   onNavigate: (view: string) => void;
   onLogout: () => void;
 }
@@ -28,6 +30,8 @@ const MainLayout: React.FC<LayoutProps> = ({
   children,
   role,
   currentView,
+  previousView,
+  viewMode,
   onNavigate,
   onLogout
 }) => {
@@ -126,17 +130,23 @@ const MainLayout: React.FC<LayoutProps> = ({
         if (stats.pending_counts) {
           setPendingCounts(stats.pending_counts);
         }
-      }).catch(err => console.error("Error fetching badges", err));
+      }).catch(err => console.error("Erro ao buscar contadores", err));
     }
-  }, [user, role, currentView]); // Refresh when view changes to update counts? Might be too heavy. Maybe just on mount and periodic? keeping simple for now.
+  }, [user, role, currentView]); 
 
   const adminRoles = ['ADMIN', 'SINDICO', 'SUBSINDICO', 'CONSELHO', 'PORTEIRO', 'FINANCEIRO'];
 
-  // Determine if we should show Admin or Resident Sidebar
-  // If the user is on a Resident View, show Resident Sidebar regardless of their actual Role.
-  // Otherwise, fallback to their Role capabilities.
-  const isResidentView = currentView.startsWith('resident_');
-  const showAdminSidebar = adminRoles.includes(role) && !isResidentView;
+  // Determina qual sidebar exibir baseado no Modo de Visualização Explícito (Contexto)
+  // Se viewMode for fornecido pelo App.tsx, usa ele. Caso contrário, usa lógica de Role.
+  let showAdminSidebar = false;
+
+  if (viewMode) {
+    showAdminSidebar = (viewMode === 'ADMIN');
+  } else {
+    // Fallback de segurança para versões anteriores ou contextos não mapeados
+    const isResidentView = currentView.startsWith('resident_');
+    showAdminSidebar = adminRoles.includes(role) && !isResidentView;
+  }
 
   const navItems = showAdminSidebar ? ADMIN_NAV : RESIDENT_NAV;
   const sidebarBg = showAdminSidebar ? 'bg-[#1e3a3a]' : 'bg-emerald-900';
@@ -145,7 +155,7 @@ const MainLayout: React.FC<LayoutProps> = ({
   const hoverItemBg = showAdminSidebar ? 'hover:bg-[#264949] hover:text-white' : 'hover:bg-emerald-800 hover:text-white';
 
   const getBadge = (view: string) => {
-    // Badges are for Admin items mostly
+    // Badges (bolinhas de contagem) são exibidas apenas no menu Admin
     if (!showAdminSidebar) return null;
 
     let count = 0;
