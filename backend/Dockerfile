@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Install system dependencies (build-essential for some python packages if needed)
 # libpq-dev is often needed for psycopg2/asyncpg build
-RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+# libjpeg-dev, zlib1g-dev, libpng-dev are needed for Pillow
+RUN apt-get update && apt-get install -y libpq-dev gcc libjpeg-dev zlib1g-dev libpng-dev && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
