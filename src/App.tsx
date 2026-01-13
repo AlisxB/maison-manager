@@ -44,6 +44,7 @@ import { PublicReport } from './pages/PublicReport';
 const AppContent: React.FC = () => {
   const { signed, user, signOut, loading } = useAuth();
   const [currentView, setCurrentView] = React.useState<string>('admin_dashboard');
+  const [previousView, setPreviousView] = React.useState<string | null>(null);
 
   // Check for Public Report URL
   const isPublicReport = window.location.pathname.includes('/relatorio-financeiro/');
@@ -72,6 +73,26 @@ const AppContent: React.FC = () => {
       hasRedirected.current = false;
     }
   }, [user]);
+
+  // Intercept navigation to save history for specific pages
+  const handleNavigate = (view: string) => {
+    if (view === 'privacy_policy' || view === 'terms_of_use') {
+      setPreviousView(currentView);
+    }
+    setCurrentView(view);
+  };
+
+  const handleBack = () => {
+    if (previousView) {
+      setCurrentView(previousView);
+      setPreviousView(null);
+    } else {
+      // Fallback safe default
+      if (user?.role === 'ADMIN') setCurrentView('admin_dashboard');
+      else if (user?.role === 'RESIDENTE') setCurrentView('resident_dashboard');
+      else setCurrentView('role_selection');
+    }
+  };
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
@@ -107,8 +128,8 @@ const AppContent: React.FC = () => {
       case 'resident_issues': return <ResidentIssues />;
       case 'resident_profile': return <ResidentProfile />;
       case 'resident_financial': return <ResidentFinancial />;
-      case 'privacy_policy': return <PrivacyPolicy onBack={() => setCurrentView(user.role === 'ADMIN' ? 'admin_dashboard' : 'resident_dashboard')} />;
-      case 'terms_of_use': return <TermsOfUse onBack={() => setCurrentView(user.role === 'ADMIN' ? 'admin_dashboard' : 'resident_dashboard')} />;
+      case 'privacy_policy': return <PrivacyPolicy onBack={handleBack} />;
+      case 'terms_of_use': return <TermsOfUse onBack={handleBack} />;
 
       default: return <div className="p-4 text-red-500">View not found: {currentView}</div>;
     }
@@ -128,7 +149,7 @@ const AppContent: React.FC = () => {
     <MainLayout
       role={user.role}
       currentView={currentView}
-      onNavigate={setCurrentView}
+      onNavigate={handleNavigate}
       onLogout={signOut}
     >
       {renderContent()}
