@@ -112,7 +112,38 @@ const AppContent: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'role_selection': return <RoleSelectionScreen onSelect={handleNavigate} />;
-      // ... vistas administrativas e de morador mantidas (nomes de view são IDs técnicos)
+      
+      // Admin Views
+      case 'admin_dashboard': return <AdminDashboard />;
+      case 'admin_units': return <AdminUnits />;
+      case 'admin_readings': return <AdminReadings />;
+      case 'admin_residents': return <AdminResidents />;
+      case 'admin_requests': return <AdminRequests />;
+      case 'admin_financial': return <AdminFinancial />;
+      case 'admin_issues': return <AdminIssues />;
+      case 'admin_violations': return <ViolationsView />;
+      case 'admin_notifications': return <AdminNotifications />;
+      case 'admin_announcements': return <AdminAnnouncements />;
+      case 'admin_reservations': return <AdminReservations />;
+      case 'admin_inventory': return <AdminInventory />;
+      case 'admin_reports': return <AdminReports />;
+      case 'admin_settings': return <AdminSettings />;
+      case 'admin_profile': return <AdminProfile />;
+      case 'admin_documents': return <AdminDocuments />;
+
+      // Resident Views
+      case 'resident_dashboard': return <ResidentDashboard onNavigate={handleNavigate} />;
+      case 'resident_announcements': return <ResidentAnnouncements />;
+      case 'resident_notifications': return <ResidentNotifications />;
+      case 'resident_documents': return <ResidentDocuments />;
+      case 'resident_consumption': return <ResidentConsumption />;
+      case 'resident_reservations': return <ResidentReservations />;
+      case 'resident_report_issue': return <ResidentReportIssue />;
+      case 'resident_issues': return <ResidentIssues />;
+      case 'resident_profile': return <ResidentProfile />;
+      case 'resident_financial': return <ResidentFinancial />;
+      
+      // Public / Neutral Views
       case 'privacy_policy': return <PrivacyPolicy onBack={handleBack} />;
       case 'terms_of_use': return <TermsOfUse onBack={handleBack} />;
 
