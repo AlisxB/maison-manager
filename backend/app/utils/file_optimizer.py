@@ -24,9 +24,11 @@ def optimize_pdf(file_bytes: bytes) -> bytes:
             return file_bytes
 
         for page in reader.pages:
-            # Comprime fluxos de conteúdo (sem perda de qualidade visual)
-            page.compress_content_streams()
             writer.add_page(page)
+
+        # Comprime fluxos de conteúdo em todas as páginas do writer
+        for page in writer.pages:
+            page.compress_content_streams()
 
         # 3. Otimização Estrutural
         writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
