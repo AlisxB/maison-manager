@@ -47,6 +47,12 @@ export const AdminDocuments: React.FC = () => {
         e.preventDefault();
         if (!uploadFile || !title) return;
 
+        // Validação de Tamanho (Frontend)
+        if (uploadFile.size > 20 * 1024 * 1024) {
+            alert("O arquivo é muito grande. O limite máximo é de 20MB.");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             await DocumentService.upload(uploadFile, title, category, description);
@@ -302,7 +308,7 @@ export const AdminDocuments: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Arquivo (PDF/Imagem - Máx 10MB)</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Arquivo (PDF/Imagem - Máx 20MB)</label>
                                 <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 hover:border-[#437476]/50 transition-all cursor-pointer relative group bg-slate-50/50">
                                     <input
                                         type="file"
