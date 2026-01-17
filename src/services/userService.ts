@@ -33,7 +33,8 @@ export const UserService = {
 
     getResidents: async () => {
         const response = await api.get<User[]>('/users/');
-        return response.data.filter(u => u.role === 'RESIDENTE');
+        // Filtra qualquer usuário que tenha uma unidade vinculada (independente do cargo)
+        return response.data.filter(u => u.unit_id || u.unit);
     },
 
     create: async (data: any) => {
