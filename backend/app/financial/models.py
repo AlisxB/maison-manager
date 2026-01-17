@@ -20,6 +20,8 @@ class Transaction(Base):
     status = Column(String(20), default='PAGO')
     observation = Column(Text)
     
+    violation_id = Column(UUID(as_uuid=True), ForeignKey("violations.id"), nullable=True)
+    
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
 
 class FinancialShare(Base):
