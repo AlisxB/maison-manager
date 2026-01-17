@@ -71,16 +71,32 @@ class FinancialService:
                 update_data['type'] = 'DESPESA'
 
         # Map Status if present
+        is_paying = False
         if 'status' in update_data:
             s = update_data['status'].lower()
             if s == 'paid':
                 update_data['status'] = 'PAGO'
+                is_paying = True
             elif s == 'pending':
                 update_data['status'] = 'PENDENTE'
 
         for field, value in update_data.items():
             setattr(db_tx, field, value)
             
+        # Auto-resolve Linked Violation (Best Practice)
+        if is_paying and db_tx.violation_id:
+            try:
+                from app.violations.models import Violation
+                from sqlalchemy import update
+                
+                await self.db.execute(
+                    update(Violation)
+                    .where(Violation.id == db_tx.violation_id)
+                    .values(status='PAGO')
+                )
+            except Exception as e:
+                print(f"Failed to auto-update violation status: {e}")
+
         await self.db.commit()
         await self.db.refresh(db_tx)
         return db_tx

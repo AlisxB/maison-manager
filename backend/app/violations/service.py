@@ -63,24 +63,31 @@ class ViolationService:
                 user_obj = user_res.scalar_one_or_none()
                 
                 user_name = "Morador"
-                unit_info = ""
+                unit_label = ""
+                
                 if user_obj:
                     user_name = user_obj.name
                     if user_obj.unit:
-                         unit_info = f" (Bloco {user_obj.unit.block or ''} - {user_obj.unit.number})"
+                         # Formato: (Bloco A - 101)
+                         parts = []
+                         if user_obj.unit.block:
+                             parts.append(f"Bloco {user_obj.unit.block}")
+                         parts.append(str(user_obj.unit.number))
+                         unit_label = f" ({' - '.join(parts)})"
                 
                 # Use timezone aware date
                 tx_date = data.occurred_at or datetime.now(timezone.utc)
                 
                 transaction = Transaction(
                     condominium_id=condo_id,
-                    type='RECEITA', # Check constraint: RECEITA, DESPESA
-                    description=f"Multa - {user_name}",
+                    type='RECEITA',
+                    description=f"Multa - {user_name}{unit_label}",
                     amount=data.amount,
                     category='Multas',
                     date=tx_date,
-                    status='PENDENTE', # Check constraint: PAGO, PENDENTE
-                    observation=f"Infração ID: {violation.id}. Morador: {user_name}{unit_info}. Motivo: {data.description[:100]}..."
+                    status='PENDENTE',
+                    observation=data.description, # Limpo e sem ID
+                    violation_id=violation.id # Vínculo relacional forte
                 )
                 self.db.add(transaction)
                 # Flush to check for errors immediately (optional, but good for debugging)
